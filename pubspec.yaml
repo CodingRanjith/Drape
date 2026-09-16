@@ -36,3 +36,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/coming_soon.json
+    - assets/walkthrough/

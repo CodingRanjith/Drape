@@ -115,6 +115,12 @@ class DrapeState extends ChangeNotifier {
     clothSets: clothSets,
   );
 
+  Future<void> completeWalkthrough() async {
+    profile.walkthroughSeen = true;
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> completeOnboarding({
     required String name,
     required Set<int> workdays,

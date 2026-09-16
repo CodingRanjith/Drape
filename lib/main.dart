@@ -8,6 +8,7 @@ import 'app_nav.dart';
 import 'screens/alarm_ring_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/shell_screen.dart';
+import 'screens/splash_walkthrough_screen.dart';
 import 'services/notify.dart';
 import 'state/drape_state.dart';
 import 'theme/app_theme.dart';
@@ -102,6 +103,11 @@ class _Gate extends StatelessWidget {
     if (state.loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!state.profile.walkthroughSeen) {
+      return SplashWalkthroughScreen(
+        onFinished: () => unawaited(state.completeWalkthrough()),
       );
     }
     if (!state.profile.onboarded) {

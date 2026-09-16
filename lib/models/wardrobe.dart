@@ -511,6 +511,7 @@ class UserProfile {
     this.workStyle = Formality.smartCasual,
     this.minRepeatDays = 4,
     this.onboarded = false,
+    this.walkthroughSeen = false,
     this.wearer = Wearer.woman,
   }) : workdays = workdays ?? {1, 2, 3, 4, 5};
 
@@ -519,6 +520,7 @@ class UserProfile {
   Formality workStyle;
   int minRepeatDays;
   bool onboarded;
+  bool walkthroughSeen;
   Wearer wearer;
 
   Map<String, dynamic> toJson() => {
@@ -527,6 +529,7 @@ class UserProfile {
     'workStyle': workStyle.name,
     'minRepeatDays': minRepeatDays,
     'onboarded': onboarded,
+    'walkthroughSeen': walkthroughSeen,
     'wearer': wearer.name,
   };
 
@@ -540,6 +543,7 @@ class UserProfile {
     ),
     minRepeatDays: json['minRepeatDays'] as int? ?? 4,
     onboarded: json['onboarded'] as bool? ?? false,
+    walkthroughSeen: json['walkthroughSeen'] as bool? ?? false,
     wearer: Wearer.values.byName(json['wearer'] as String? ?? Wearer.woman.name),
   );
 }
