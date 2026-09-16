@@ -513,6 +513,7 @@ class UserProfile {
     this.onboarded = false,
     this.walkthroughSeen = false,
     this.wearer = Wearer.woman,
+    this.dateOfBirth,
   }) : workdays = workdays ?? {1, 2, 3, 4, 5};
 
   String name;
@@ -522,6 +523,7 @@ class UserProfile {
   bool onboarded;
   bool walkthroughSeen;
   Wearer wearer;
+  DateTime? dateOfBirth;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -531,6 +533,7 @@ class UserProfile {
     'onboarded': onboarded,
     'walkthroughSeen': walkthroughSeen,
     'wearer': wearer.name,
+    'dateOfBirth': dateOfBirth?.toIso8601String(),
   };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -545,6 +548,9 @@ class UserProfile {
     onboarded: json['onboarded'] as bool? ?? false,
     walkthroughSeen: json['walkthroughSeen'] as bool? ?? false,
     wearer: Wearer.values.byName(json['wearer'] as String? ?? Wearer.woman.name),
+    dateOfBirth: json['dateOfBirth'] == null
+        ? null
+        : DateTime.tryParse(json['dateOfBirth'] as String),
   );
 }
 

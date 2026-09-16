@@ -36,4 +36,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/coming_soon.json
+    - assets/onboarding_bg.png
+    - assets/gender_female.png
+    - assets/gender_male.png
     - assets/walkthrough/

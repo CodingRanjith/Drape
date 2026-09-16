@@ -149,8 +149,9 @@ class _WalkthroughPage extends StatelessWidget {
           child: Image.asset(
             slide.image,
             fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.32),
+            alignment: const Alignment(0, -0.2),
             filterQuality: FilterQuality.high,
+            errorBuilder: (_, _, _) => ColoredBox(color: slide.wash),
           ),
         ),
         const DecoratedBox(
@@ -159,47 +160,47 @@ class _WalkthroughPage extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0x33000000),
-                Color(0x00000000),
-                Color(0x59000000),
-                Color(0xCC111111),
+                Color(0x55000000),
+                Color(0x14000000),
+                Color(0x99000000),
               ],
-              stops: [0, 0.28, 0.58, 1],
+              stops: [0, 0.42, 1],
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
-            ),
-            padding: EdgeInsets.fromLTRB(28, 32, 28, 16 + bottom),
+        SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(28, 12, 28, 16 + bottom),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  slide.title,
-                  textAlign: TextAlign.center,
+                  'Drape',
                   style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                    letterSpacing: -0.35,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  slide.title,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 34,
+                    height: 1.12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: -0.4,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   slide.body,
-                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14.5,
-                    height: 1.55,
+                    fontSize: 15,
+                    height: 1.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF8A8178),
+                    color: Color(0xE6FFFFFF),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -220,14 +221,14 @@ class _WalkthroughPage extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
+                            color: Colors.white,
                           ),
                         ),
                       ),
                     ),
                     const Spacer(),
                     Material(
-                      color: AppColors.ink,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(999),
                       child: InkWell(
                         onTap: onNext,
@@ -242,7 +243,7 @@ class _WalkthroughPage extends StatelessWidget {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppColors.ink,
                             ),
                           ),
                         ),
@@ -268,15 +269,14 @@ class _Dots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         for (var i = 0; i < count; i++) ...[
           Container(
-            width: 8,
+            width: i == index ? 22 : 8,
             height: 8,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: i == index ? AppColors.ink : const Color(0xFFD8D0C8),
+              color: i == index ? Colors.white : const Color(0x66FFFFFF),
+              borderRadius: BorderRadius.circular(99),
             ),
           ),
           if (i != count - 1) const SizedBox(width: 8),

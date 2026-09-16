@@ -126,12 +126,14 @@ class DrapeState extends ChangeNotifier {
     required Set<int> workdays,
     required Formality workStyle,
     required Wearer wearer,
+    DateTime? dateOfBirth,
   }) async {
     profile
       ..name = name.trim().isEmpty ? 'there' : name.trim()
       ..workdays = workdays
       ..workStyle = workStyle
       ..wearer = wearer
+      ..dateOfBirth = dateOfBirth
       ..onboarded = true;
     regenerateWeek();
     _rebuildTodayChoices();
