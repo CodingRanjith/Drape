@@ -53,7 +53,11 @@ class PageBackground extends StatelessWidget {
         Positioned.fill(
           child: ColoredBox(color: overlayColor),
         ),
-        child,
+        SafeArea(
+          bottom: false,
+          minimum: const EdgeInsets.only(top: 16),
+          child: child,
+        ),
       ],
     );
   }

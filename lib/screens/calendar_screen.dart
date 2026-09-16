@@ -125,10 +125,14 @@ class _EventsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(26),
-          child: ColoredBox(
-            color: const Color(0xFFE7EEEA),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xF2FFFFFF),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 14, 10, 16),
             child: Column(
               children: [
                 _MonthHeader(
@@ -136,39 +140,40 @@ class _EventsTab extends StatelessWidget {
                   onPrev: onPrevMonth,
                   onNext: onNextMonth,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 14, 10, 16),
-                  child: _MonthGrid(
-                    month: month,
-                    selected: selected,
-                    events: state.events,
-                    onSelect: onSelect,
-                  ),
+                const SizedBox(height: 12),
+                _MonthGrid(
+                  month: month,
+                  selected: selected,
+                  events: state.events,
+                  onSelect: onSelect,
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    const _LegendMark(
+                      child: _FinishedBadge(size: 14),
+                      label: 'Finished',
+                    ),
+                    _LegendMark(
+                      child: _TodayBadge(day: DateTime.now().day),
+                      label: 'Today',
+                    ),
+                    const _LegendMark(
+                      child: Icon(
+                        Icons.flag_rounded,
+                        size: 14,
+                        color: AppColors.terracotta,
+                      ),
+                      label: 'Reminder',
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 14),
-        const Wrap(
-          spacing: 14,
-          runSpacing: 8,
-          children: [
-            _LegendSwatch(
-              fill: Color(0xFFFDE8E6),
-              border: Color(0xFFE24C43),
-              label: 'Finished',
-            ),
-            _LegendSwatch(
-              fill: AppColors.sageSoft,
-              border: AppColors.sage,
-              label: 'Today',
-            ),
-            _LegendDot(
-              color: AppColors.terracotta,
-              label: 'Reminder',
-            ),
-          ],
         ),
         const SizedBox(height: 22),
         Text(
@@ -206,36 +211,24 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.sage,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: onPrev,
-              color: Colors.white,
-              icon: const Icon(Icons.chevron_left_rounded),
-            ),
-            Expanded(
-              child: Text(
-                DateFormat('MMMM y').format(month),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: onNext,
-              color: Colors.white,
-              icon: const Icon(Icons.chevron_right_rounded),
-            ),
-          ],
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onPrev,
+          icon: const Icon(Icons.chevron_left_rounded),
         ),
-      ),
+        Expanded(
+          child: Text(
+            DateFormat('MMMM y').format(month),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+        ),
+        IconButton(
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
+      ],
     );
   }
 }
@@ -273,10 +266,10 @@ class _MonthGrid extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.sage,
-                    fontSize: 12,
-                    letterSpacing: 0.6,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
+                    fontSize: 11,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
@@ -290,7 +283,8 @@ class _MonthGrid extends StatelessWidget {
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+            crossAxisSpacing: 4,
+            childAspectRatio: 0.72,
           ),
           itemBuilder: (context, i) {
             if (i < lead) return const SizedBox.shrink();
@@ -333,116 +327,129 @@ class _DayCell extends StatelessWidget {
   final bool hasReminder;
   final VoidCallback onTap;
 
-  static const _finished = Color(0xFFE24C43);
-  static const _finishedSoft = Color(0xFFFDE8E6);
+  static const _cell = Color(0xFFF0ECE8);
 
   @override
   Widget build(BuildContext context) {
-    final fill = _fillColor();
-    final ink = _inkColor();
+    final fill = isToday ? AppColors.sage : _cell;
+    final numberColor = isToday ? Colors.white : AppColors.ink;
 
     return InkWell(
       customBorder: const CircleBorder(),
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: fill,
-          shape: BoxShape.circle,
-          border: isSelected && !isToday
-              ? Border.all(color: AppColors.ink, width: 1.6)
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '$day',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-                color: ink,
-              ),
-            ),
-            if (hasReminder) ...[
-              const SizedBox(height: 3),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.terracotta,
-                  shape: BoxShape.circle,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 40,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    shape: BoxShape.circle,
+                    border: isSelected && !isToday
+                        ? Border.all(color: AppColors.ink, width: 1.4)
+                        : null,
+                  ),
+                  child: Text(
+                    '$day',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: numberColor,
+                      height: 1,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ],
+                if (completed && !isToday)
+                  const Positioned(
+                    top: -1,
+                    child: _FinishedBadge(size: 13),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 12,
+            child: hasReminder
+                ? const Icon(
+                    Icons.flag_rounded,
+                    size: 12,
+                    color: AppColors.terracotta,
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinishedBadge extends StatelessWidget {
+  const _FinishedBadge({this.size = 13});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE24C43),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.check_rounded, size: size * 0.72, color: Colors.white),
+    );
+  }
+}
+
+class _TodayBadge extends StatelessWidget {
+  const _TodayBadge({required this.day});
+
+  final int day;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16,
+      height: 16,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.sage,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '$day',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 7,
+          fontWeight: FontWeight.w800,
+          height: 1,
         ),
       ),
     );
   }
-
-  Color? _fillColor() {
-    if (isToday) return AppColors.sage;
-    if (isSelected) return Colors.white.withValues(alpha: 0.7);
-    return Colors.transparent;
-  }
-
-  Color _inkColor() {
-    if (isToday) return Colors.white;
-    if (completed) return _finished;
-    return AppColors.ink;
-  }
 }
 
-class _LegendSwatch extends StatelessWidget {
-  const _LegendSwatch({
-    required this.fill,
-    required this.border,
-    required this.label,
-  });
+class _LegendMark extends StatelessWidget {
+  const _LegendMark({required this.child, required this.label});
 
-  final Color fill;
-  final Color border;
+  final Widget child;
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: border),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
+        child,
         const SizedBox(width: 6),
         Text(
           label,

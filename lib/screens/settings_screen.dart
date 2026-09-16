@@ -12,6 +12,7 @@ import '../widgets/back_icon.dart';
 import '../widgets/logout_button.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
+import 'notifications_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -78,90 +79,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
+                ProfileAvatar(radius: 20, onTap: _changePhoto),
+                const SizedBox(width: 4),
                 _LogoutMark(onTap: () => confirmLogout(context)),
               ],
             ),
             const SizedBox(height: 22),
             _WhiteCard(
-              onTap: _editIdentity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-                child: Row(
-                  children: [
-                    ProfileAvatar(
-                      radius: 26,
-                      onTap: _changePhoto,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Color(0xFFB7AFA7),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            const _SectionLabel('Details'),
-            _WhiteCard(
               child: Column(
                 children: [
                   _MenuRow(
+                    icon: Icons.person_outline_rounded,
+                    title: 'My Profile',
+                    onTap: _editIdentity,
+                  ),
+                  _MenuRow(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifications',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    ),
+                  ),
+                  _MenuRow(
                     icon: Icons.wc_outlined,
                     title: 'Gender',
-                    value: profile.wearer.genderLabel,
                     onTap: _pickGender,
                   ),
                   _MenuRow(
                     icon: Icons.cake_outlined,
                     title: 'Date of birth',
-                    value: profile.dateOfBirth == null
-                        ? 'Add date'
-                        : DateFormat('d MMMM y').format(profile.dateOfBirth!),
                     onTap: _pickDob,
                   ),
-                  _HeightWeightRow(
-                    heightText: profile.heightCm == null
-                        ? 'Add height'
-                        : '${_pretty(profile.heightCm!)} cm',
-                    weightText: profile.weightKg == null
-                        ? 'Add weight'
-                        : '${_pretty(profile.weightKg!)} kg',
-                    onHeight: () => _pickNumber(
+                  _MenuRow(
+                    icon: Icons.height_rounded,
+                    title: 'Height',
+                    onTap: () => _pickNumber(
                       title: 'Height',
                       suffix: 'cm',
                       value: profile.heightCm,
                       onSave: (v) => _persist((p) => p.heightCm = v),
                     ),
-                    onWeight: () => _pickNumber(
+                  ),
+                  _MenuRow(
+                    icon: Icons.monitor_weight_outlined,
+                    title: 'Weight',
+                    groupEnd: true,
+                    onTap: () => _pickNumber(
                       title: 'Weight',
                       suffix: 'kg',
                       value: profile.weightKg,
@@ -169,33 +134,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   _MenuRow(
-                    icon: Icons.monitor_heart_outlined,
+                    icon: Icons.help_outline_rounded,
                     title: 'BMI',
                     value: profile.bmiLabel,
                     valueColor: _bmiColor(profile),
                     showChevron: false,
-                    showDivider: false,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 22),
-            const _SectionLabel('Backup'),
-            _WhiteCard(
-              child: Column(
-                children: [
                   _MenuRow(
                     icon: Icons.ios_share_rounded,
                     title: 'Export',
-                    value: 'Save a backup zip',
                     onTap: _busy ? null : _backup,
                   ),
                   _MenuRow(
                     icon: Icons.download_outlined,
                     title: 'Import',
-                    value: 'Restore from backup zip',
-                    showDivider: false,
+                    showChevron: true,
                     onTap: _busy ? null : _import,
+                    isLast: true,
                   ),
                 ],
               ),

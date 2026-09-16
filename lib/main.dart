@@ -89,19 +89,6 @@ class _DrapeRootState extends State<DrapeRoot> with WidgetsBindingObserver {
         navigatorKey: appNavigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
-        builder: (context, child) {
-          final media = MediaQuery.of(context);
-          const extraTop = 16.0;
-          return MediaQuery(
-            data: media.copyWith(
-              padding: media.padding.copyWith(top: media.padding.top + extraTop),
-              viewPadding: media.viewPadding.copyWith(
-                top: media.viewPadding.top + extraTop,
-              ),
-            ),
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
         home: const _Gate(),
       ),
     );
