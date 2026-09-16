@@ -9,98 +9,40 @@ import '../widgets/back_icon.dart';
 import '../widgets/closet_add.dart';
 import '../widgets/common.dart';
 import '../widgets/settings_button.dart';
+import '../widgets/swipe_arrow_row.dart';
 import 'garment_detail_screen.dart';
 import 'garment_editor_screen.dart';
 
-class CollectionSetsScreen extends StatelessWidget {
+enum _BrowseMode { singles, sets }
+
+class CollectionSetsScreen extends StatefulWidget {
   const CollectionSetsScreen({super.key, required this.collection});
 
   final StyleCollection collection;
 
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
-    final sets = state.setsFor(collection);
+  State<CollectionSetsScreen> createState() => _CollectionSetsScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackIcon(),
-        title: Text(collection.label),
-        actions: const [SettingsButton()],
+class _CollectionSetsScreenState extends State<CollectionSetsScreen> {
+  _BrowseMode _mode = _BrowseMode.singles;
+  final Set<String> _collapsedTypes = {};
+
+  StyleCollection get collection => widget.collection;
+
+  Future<void> _addSingle(ClothesType type) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GarmentEditorScreen(
+          initialCategory: type.category,
+          initialTopKind: type.topKind,
+          assignToCollection: collection,
+        ),
       ),
-      floatingActionButton: collection.comingSoon || sets.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => state.addClothSet(collection),
-              icon: const Icon(Icons.add),
-              label: const Text('Add set'),
-            ),
-      body: collection.comingSoon
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 360),
-                  child: Lottie.asset(
-                    'assets/coming_soon.json',
-                    repeat: true,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            )
-          : sets.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
-                child: EmptyState(
-                  title: 'Add a set',
-                  body:
-                      'Nothing here yet. Tap Add set, then add each piece with a photo.',
-                  actionLabel: 'Add set',
-                  onAction: () => state.addClothSet(collection),
-                ),
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-              children: [
-                Text(
-                  collection.subtitle,
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Only sets you add are shown. Add pieces inside a set, or delete a set you do not need.',
-                ),
-                const SizedBox(height: 18),
-                for (var i = 0; i < sets.length; i++)
-                  _SetCard(
-                    set: sets[i],
-                    number: i + 1,
-                    pieces: state.piecesOf(sets[i].outfit),
-                    onAddPiece: (type) => _addPiece(context, sets[i], type),
-                    onRename: () => _rename(context, sets[i]),
-                    onDelete: () => _deleteSet(context, sets[i]),
-                    onRemovePiece: (garment) => state.assignToClothSet(
-                      sets[i].id,
-                      garment.category,
-                      null,
-                    ),
-                  ),
-              ],
-            ),
     );
   }
 
-  Future<void> _addPiece(
-    BuildContext context,
-    ClothSet set,
-    ClothesType type,
-  ) async {
+  Future<void> _addPiece(ClothSet set, ClothesType type) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GarmentEditorScreen(
@@ -115,7 +57,58 @@ class CollectionSetsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _rename(BuildContext context, ClothSet set) async {
+  Future<void> _showAddMenu(DrapeState state) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.paper,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Add to this collection',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.checkroom_outlined),
+                title: const Text('Single item'),
+                subtitle: const Text('Name, color, type — one piece'),
+                onTap: () => Navigator.pop(context, 'single'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.layers_outlined),
+                title: const Text('Full set'),
+                subtitle: const Text('Group pieces into one look'),
+                onTap: () => Navigator.pop(context, 'set'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'set') {
+      await state.addClothSet(collection);
+      setState(() => _mode = _BrowseMode.sets);
+      return;
+    }
+    await pickClothesType(
+      context,
+      title: 'Item type',
+      onPick: _addSingle,
+    );
+    if (mounted) setState(() => _mode = _BrowseMode.singles);
+  }
+
+  Future<void> _rename(ClothSet set) async {
     final name = TextEditingController(text: set.name);
     final next = await showDialog<String>(
       context: context,
@@ -139,11 +132,11 @@ class CollectionSetsScreen extends StatelessWidget {
       ),
     );
     name.dispose();
-    if (next == null || !context.mounted) return;
+    if (next == null || !mounted) return;
     await context.read<DrapeState>().renameClothSet(set.id, next);
   }
 
-  Future<void> _deleteSet(BuildContext context, ClothSet set) async {
+  Future<void> _deleteSet(ClothSet set) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -161,14 +154,341 @@ class CollectionSetsScreen extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true && context.mounted) {
+    if (ok == true && mounted) {
       await context.read<DrapeState>().deleteClothSet(set.id);
     }
   }
+
+  List<Garment> _orderedPieces(List<Garment> pieces) {
+    const order = [
+      GarmentCategory.dress,
+      GarmentCategory.top,
+      GarmentCategory.bottom,
+      GarmentCategory.outerwear,
+      GarmentCategory.shoes,
+      GarmentCategory.accessory,
+    ];
+    final ordered = <Garment>[];
+    for (final category in order) {
+      for (final g in pieces) {
+        if (g.category == category) ordered.add(g);
+      }
+    }
+    return ordered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<DrapeState>();
+    final sets = state.setsFor(collection);
+    final singles = state.singlesFor(collection);
+    final hasContent = state.collectionHasContent(collection);
+    final wearerTypes = ClothesType.forWearer(state.profile.wearer);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const AppBackIcon(),
+        title: Text(collection.label),
+        actions: const [SettingsButton()],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddMenu(state),
+        icon: const Icon(Icons.add),
+        label: Text(hasContent ? 'Add' : 'Add first item'),
+      ),
+      body: !hasContent
+          ? _ComingSoonEmpty(onAdd: () => _showAddMenu(state))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+              children: [
+                Text(
+                  collection.subtitle,
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SegmentedButton<_BrowseMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: _BrowseMode.singles,
+                      label: Text('Singles'),
+                      icon: Icon(Icons.checkroom_outlined, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: _BrowseMode.sets,
+                      label: Text('Sets'),
+                      icon: Icon(Icons.layers_outlined, size: 18),
+                    ),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: (v) => setState(() => _mode = v.first),
+                ),
+                const SizedBox(height: 18),
+                if (_mode == _BrowseMode.singles) ...[
+                  if (singles.isEmpty)
+                    _HintCard(
+                      title: 'No single items yet',
+                      body:
+                          'Add one piece at a time, or switch to Sets for full looks.',
+                      actionLabel: 'Add single',
+                      onAction: () => pickClothesType(
+                        context,
+                        title: 'Item type',
+                        onPick: _addSingle,
+                      ),
+                    )
+                  else ...[
+                    for (final type in wearerTypes)
+                      _TypeRowCard(
+                        type: type,
+                        garments: singles
+                            .where((g) => type.matches(g))
+                            .toList(),
+                        expanded: !_collapsedTypes.contains(type.label),
+                        onToggle: () {
+                          setState(() {
+                            if (_collapsedTypes.contains(type.label)) {
+                              _collapsedTypes.remove(type.label);
+                            } else {
+                              _collapsedTypes.add(type.label);
+                            }
+                          });
+                        },
+                        onAdd: () => _addSingle(type),
+                        onOpen: (g) => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => GarmentDetailScreen(id: g.id),
+                          ),
+                        ),
+                      ),
+                  ],
+                ] else ...[
+                  if (sets.isEmpty)
+                    _HintCard(
+                      title: 'No sets yet',
+                      body: 'Create a set, then add each piece with a photo.',
+                      actionLabel: 'Add set',
+                      onAction: () async {
+                        await state.addClothSet(collection);
+                      },
+                    )
+                  else
+                    for (var i = 0; i < sets.length; i++)
+                      _SetRowCard(
+                        set: sets[i],
+                        number: i + 1,
+                        pieces: _orderedPieces(state.piecesOf(sets[i].outfit)),
+                        onAddPiece: (type) => _addPiece(sets[i], type),
+                        onRename: () => _rename(sets[i]),
+                        onDelete: () => _deleteSet(sets[i]),
+                        onRemovePiece: (garment) => state.assignToClothSet(
+                          sets[i].id,
+                          garment.category,
+                          null,
+                        ),
+                        onOpen: (g) => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => GarmentDetailScreen(id: g.id),
+                          ),
+                        ),
+                      ),
+                ],
+              ],
+            ),
+    );
+  }
 }
 
-class _SetCard extends StatelessWidget {
-  const _SetCard({
+class _ComingSoonEmpty extends StatelessWidget {
+  const _ComingSoonEmpty({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 8, 28, 100),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320, maxHeight: 280),
+              child: Lottie.asset(
+                'assets/coming_soon.json',
+                repeat: true,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Coming soon',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Nothing here yet. Add a single item or a full set — this animation hides once you add something.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HintCard extends StatelessWidget {
+  const _HintCard({
+    required this.title,
+    required this.body,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final String title;
+  final String body;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(body, style: const TextStyle(color: AppColors.muted)),
+          const SizedBox(height: 14),
+          FilledButton(onPressed: onAction, child: Text(actionLabel)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypeRowCard extends StatelessWidget {
+  const _TypeRowCard({
+    required this.type,
+    required this.garments,
+    required this.expanded,
+    required this.onToggle,
+    required this.onAdd,
+    required this.onOpen,
+  });
+
+  final ClothesType type;
+  final List<Garment> garments;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final VoidCallback onAdd;
+  final void Function(Garment garment) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (garments.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 14),
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(type.category.icon, color: AppColors.terracotta, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: onToggle,
+                    child: Text(
+                      '${type.label} · ${garments.length}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: expanded ? 'Hide list' : 'Show list',
+                  onPressed: onToggle,
+                  icon: Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+            if (expanded) ...[
+              const SizedBox(height: 4),
+              // Dropdown-style name list
+              ...garments.map(
+                (g) => ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: PhotoTile(garment: g, radius: 10),
+                  ),
+                  title: Text(
+                    g.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    '${g.typeLabel} · ${colorNameOf(g.primaryColor)}',
+                  ),
+                  onTap: () => onOpen(g),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SwipeArrowRow(
+                garments: garments,
+                onTap: onOpen,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SetRowCard extends StatelessWidget {
+  const _SetRowCard({
     required this.set,
     required this.number,
     required this.pieces,
@@ -176,6 +496,7 @@ class _SetCard extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     required this.onRemovePiece,
+    required this.onOpen,
   });
 
   final ClothSet set;
@@ -185,25 +506,10 @@ class _SetCard extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final void Function(Garment garment) onRemovePiece;
-
-  static const _order = [
-    GarmentCategory.dress,
-    GarmentCategory.top,
-    GarmentCategory.bottom,
-    GarmentCategory.outerwear,
-    GarmentCategory.shoes,
-    GarmentCategory.accessory,
-  ];
+  final void Function(Garment garment) onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final ordered = <Garment>[];
-    for (final category in _order) {
-      for (final g in pieces) {
-        if (g.category == category) ordered.add(g);
-      }
-    }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
@@ -258,78 +564,12 @@ class _SetCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (ordered.isEmpty)
-              const Text(
-                'Nothing in this set yet. Tap Add.',
-                style: TextStyle(color: AppColors.muted),
-              )
-            else
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: ordered.map((g) {
-                  return SizedBox(
-                    width: 86,
-                    child: Column(
-                      children: [
-                        AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: InkWell(
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          GarmentDetailScreen(id: g.id),
-                                    ),
-                                  ),
-                                  child: PhotoTile(garment: g, radius: 14),
-                                ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Material(
-                                  color: Colors.white,
-                                  shape: const CircleBorder(),
-                                  child: InkWell(
-                                    customBorder: const CircleBorder(),
-                                    onTap: () => onRemovePiece(g),
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(2),
-                                      child: Icon(Icons.close, size: 16),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          g.typeLabel,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        Text(
-                          g.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+            SwipeArrowRow(
+              garments: pieces,
+              emptyLabel: 'Nothing in this set yet. Tap Add.',
+              onTap: onOpen,
+              onRemove: onRemovePiece,
+            ),
           ],
         ),
       ),

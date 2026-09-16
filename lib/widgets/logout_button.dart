@@ -37,7 +37,7 @@ class LogoutButton extends StatelessWidget {
     return IconButton(
       tooltip: 'Logout',
       onPressed: () => confirmLogout(context),
-      icon: const Icon(Icons.logout_rounded, size: 26),
+      icon: const Icon(Icons.logout_rounded, size: 26, color: Color(0xFFE24B4B)),
     );
   }
 }

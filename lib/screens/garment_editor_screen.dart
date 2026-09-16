@@ -22,6 +22,7 @@ class GarmentEditorScreen extends StatefulWidget {
     this.pairWithId,
     this.assignToDate,
     this.assignToSetId,
+    this.assignToCollection,
   });
 
   final Garment? existing;
@@ -30,6 +31,7 @@ class GarmentEditorScreen extends StatefulWidget {
   final String? pairWithId;
   final DateTime? assignToDate;
   final String? assignToSetId;
+  final StyleCollection? assignToCollection;
 
   @override
   State<GarmentEditorScreen> createState() => _GarmentEditorScreenState();
@@ -50,7 +52,11 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
           category: widget.initialCategory ?? GarmentCategory.top,
           colors: [colorArgb(fashionPalette.first.value)],
           topKind: widget.initialTopKind ?? TopKind.top,
+          styleCollection: widget.assignToCollection,
         );
+    if (widget.assignToCollection != null) {
+      _garment.styleCollection = widget.assignToCollection;
+    }
     if (widget.pairWithId != null &&
         !_garment.pairsWithIds.contains(widget.pairWithId)) {
       _garment.pairsWithIds.add(widget.pairWithId!);
@@ -116,6 +122,8 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
           pairWithId: _garment.id,
           assignToDate: widget.assignToDate,
           assignToSetId: widget.assignToSetId,
+          assignToCollection:
+              widget.assignToCollection ?? _garment.styleCollection,
         ),
       ),
     );
@@ -201,12 +209,12 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
             controller: _name,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
-              labelText: 'Name',
+              labelText: 'Item name',
               hintText: 'Example: white shirt, blue pant',
             ),
           ),
           const SizedBox(height: 18),
-          Text('Type', style: Theme.of(context).textTheme.titleMedium),
+          Text('Item type', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -231,7 +239,44 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
             }).toList(),
           ),
           const SizedBox(height: 18),
-          Text('Color', style: Theme.of(context).textTheme.titleMedium),
+          Text('Collection', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 6),
+          const Text('Pick which card this item belongs to — change anytime.'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('None'),
+                selected: _garment.styleCollection == null,
+                onSelected: (_) => setState(() => _garment.styleCollection = null),
+                selectedColor: AppColors.ink,
+                labelStyle: TextStyle(
+                  color: _garment.styleCollection == null
+                      ? Colors.white
+                      : AppColors.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              ...StyleCollection.values.map((c) {
+                final selected = _garment.styleCollection == c;
+                return ChoiceChip(
+                  label: Text(c.label),
+                  selected: selected,
+                  onSelected: (_) =>
+                      setState(() => _garment.styleCollection = c),
+                  selectedColor: AppColors.ink,
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : AppColors.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              }),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text('Item color', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           const Text('Pick the real color of this piece. You will see it below.'),
           const SizedBox(height: 12),

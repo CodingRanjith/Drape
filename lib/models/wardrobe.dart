@@ -199,6 +199,7 @@ class Garment {
     this.notes = '',
     List<String>? pairsWithIds,
     this.topKind = TopKind.top,
+    this.styleCollection,
   }) : createdAt = createdAt ?? DateTime.now(),
        pairsWithIds = pairsWithIds ?? [];
 
@@ -217,6 +218,8 @@ class Garment {
   String notes;
   List<String> pairsWithIds;
   TopKind topKind;
+  /// When set, this piece is a single item under that collection card.
+  StyleCollection? styleCollection;
 
   String get typeLabel {
     if (category == GarmentCategory.top) return topKind.label;
@@ -248,6 +251,7 @@ class Garment {
     'notes': notes,
     'pairsWithIds': pairsWithIds,
     'topKind': topKind.name,
+    'styleCollection': styleCollection?.name,
   };
 
   factory Garment.fromJson(Map<String, dynamic> json) => Garment(
@@ -270,6 +274,9 @@ class Garment {
         .map((e) => e as String)
         .toList(),
     topKind: TopKind.values.byName(json['topKind'] as String? ?? TopKind.top.name),
+    styleCollection: json['styleCollection'] == null
+        ? null
+        : StyleCollection.values.byName(json['styleCollection'] as String),
   );
 }
 
@@ -399,15 +406,34 @@ extension StyleCollectionX on StyleCollection {
   };
 
   String get subtitle => switch (this) {
-    StyleCollection.officeWear => 'Add office sets when you want them',
-    StyleCollection.nightDress => 'Coming soon',
+    StyleCollection.officeWear => 'Add office singles or full sets',
+    StyleCollection.nightDress => 'Soft night looks — add when ready',
     StyleCollection.partyWear => 'Looks for parties',
-    StyleCollection.marriageFunctions => 'Wedding and function sets',
-    StyleCollection.outing => 'Casual outing sets',
-    StyleCollection.western => 'Western wear sets',
+    StyleCollection.marriageFunctions => 'Wedding and function looks',
+    StyleCollection.outing => 'Casual outing looks',
+    StyleCollection.western => 'Western wear looks',
   };
 
-  bool get comingSoon => this == StyleCollection.nightDress;
+  String get coverAsset => switch (this) {
+    StyleCollection.officeWear => 'assets/walkthrough/style.png',
+    StyleCollection.nightDress => 'assets/walkthrough/week.png',
+    StyleCollection.partyWear => 'assets/girl1.jpg',
+    StyleCollection.marriageFunctions => 'assets/walkthrough/today.png',
+    StyleCollection.outing => 'assets/walkthrough/closet.png',
+    StyleCollection.western => 'assets/gender_female.png',
+  };
+
+  List<Color> get coverGradient => switch (this) {
+    StyleCollection.officeWear => const [Color(0xFF3F5E51), Color(0xFF1C1612)],
+    StyleCollection.nightDress => const [Color(0xFF2A2438), Color(0xFF1C1612)],
+    StyleCollection.partyWear => const [Color(0xFF6B2748), Color(0xFF1C1612)],
+    StyleCollection.marriageFunctions => const [
+      Color(0xFFB0894F),
+      Color(0xFF1C1612),
+    ],
+    StyleCollection.outing => const [Color(0xFF3D6EA8), Color(0xFF1C1612)],
+    StyleCollection.western => const [Color(0xFFC45C26), Color(0xFF1C1612)],
+  };
 
   IconData get icon => switch (this) {
     StyleCollection.officeWear => Icons.work_outline_rounded,
@@ -556,10 +582,19 @@ class UserProfile {
     return w / (m * m);
   }
 
+  String get bmiCategory {
+    final value = bmi;
+    if (value == null) return '';
+    if (value < 18.5) return 'Underweight';
+    if (value < 25) return 'Normal';
+    if (value < 30) return 'Overweight';
+    return 'Obese';
+  }
+
   String get bmiLabel {
     final value = bmi;
     if (value == null) return 'Add height and weight';
-    return value.toStringAsFixed(1);
+    return '$bmiCategory · ${value.toStringAsFixed(1)}';
   }
 
   TimeOfDay get officeAlarmTime =>

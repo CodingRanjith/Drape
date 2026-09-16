@@ -32,9 +32,8 @@ class TodayScreen extends StatelessWidget {
         appBar: AppBar(
         leading: const AppBackIcon(),
         title: const Text('Home'),
-        actions: [
-          _NoticeBell(count: state.homeNoticeCount),
-          const Padding(
+        actions: const [
+          Padding(
             padding: EdgeInsets.only(right: 12),
             child: Center(child: ProfileAvatar()),
           ),
@@ -47,9 +46,19 @@ class TodayScreen extends StatelessWidget {
             DateFormat('EEEE').format(today),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 36),
           ),
-          Text(
-            DateFormat('d MMMM').format(today),
-            style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.muted),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  DateFormat('d MMMM').format(today),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+              _NoticeBell(count: state.homeNoticeCount),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
@@ -130,6 +139,9 @@ class _NoticeBell extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'Notifications',
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
       onPressed: () {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const NotificationsScreen()),

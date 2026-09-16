@@ -511,6 +511,23 @@ class DrapeState extends ChangeNotifier {
     return clothSets.where((s) => s.collection == collection).toList();
   }
 
+  /// Singles tagged to this collection (not set-only pieces).
+  List<Garment> singlesFor(StyleCollection collection) {
+    return garments.where((g) => g.styleCollection == collection).toList();
+  }
+
+  bool collectionHasContent(StyleCollection collection) {
+    return singlesFor(collection).isNotEmpty || setsFor(collection).isNotEmpty;
+  }
+
+  int collectionItemCount(StyleCollection collection) {
+    final setPieceIds = <String>{};
+    for (final set in setsFor(collection)) {
+      setPieceIds.addAll(set.outfit.pieceIds);
+    }
+    return singlesFor(collection).length + setPieceIds.length;
+  }
+
   Future<ClothSet> addClothSet(StyleCollection collection) async {
     final set = ClothSet(
       id: _uuid.v4(),

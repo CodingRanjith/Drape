@@ -69,6 +69,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: Text(
                     'My Profile',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -146,13 +148,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : DateFormat('d MMMM y').format(profile.dateOfBirth!),
                     onTap: _pickDob,
                   ),
-                  _MenuRow(
-                    icon: Icons.monitor_weight_outlined,
-                    title: 'Weight',
-                    value: profile.weightKg == null
+                  _HeightWeightRow(
+                    heightText: profile.heightCm == null
+                        ? 'Add height'
+                        : '${_pretty(profile.heightCm!)} cm',
+                    weightText: profile.weightKg == null
                         ? 'Add weight'
                         : '${_pretty(profile.weightKg!)} kg',
-                    onTap: () => _pickNumber(
+                    onHeight: () => _pickNumber(
+                      title: 'Height',
+                      suffix: 'cm',
+                      value: profile.heightCm,
+                      onSave: (v) => _persist((p) => p.heightCm = v),
+                    ),
+                    onWeight: () => _pickNumber(
                       title: 'Weight',
                       suffix: 'kg',
                       value: profile.weightKg,
@@ -160,22 +169,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   _MenuRow(
-                    icon: Icons.height_rounded,
-                    title: 'Height',
-                    value: profile.heightCm == null
-                        ? 'Add height'
-                        : '${_pretty(profile.heightCm!)} cm',
-                    onTap: () => _pickNumber(
-                      title: 'Height',
-                      suffix: 'cm',
-                      value: profile.heightCm,
-                      onSave: (v) => _persist((p) => p.heightCm = v),
-                    ),
-                  ),
-                  _MenuRow(
                     icon: Icons.monitor_heart_outlined,
                     title: 'BMI',
                     value: profile.bmiLabel,
+                    valueColor: _bmiColor(profile),
                     showChevron: false,
                     showDivider: false,
                   ),
@@ -216,6 +213,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _pretty(double value) =>
       value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(1);
+
+  Color? _bmiColor(UserProfile profile) {
+    switch (profile.bmiCategory) {
+      case 'Underweight':
+        return const Color(0xFF4A7C9B);
+      case 'Normal':
+        return AppColors.sage;
+      case 'Overweight':
+        return AppColors.terracotta;
+      case 'Obese':
+        return const Color(0xFFE24B4B);
+      default:
+        return null;
+    }
+  }
 
   Future<void> _changePhoto() async {
     final bytes = await pickProfileImage(context);
@@ -522,11 +534,121 @@ class _WhiteCard extends StatelessWidget {
   }
 }
 
+class _HeightWeightRow extends StatelessWidget {
+  const _HeightWeightRow({
+    required this.heightText,
+    required this.weightText,
+    required this.onHeight,
+    required this.onWeight,
+  });
+
+  final String heightText;
+  final String weightText;
+  final VoidCallback onHeight;
+  final VoidCallback onWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MeasureTile(
+                icon: Icons.height_rounded,
+                title: 'Height',
+                value: heightText,
+                onTap: onHeight,
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 52,
+              color: const Color(0xFFF0EBE6),
+            ),
+            Expanded(
+              child: _MeasureTile(
+                icon: Icons.monitor_weight_outlined,
+                title: 'Weight',
+                value: weightText,
+                onTap: onWeight,
+              ),
+            ),
+          ],
+        ),
+        const Padding(
+          padding: EdgeInsets.only(left: 16, right: 16),
+          child: Divider(height: 1, color: Color(0xFFF0EBE6)),
+        ),
+      ],
+    );
+  }
+}
+
+class _MeasureTile extends StatelessWidget {
+  const _MeasureTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 12, 8, 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF8A827A)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MenuRow extends StatelessWidget {
   const _MenuRow({
     required this.icon,
     required this.title,
     this.value,
+    this.valueColor,
     this.onTap,
     this.showChevron = true,
     this.showDivider = true,
@@ -535,6 +657,7 @@ class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? value;
+  final Color? valueColor;
   final VoidCallback? onTap;
   final bool showChevron;
   final bool showDivider;
@@ -572,7 +695,7 @@ class _MenuRow extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.muted,
+                            color: valueColor ?? AppColors.muted,
                           ),
                         ),
                       ],

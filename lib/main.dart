@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'app_nav.dart';
 import 'screens/alarm_ring_screen.dart';
+import 'screens/logo_prepage_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/splash_walkthrough_screen.dart';
@@ -94,17 +95,58 @@ class _DrapeRootState extends State<DrapeRoot> with WidgetsBindingObserver {
   }
 }
 
-class _Gate extends StatelessWidget {
+class _Gate extends StatefulWidget {
   const _Gate();
+
+  @override
+  State<_Gate> createState() => _GateState();
+}
+
+class _GateState extends State<_Gate> {
+  var _minElapsed = false;
+  Timer? _logoTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep logo on screen long enough for intro motion + chime to finish.
+    _logoTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (mounted) setState(() => _minElapsed = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _logoTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
-    if (state.loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final showLogo = state.loading || !_minElapsed;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 480),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: showLogo
+          ? const LogoPrepageScreen(key: ValueKey('logo'))
+          : KeyedSubtree(
+              key: const ValueKey('app'),
+              child: _HomeFor(state: state),
+            ),
+    );
+  }
+}
+
+class _HomeFor extends StatelessWidget {
+  const _HomeFor({required this.state});
+
+  final DrapeState state;
+
+  @override
+  Widget build(BuildContext context) {
     if (!state.profile.walkthroughSeen) {
       return SplashWalkthroughScreen(
         onFinished: () => unawaited(state.completeWalkthrough()),
