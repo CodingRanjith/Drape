@@ -52,114 +52,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<DrapeState>().profile;
-    final name = profile.name.isEmpty || profile.name == 'there'
-        ? 'Your name'
-        : profile.name;
-    final subtitle = profile.wearer.genderLabel;
 
     return PageBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 8, 20, 28),
-          children: [
-            Row(
-              children: [
-                const AppBackIcon(),
-                Expanded(
-                  child: Text(
-                    'My Profile',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ),
-                ProfileAvatar(radius: 20, onTap: _changePhoto),
-                const SizedBox(width: 4),
-                _LogoutMark(onTap: () => confirmLogout(context)),
-              ],
-            ),
-            const SizedBox(height: 22),
-            _WhiteCard(
-              child: Column(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  _MenuRow(
-                    icon: Icons.person_outline_rounded,
-                    title: 'My Profile',
-                    onTap: _editIdentity,
-                  ),
-                  _MenuRow(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationsScreen(),
+                  const AppBackIcon(),
+                  Expanded(
+                    child: Text(
+                      'My Profile',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
                       ),
                     ),
                   ),
-                  _MenuRow(
-                    icon: Icons.wc_outlined,
-                    title: 'Gender',
-                    onTap: _pickGender,
-                  ),
-                  _MenuRow(
-                    icon: Icons.cake_outlined,
-                    title: 'Date of birth',
-                    onTap: _pickDob,
-                  ),
-                  _MenuRow(
-                    icon: Icons.height_rounded,
-                    title: 'Height',
-                    onTap: () => _pickNumber(
-                      title: 'Height',
-                      suffix: 'cm',
-                      value: profile.heightCm,
-                      onSave: (v) => _persist((p) => p.heightCm = v),
-                    ),
-                  ),
-                  _MenuRow(
-                    icon: Icons.monitor_weight_outlined,
-                    title: 'Weight',
-                    groupEnd: true,
-                    onTap: () => _pickNumber(
-                      title: 'Weight',
-                      suffix: 'kg',
-                      value: profile.weightKg,
-                      onSave: (v) => _persist((p) => p.weightKg = v),
-                    ),
-                  ),
-                  _MenuRow(
-                    icon: Icons.help_outline_rounded,
-                    title: 'BMI',
-                    value: profile.bmiLabel,
-                    valueColor: _bmiColor(profile),
-                    showChevron: false,
-                  ),
-                  _MenuRow(
-                    icon: Icons.ios_share_rounded,
-                    title: 'Export',
-                    onTap: _busy ? null : _backup,
-                  ),
-                  _MenuRow(
-                    icon: Icons.download_outlined,
-                    title: 'Import',
-                    showChevron: true,
-                    onTap: _busy ? null : _import,
-                    isLast: true,
-                  ),
+                  ProfileAvatar(radius: 20, onTap: _changePhoto),
+                  const SizedBox(width: 4),
+                  _LogoutMark(onTap: () => confirmLogout(context)),
                 ],
               ),
-            ),
-            if (_busy) ...[
-              const SizedBox(height: 14),
-              const Center(child: CircularProgressIndicator()),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _WhiteCard(
+                  child: SingleChildScrollView(
+                    child: Column(
+                    children: [
+                      _MenuRow(
+                        icon: Icons.person_outline_rounded,
+                        title: 'My Profile',
+                        onTap: _editIdentity,
+                      ),
+                      _MenuRow(
+                        icon: Icons.notifications_none_rounded,
+                        title: 'Notifications',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationsScreen(),
+                          ),
+                        ),
+                      ),
+                      _MenuRow(
+                        icon: Icons.wc_outlined,
+                        title: 'Gender',
+                        onTap: _pickGender,
+                      ),
+                      _MenuRow(
+                        icon: Icons.cake_outlined,
+                        title: 'Date of birth',
+                        onTap: _pickDob,
+                      ),
+                      _MenuRow(
+                        icon: Icons.height_rounded,
+                        title: 'Height',
+                        onTap: () => _pickNumber(
+                          title: 'Height',
+                          suffix: 'cm',
+                          value: profile.heightCm,
+                          onSave: (v) => _persist((p) => p.heightCm = v),
+                        ),
+                      ),
+                      _MenuRow(
+                        icon: Icons.monitor_weight_outlined,
+                        title: 'Weight',
+                        groupEnd: true,
+                        onTap: () => _pickNumber(
+                          title: 'Weight',
+                          suffix: 'kg',
+                          value: profile.weightKg,
+                          onSave: (v) => _persist((p) => p.weightKg = v),
+                        ),
+                      ),
+                      _MenuRow(
+                        icon: Icons.monitor_heart_outlined,
+                        title: 'BMI',
+                        value: profile.bmiLabel,
+                        valueColor: _bmiColor(profile),
+                        showChevron: false,
+                      ),
+                      _MenuRow(
+                        icon: Icons.ios_share_rounded,
+                        title: 'Export',
+                        onTap: _busy ? null : _backup,
+                      ),
+                      _MenuRow(
+                        icon: Icons.download_outlined,
+                        title: 'Import',
+                        onTap: _busy ? null : _import,
+                      ),
+                      if (_busy) ...[
+                        const SizedBox(height: 12),
+                        const Center(child: CircularProgressIndicator()),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              ),
             ],
-          ],
+          ),
         ),
         ),
       ),
@@ -435,165 +435,20 @@ class _LogoutMark extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 10),
-      child: Text(
-        text.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.1,
-          color: const Color(0xFF9A928A),
-        ),
-      ),
-    );
-  }
-}
-
 class _WhiteCard extends StatelessWidget {
-  const _WhiteCard({required this.child, this.onTap});
+  const _WhiteCard({required this.child});
 
   final Widget child;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final card = Material(
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.transparent,
-      elevation: 0,
-      borderRadius: BorderRadius.circular(22),
-      child: child,
-    );
-    if (onTap == null) return card;
     return Material(
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
       elevation: 0,
       borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _HeightWeightRow extends StatelessWidget {
-  const _HeightWeightRow({
-    required this.heightText,
-    required this.weightText,
-    required this.onHeight,
-    required this.onWeight,
-  });
-
-  final String heightText;
-  final String weightText;
-  final VoidCallback onHeight;
-  final VoidCallback onWeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _MeasureTile(
-                icon: Icons.height_rounded,
-                title: 'Height',
-                value: heightText,
-                onTap: onHeight,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 52,
-              color: const Color(0xFFF0EBE6),
-            ),
-            Expanded(
-              child: _MeasureTile(
-                icon: Icons.monitor_weight_outlined,
-                title: 'Weight',
-                value: weightText,
-                onTap: onWeight,
-              ),
-            ),
-          ],
-        ),
-        const Padding(
-          padding: EdgeInsets.only(left: 16, right: 16),
-          child: Divider(height: 1, color: Color(0xFFF0EBE6)),
-        ),
-      ],
-    );
-  }
-}
-
-class _MeasureTile extends StatelessWidget {
-  const _MeasureTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 12, 8, 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: const Color(0xFF8A827A)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -606,7 +461,7 @@ class _MenuRow extends StatelessWidget {
     this.valueColor,
     this.onTap,
     this.showChevron = true,
-    this.showDivider = true,
+    this.groupEnd = false,
   });
 
   final IconData icon;
@@ -615,7 +470,7 @@ class _MenuRow extends StatelessWidget {
   final Color? valueColor;
   final VoidCallback? onTap;
   final bool showChevron;
-  final bool showDivider;
+  final bool groupEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -624,39 +479,32 @@ class _MenuRow extends StatelessWidget {
         InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: const Color(0xFF8A827A)),
-                const SizedBox(width: 14),
+                Icon(icon, size: 22, color: AppColors.ink),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                      if (value != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          value!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: valueColor ?? AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
                   ),
                 ),
+                if (value != null) ...[
+                  Text(
+                    value!,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: valueColor ?? AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 if (showChevron)
                   const Icon(
                     Icons.chevron_right_rounded,
@@ -666,10 +514,10 @@ class _MenuRow extends StatelessWidget {
             ),
           ),
         ),
-        if (showDivider)
+        if (groupEnd)
           const Padding(
-            padding: EdgeInsets.only(left: 52),
-            child: Divider(height: 1, color: Color(0xFFF0EBE6)),
+            padding: EdgeInsets.symmetric(horizontal: 18),
+            child: Divider(height: 1, color: Color(0xFFE6E0DA)),
           ),
       ],
     );
