@@ -2,18 +2,16 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/life.dart';
-import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
-import '../widgets/clothes_photo_row.dart';
-import '../widgets/common.dart';
-import '../widgets/garment_photo.dart';
+import '../widgets/page_background.dart';
 
 class EventEditorScreen extends StatefulWidget {
   const EventEditorScreen({super.key, this.existing, this.initialDate});
@@ -116,18 +114,18 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
   }
 
   String _mimeFor(String ext) => switch (ext) {
-    'wav' => 'audio/wav',
-    'm4a' => 'audio/mp4',
-    'aac' => 'audio/aac',
-    'ogg' => 'audio/ogg',
-    _ => 'audio/mpeg',
-  };
+        'wav' => 'audio/wav',
+        'm4a' => 'audio/mp4',
+        'aac' => 'audio/aac',
+        'ogg' => 'audio/ogg',
+        _ => 'audio/mpeg',
+      };
 
   Future<void> _save() async {
     final title = _title.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a name for this event.')),
+        const SnackBar(content: Text('Please enter a name for this reminder.')),
       );
       return;
     }
@@ -135,245 +133,456 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       ..title = title
       ..notes = _notes.text.trim();
     await context.read<DrapeState>().saveEvent(
-      _event,
-      musicBytes: _musicBytes,
-      musicExt: _musicExt,
-      musicMime: _musicMime,
-    );
+          _event,
+          musicBytes: _musicBytes,
+          musicExt: _musicExt,
+          musicMime: _musicMime,
+        );
     if (mounted) Navigator.pop(context);
   }
 
   int nowYear() => DateTime.now().year;
 
+  InputDecoration _fieldDecoration({
+    required String hintText,
+    bool multiline = false,
+  }) {
+    final radius = BorderRadius.circular(multiline ? 16 : 22);
+    final rest = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: const BorderSide(color: AppColors.ink, width: 1.15),
+    );
+    return InputDecoration(
+      hintText: hintText,
+      hintMaxLines: multiline ? 3 : 1,
+      hintStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        height: 1.35,
+        fontWeight: FontWeight.w500,
+        color: AppColors.muted,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      isDense: true,
+      isCollapsed: false,
+      alignLabelWithHint: true,
+      floatingLabelBehavior: FloatingLabelBehavior.never,
+      constraints: BoxConstraints(minHeight: multiline ? 112 : 44),
+      contentPadding: EdgeInsets.fromLTRB(16, multiline ? 14 : 12, 16, multiline ? 14 : 12),
+      border: rest,
+      enabledBorder: rest,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.terracotta, width: 1.4),
+      ),
+      errorBorder: rest,
+      focusedErrorBorder: rest,
+      disabledBorder: rest,
+    );
+  }
+
+  Widget _overrideField({required Widget child}) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: false,
+          isDense: true,
+          isCollapsed: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  String get _musicLabel =>
+      _event.musicName ??
+      (_event.musicPath == null ? 'Default bell' : 'Custom song');
+
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackIcon(),
-        title: Text(widget.existing == null ? 'Add event' : 'Edit event'),
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
-          TextField(
-            controller: _title,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'Riya birthday, office function…',
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text('Type', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: EventKind.values.map((k) {
-              final selected = _event.kind == k;
-              return ChoiceChip(
-                label: Text(k.label),
-                selected: selected,
-                onSelected: (_) => setState(() => _event.kind = k),
-                selectedColor: AppColors.ink,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.ink,
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.calendar_month_rounded),
-            title: const Text('Date'),
-            subtitle: Text(DateFormat('EEEE, d MMMM y').format(_event.at)),
-            onTap: _pickDate,
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.schedule_rounded),
-            title: const Text('Time'),
-            subtitle: Text(DateFormat('h:mm a').format(_event.at)),
-            onTap: _pickTime,
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Set alarm'),
-            subtitle: const Text('The alarm will ring at this date and time, with music.'),
-            value: _event.alarmOn,
-            activeThumbColor: AppColors.terracotta,
-            onChanged: (v) => setState(() => _event.alarmOn = v),
-          ),
-          if (_event.alarmOn) ...[
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.music_note_rounded),
-              title: const Text('Alarm music'),
-              subtitle: Text(
-                _event.musicName ??
-                    (_event.musicPath == null ? 'Default bell' : 'Custom song'),
-              ),
-              trailing: TextButton(
-                onPressed: _pickMusic,
-                child: const Text('Choose'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 18),
-          Text('Select your event clothes', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          const Text('Tap the clothes you will wear for this event. You can pick more than one.'),
-          const SizedBox(height: 12),
-          if (state.garments.isEmpty)
-            const Text('Add clothes in Closet first, then pick them here.')
-          else ...[
-            if (_eventClothes(state).isNotEmpty) ...[
-              ClothesPhotoRow(garments: _eventClothes(state)),
-              const SizedBox(height: 12),
-            ],
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (final garment in state.garments)
-                  _EventClothChip(
-                    garment: garment,
-                    selected: _event.garmentIds.contains(garment.id),
-                    onTap: () {
-                      setState(() {
-                        if (_event.garmentIds.contains(garment.id)) {
-                          _event.garmentIds.remove(garment.id);
-                        } else {
-                          _event.garmentIds.add(garment.id);
-                        }
-                      });
-                    },
-                  ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 18),
-          Text('Party wear for this day', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (state.partyLooks.isEmpty)
-            const Text('Upload party wear in Calendar first, then you can pick it here.')
-          else
-            ...state.partyLooks.map((look) {
-              final selected = _event.partyLookId == look.id;
-              final photo = garmentImageProvider(look.imagePath);
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                selected: selected,
-                onTap: () => setState(() => _event.partyLookId = look.id),
-                leading: photo == null
-                    ? const Icon(Icons.checkroom_outlined)
-                    : SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image(image: photo, fit: BoxFit.cover),
+    final isNew = widget.existing == null;
+
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 12, 12, 0),
+                child: Row(
+                  children: [
+                    const AppBackIcon(),
+                    Expanded(
+                      child: Text(
+                        isNew ? 'Add Reminder' : 'Edit Reminder',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          height: 1.15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
                         ),
                       ),
-                title: Text(look.name),
-                subtitle: Text(look.occasion.label),
-                trailing: selected
-                    ? const Icon(Icons.check_circle_rounded, color: AppColors.terracotta)
-                    : const Icon(Icons.circle_outlined),
-              );
-            }),
-          if (_event.partyLookId != null)
-            TextButton(
-              onPressed: () => setState(() => _event.partyLookId = null),
-              child: const Text('No party wear'),
-            ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notes,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Notes',
-              hintText: 'Venue, gift, what to wear…',
+                    ),
+                    TextButton(
+                      onPressed: _save,
+                      child: Text(
+                        'Save',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.terracotta,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 36),
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: const BoxDecoration(
+                          color: AppColors.terracottaSoft,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.notifications_active_outlined,
+                          color: AppColors.terracotta,
+                          size: 34,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      isNew
+                          ? 'Set a date, time and alarm'
+                          : 'Update this reminder',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    _ReminderCard(
+                      children: [
+                        _FieldBlock(
+                          label: 'Name of Reminder',
+                          child: _overrideField(
+                            child: TextField(
+                              controller: _title,
+                              textCapitalization: TextCapitalization.sentences,
+                              spellCheckConfiguration:
+                                  const SpellCheckConfiguration.disabled(),
+                              cursorColor: AppColors.terracotta,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                height: 1.3,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.ink,
+                              ),
+                              decoration: _fieldDecoration(
+                                hintText: 'Birthday, meeting…',
+                              ),
+                            ),
+                          ),
+                        ),
+                        const _CardDivider(),
+                        _ActionRow(
+                          icon: Icons.calendar_month_rounded,
+                          title: 'Date',
+                          value: DateFormat('EEEE, d MMMM y').format(_event.at),
+                          onTap: _pickDate,
+                        ),
+                        const _CardDivider(),
+                        _ActionRow(
+                          icon: Icons.schedule_rounded,
+                          title: 'Time',
+                          value: DateFormat('h:mm a').format(_event.at),
+                          onTap: _pickTime,
+                        ),
+                        const _CardDivider(),
+                        _SwitchRow(
+                          icon: Icons.alarm_rounded,
+                          title: 'Set Alarm',
+                          value: _event.alarmOn,
+                          onChanged: (v) => setState(() => _event.alarmOn = v),
+                        ),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          alignment: Alignment.topCenter,
+                          child: _event.alarmOn
+                              ? Column(
+                                  children: [
+                                    const _CardDivider(),
+                                    _ActionRow(
+                                      icon: Icons.music_note_rounded,
+                                      title: 'Set Music',
+                                      valueMaxLines: 2,
+                                      value:
+                                          'Plays at ${DateFormat('h:mm a').format(_event.at)} · $_musicLabel',
+                                      trailing: Text(
+                                        'Choose',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.terracotta,
+                                        ),
+                                      ),
+                                      onTap: _pickMusic,
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        const _CardDivider(),
+                        _FieldBlock(
+                          label: 'Notes',
+                          child: _overrideField(
+                            child: TextField(
+                              controller: _notes,
+                              maxLines: 5,
+                              minLines: 4,
+                              keyboardType: TextInputType.multiline,
+                              textAlignVertical: TextAlignVertical.top,
+                              spellCheckConfiguration:
+                                  const SpellCheckConfiguration.disabled(),
+                              cursorColor: AppColors.terracotta,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.ink,
+                              ),
+                              decoration: _fieldDecoration(
+                                hintText: 'Optional note',
+                                multiline: true,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _save,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.ink,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const StadiumBorder(),
+                          textStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Save Reminder'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(children: children),
+      ),
+    );
+  }
+}
+
+class _CardDivider extends StatelessWidget {
+  const _CardDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 18),
+      child: Divider(height: 1, color: Color(0xFFF0EBE6)),
+    );
+  }
+}
+
+class _FieldBlock extends StatelessWidget {
+  const _FieldBlock({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: AppColors.muted,
             ),
           ),
-          const SizedBox(height: 24),
-          FilledButton(onPressed: _save, child: const Text('Save event')),
+          const SizedBox(height: 8),
+          child,
         ],
       ),
     );
   }
-
-  List<Garment> _eventClothes(DrapeState state) {
-    return _event.garmentIds
-        .map(state.garmentById)
-        .whereType<Garment>()
-        .toList();
-  }
 }
 
-class _EventClothChip extends StatelessWidget {
-  const _EventClothChip({
-    required this.garment,
-    required this.selected,
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.icon,
+    required this.title,
+    required this.value,
     required this.onTap,
+    this.trailing,
+    this.valueMaxLines = 1,
   });
 
-  final Garment garment;
-  final bool selected;
+  final IconData icon;
+  final String title;
+  final String value;
   final VoidCallback onTap;
+  final Widget? trailing;
+  final int valueMaxLines;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: SizedBox(
-        width: 86,
-        child: Column(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+        child: Row(
           children: [
-            AspectRatio(
-              aspectRatio: 3 / 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? AppColors.ink : AppColors.line,
-                    width: selected ? 2.5 : 1,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF7F1EA),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 20, color: AppColors.terracotta),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(child: PhotoTile(garment: garment, radius: 12)),
-                      if (selected)
-                        const Align(
-                          alignment: Alignment.topRight,
-                          child: Padding(
-                            padding: EdgeInsets.all(4),
-                            child: Icon(Icons.check_circle, color: Colors.white, size: 20),
-                          ),
-                        ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: valueMaxLines,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.muted,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              garment.typeLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
+            trailing ??
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFFB7AFA7),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 10, 10),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF7F1EA),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 20, color: AppColors.terracotta),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
                 color: AppColors.ink,
               ),
             ),
-          ],
-        ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeThumbColor: AppColors.terracotta,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

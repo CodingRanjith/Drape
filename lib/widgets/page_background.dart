@@ -6,9 +6,14 @@ import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 
 class PageBackground extends StatelessWidget {
-  const PageBackground({super.key, required this.child});
+  const PageBackground({
+    super.key,
+    required this.child,
+    this.overlayColor = const Color(0xB8F7F7F7),
+  });
 
   final Widget child;
+  final Color overlayColor;
 
   static const _brighten = ColorFilter.matrix(<double>[
     1.18, 0, 0, 0, 22,
@@ -45,8 +50,8 @@ class PageBackground extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned.fill(
-          child: ColoredBox(color: Color(0xB8F7F7F7)),
+        Positioned.fill(
+          child: ColoredBox(color: overlayColor),
         ),
         child,
       ],
