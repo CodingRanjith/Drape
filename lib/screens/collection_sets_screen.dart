@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/closet_add.dart';
 import '../widgets/common.dart';
 import '../widgets/settings_button.dart';
@@ -23,6 +24,7 @@ class CollectionSetsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(collection.label),
         actions: const [SettingsButton()],
       ),

@@ -4,8 +4,12 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/settings_button.dart';
+import '../widgets/back_icon.dart';
+import '../widgets/closet_add.dart';
+import '../widgets/page_background.dart';
+import '../widgets/profile_avatar.dart';
 import 'collection_sets_screen.dart';
+import 'garment_editor_screen.dart';
 
 class ClosetScreen extends StatelessWidget {
   const ClosetScreen({super.key});
@@ -14,13 +18,39 @@ class ClosetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Closet'),
-        actions: const [SettingsButton()],
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+        leading: const AppBackIcon(),
+        title: const Text('Add clothes'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: ProfileAvatar()),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => pickClothesType(
+          context,
+          title: 'Add clothes',
+          onPick: (type) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => GarmentEditorScreen(
+                  initialCategory: type.category,
+                  initialTopKind: type.topKind,
+                ),
+              ),
+            );
+          },
+        ),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add clothes'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
         children: [
           Text(
             '${state.garments.length} items',
@@ -29,7 +59,7 @@ class ClosetScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text('Collections', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          const Text('Open a card and add as many sets as you want.'),
+          const Text('Open a card and add as many sets as you want, or tap Add clothes to upload a photo.'),
           const SizedBox(height: 18),
           GridView.count(
             crossAxisCount: 2,
@@ -48,6 +78,7 @@ class ClosetScreen extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -65,6 +96,8 @@ class _CollectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.paper,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),

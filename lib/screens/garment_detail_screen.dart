@@ -6,6 +6,7 @@ import '../models/wardrobe.dart';
 
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import 'garment_editor_screen.dart';
 
@@ -23,6 +24,7 @@ class GarmentDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(garment.name),
         actions: [
           IconButton(

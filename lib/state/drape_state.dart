@@ -127,6 +127,7 @@ class DrapeState extends ChangeNotifier {
     required Formality workStyle,
     required Wearer wearer,
     DateTime? dateOfBirth,
+    Uint8List? photoBytes,
   }) async {
     profile
       ..name = name.trim().isEmpty ? 'there' : name.trim()
@@ -135,8 +136,23 @@ class DrapeState extends ChangeNotifier {
       ..wearer = wearer
       ..dateOfBirth = dateOfBirth
       ..onboarded = true;
+    if (photoBytes != null) {
+      profile.photoPath = await _store.saveImage(
+        photoBytes,
+        'profile_${DateTime.now().millisecondsSinceEpoch}',
+      );
+    }
     regenerateWeek();
     _rebuildTodayChoices();
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> saveProfilePhoto(Uint8List bytes) async {
+    profile.photoPath = await _store.saveImage(
+      bytes,
+      'profile_${DateTime.now().millisecondsSinceEpoch}',
+    );
     notifyListeners();
     await _persist();
   }
@@ -191,6 +207,80 @@ class DrapeState extends ChangeNotifier {
     if (hour < 12) return 'Good morning, $name';
     if (hour < 17) return 'Good afternoon, $name';
     return 'Good evening, $name';
+  }
+
+  static const officeAlarmId = 'office-alarm';
+  static const _officeSnoozeNotifId = 9199;
+
+  static int officeNotifId(int weekday) => 9100 + weekday;
+
+  LifeEvent get officeAlarmEvent {
+    final now = DateTime.now();
+    return LifeEvent(
+      id: officeAlarmId,
+      title: 'Office day',
+      kind: EventKind.other,
+      at: DateTime(
+        now.year,
+        now.month,
+        now.day,
+        profile.officeAlarmHour,
+        profile.officeAlarmMinute,
+      ),
+      alarmOn: profile.officeAlarmOn,
+      musicPath: profile.officeAlarmMusicPath,
+      musicName: profile.officeAlarmMusicName,
+    );
+  }
+
+  int get homeNoticeCount {
+    final now = DateTime.now();
+    final upcoming = events
+        .where((e) => e.alarmOn && !e.alarmFired && e.at.isAfter(now.subtract(const Duration(hours: 1))))
+        .length;
+    final officeToday =
+        profile.officeAlarmOn &&
+        profile.workdays.contains(now.weekday) &&
+        profile.officeAlarmFiredOn != dateKey(now);
+    return upcoming + (officeToday ? 1 : 0);
+  }
+
+  Future<void> saveOfficeAlarm({
+    required Set<int> workdays,
+    required bool alarmOn,
+    required int hour,
+    required int minute,
+    Uint8List? musicBytes,
+    String? musicExt,
+    String? musicMime,
+    String? musicName,
+  }) async {
+    final nextDays = workdays.isEmpty ? profile.workdays : {...workdays};
+    final daysChanged =
+        nextDays.length != profile.workdays.length ||
+        !nextDays.containsAll(profile.workdays);
+    profile
+      ..workdays = nextDays
+      ..officeAlarmOn = alarmOn
+      ..officeAlarmHour = hour
+      ..officeAlarmMinute = minute
+      ..officeAlarmFiredOn = null;
+    if (musicName != null) profile.officeAlarmMusicName = musicName;
+    if (musicBytes != null) {
+      profile.officeAlarmMusicPath = await _store.saveAudio(
+        musicBytes,
+        officeAlarmId,
+        ext: musicExt ?? 'mp3',
+        mime: musicMime ?? 'audio/mpeg',
+      );
+    }
+    if (daysChanged) {
+      regenerateWeek();
+      _rebuildTodayChoices();
+    }
+    notifyListeners();
+    await _persist();
+    await _scheduleOfficeAlarms();
   }
 
   Future<void> saveGarment(Garment garment, {Uint8List? imageBytes}) async {
@@ -606,6 +696,10 @@ class DrapeState extends ChangeNotifier {
   Future<void> checkDueAlarms() => _checkDueAlarms();
 
   Future<void> handleAlarm(String eventId) async {
+    if (eventId == officeAlarmId) {
+      await startRinging(officeAlarmEvent);
+      return;
+    }
     final event = eventById(eventId);
     if (event == null) return;
     await startRinging(event);
@@ -617,7 +711,11 @@ class DrapeState extends ChangeNotifier {
       return;
     }
     ringingEvent = event;
-    event.alarmFired = true;
+    if (event.id == officeAlarmId) {
+      profile.officeAlarmFiredOn = dateKey(DateTime.now());
+    } else {
+      event.alarmFired = true;
+    }
     notifyListeners();
     await _persist();
     await _playAlarmMusic(event);
@@ -636,8 +734,19 @@ class DrapeState extends ChangeNotifier {
     final event = ringingEvent;
     await stopRinging();
     if (event == null) return;
+    final at = DateTime.now().add(Duration(minutes: minutes));
+    if (event.id == officeAlarmId) {
+      await scheduleEventAlarm(
+        id: _officeSnoozeNotifId,
+        at: at,
+        title: 'Office day',
+        body: 'Time to get ready',
+        eventId: officeAlarmId,
+      );
+      return;
+    }
     event
-      ..at = DateTime.now().add(Duration(minutes: minutes))
+      ..at = at
       ..alarmOn = true
       ..alarmFired = false;
     await _scheduleOne(event);
@@ -675,6 +784,21 @@ class DrapeState extends ChangeNotifier {
   Future<void> _checkDueAlarms() async {
     if (ringingEvent != null) return;
     final now = DateTime.now();
+    if (profile.officeAlarmOn &&
+        profile.workdays.contains(now.weekday) &&
+        profile.officeAlarmFiredOn != dateKey(now)) {
+      final at = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        profile.officeAlarmHour,
+        profile.officeAlarmMinute,
+      );
+      if (!at.isAfter(now)) {
+        await startRinging(officeAlarmEvent);
+        return;
+      }
+    }
     final due = events.where((e) {
       if (!e.alarmOn || e.alarmFired) return false;
       return !e.at.isAfter(now);
@@ -695,12 +819,40 @@ class DrapeState extends ChangeNotifier {
     );
   }
 
+  DateTime _nextWeekdayAt(int weekday, int hour, int minute) {
+    final now = DateTime.now();
+    var date = DateTime(now.year, now.month, now.day, hour, minute);
+    while (date.weekday != weekday || !date.isAfter(now)) {
+      date = date.add(const Duration(days: 1));
+      date = DateTime(date.year, date.month, date.day, hour, minute);
+    }
+    return date;
+  }
+
+  Future<void> _scheduleOfficeAlarms() async {
+    for (var day = DateTime.monday; day <= DateTime.sunday; day++) {
+      await cancelEventAlarm(officeNotifId(day));
+    }
+    await cancelEventAlarm(_officeSnoozeNotifId);
+    if (!profile.officeAlarmOn) return;
+    for (final day in profile.workdays) {
+      await scheduleEventAlarm(
+        id: officeNotifId(day),
+        at: _nextWeekdayAt(day, profile.officeAlarmHour, profile.officeAlarmMinute),
+        title: 'Office day',
+        body: 'Time to get ready',
+        eventId: officeAlarmId,
+      );
+    }
+  }
+
   Future<void> _resyncAlarms() async {
     for (final event in events) {
       if (event.alarmOn && !event.alarmFired && event.at.isAfter(DateTime.now())) {
         await _scheduleOne(event);
       }
     }
+    await _scheduleOfficeAlarms();
   }
 
   int get completedThisWeek {
@@ -777,6 +929,23 @@ class DrapeState extends ChangeNotifier {
       return _store.saveImage(match.value, id);
     }
 
+    if (!filesOnly) {
+      profile.photoPath = await storePhoto(profile.photoPath, 'profile');
+      final officeMusic = packed.fileFor(
+        profile.officeAlarmMusicPath,
+        id: officeAlarmId,
+      );
+      if (officeMusic != null && officeMusic.isNotEmpty) {
+        final ext = fileExt(profile.officeAlarmMusicPath, fallback: 'mp3');
+        profile.officeAlarmMusicPath = await _store.saveAudio(
+          officeMusic,
+          officeAlarmId,
+          ext: ext,
+          mime: audioMime(ext),
+        );
+      }
+    }
+
     final nextGarments = filesOnly ? [...garments] : <Garment>[];
     for (final raw in (json['garments'] as List? ?? const [])) {
       final garment = Garment.fromJson(raw as Map<String, dynamic>);
@@ -788,7 +957,11 @@ class DrapeState extends ChangeNotifier {
       final key = normalizeZipPath(entry.key);
       if (usedKeys.contains(key)) continue;
       final lower = key.toLowerCase();
-      if (lower.contains('/party/') || lower.contains('/music/')) continue;
+      if (lower.contains('/party/') ||
+          lower.contains('/music/') ||
+          lower.contains('/profile/')) {
+        continue;
+      }
       final id = _uuid.v4();
       final name = zipBaseName(entry.key).replaceFirst(RegExp(r'\.[^.]+$'), '');
       usedKeys.add(key);

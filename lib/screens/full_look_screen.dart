@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 
 class FullLookScreen extends StatelessWidget {
@@ -33,7 +34,10 @@ class FullLookScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Today’s outfit')),
+      appBar: AppBar(
+        leading: const AppBackIcon(),
+        title: const Text('Today’s outfit'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [

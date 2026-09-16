@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/outfit_look.dart';
-import '../widgets/settings_button.dart';
+import '../widgets/page_background.dart';
+import '../widgets/profile_avatar.dart';
 import 'day_look_screen.dart';
 
 class WeekScreen extends StatelessWidget {
@@ -18,18 +20,29 @@ class WeekScreen extends StatelessWidget {
     final state = context.watch<DrapeState>();
     final week = state.week;
     if (week == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const PageBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
 
-    return Scaffold(
-      appBar: AppBar(
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+        leading: const AppBackIcon(),
         title: const Text('This week'),
         actions: [
-          const SettingsButton(),
           IconButton(
             tooltip: 'New outfits for this week',
             onPressed: () => state.refreshWeek(keepLocks: true),
             icon: const Icon(Icons.autorenew_rounded),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: ProfileAvatar()),
           ),
         ],
       ),
@@ -47,7 +60,7 @@ class WeekScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Monday to Friday. On Today, tap the photo to see another outfit. Tap the tick if you will wear it.',
+            'Monday to Friday. On Home, tap the photo to see another outfit. Tap the tick if you will wear it.',
           ),
           const SizedBox(height: 18),
           if (!context.read<DrapeState>().canDressHint)
@@ -59,6 +72,7 @@ class WeekScreen extends StatelessWidget {
           else
             ...week.days.map((day) => _DayCard(day: day)),
         ],
+      ),
       ),
     );
   }
@@ -91,6 +105,8 @@ class _DayCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 14),
       child: Material(
         color: AppColors.paper,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(

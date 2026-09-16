@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/profile_avatar.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -21,6 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _name = TextEditingController();
   Wearer? _wearer;
   DateTime? _dob;
+  Uint8List? _photoBytes;
   var _filled = false;
 
   @override
@@ -29,8 +31,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
     );
   }
@@ -99,65 +101,65 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       workStyle: Formality.smartCasual,
       wearer: _wearer!,
       dateOfBirth: _dob,
+      photoBytes: _photoBytes,
     );
+  }
+
+  Future<void> _pickPhoto() async {
+    final bytes = await pickProfileImage(context);
+    if (bytes == null || !mounted) return;
+    setState(() => _photoBytes = bytes);
   }
 
   InputDecoration _glassField(String hint, {Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.16),
+      fillColor: Colors.white.withValues(alpha: 0.92),
       suffixIcon: suffix,
       hintStyle: GoogleFonts.plusJakartaSans(
-        color: Colors.white70,
+        color: AppColors.muted,
         fontWeight: FontWeight.w500,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+        borderSide: const BorderSide(color: AppColors.line),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+        borderSide: const BorderSide(color: AppColors.line),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.white, width: 1.2),
+        borderSide: const BorderSide(color: AppColors.ink, width: 1.2),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth =
+        (MediaQuery.sizeOf(context).width * dpr).round().clamp(1, 4096);
+
     return Scaffold(
-      backgroundColor: AppColors.ink,
+      backgroundColor: AppColors.parchment,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const ColoredBox(color: Color(0xFF3A2A22)),
+          const ColoredBox(color: AppColors.parchment),
           Image.asset(
             'assets/onboarding_bg.png',
             fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.2),
-            filterQuality: FilterQuality.high,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.medium,
+            isAntiAlias: true,
+            cacheWidth: cacheWidth,
             errorBuilder: (_, _, _) =>
-                const ColoredBox(color: Color(0xFF3A2A22)),
+                const ColoredBox(color: AppColors.parchment),
           ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x66000000),
-                  Color(0x33000000),
-                  Color(0x99000000),
-                ],
-                stops: [0, 0.4, 1],
-              ),
-            ),
-          ),
+          const ColoredBox(color: Color(0xB8F7F7F7)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
@@ -169,13 +171,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.ink,
                     ),
                   ),
                   const SizedBox(height: 28),
                   Expanded(
                     child: ListView(
                       children: [
+                        Center(
+                          child: Column(
+                            children: [
+                              ProfileAvatar(
+                                radius: 48,
+                                imageBytes: _photoBytes,
+                                wearer: _wearer ?? Wearer.woman,
+                                showEditBadge: true,
+                                borderColor: Colors.white,
+                                fallbackColor: AppColors.terracottaSoft,
+                                onTap: _pickPhoto,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                _photoBytes != null ||
+                                        (context
+                                                .watch<DrapeState>()
+                                                .profile
+                                                .photoPath
+                                                ?.isNotEmpty ??
+                                            false)
+                                    ? 'Change photo'
+                                    : 'Add profile photo',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 22),
                         _label('Nickname'),
                         const SizedBox(height: 8),
                         TextField(
@@ -183,10 +218,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           textCapitalization: TextCapitalization.words,
                           textInputAction: TextInputAction.next,
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontWeight: FontWeight.w600,
                           ),
-                          cursorColor: Colors.white,
+                          cursorColor: AppColors.ink,
                           decoration: _glassField('Your nickname'),
                         ),
                         const SizedBox(height: 22),
@@ -197,7 +232,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Expanded(
                               child: _GenderCard(
                                 title: 'Female',
-                                image: 'assets/gender_female.png',
+                                image: Wearer.woman.portraitAsset,
                                 selected: _wearer == Wearer.woman,
                                 onTap: () =>
                                     setState(() => _wearer = Wearer.woman),
@@ -207,7 +242,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Expanded(
                               child: _GenderCard(
                                 title: 'Male',
-                                image: 'assets/gender_male.png',
+                                image: Wearer.man.portraitAsset,
                                 selected: _wearer == Wearer.man,
                                 onTap: () =>
                                     setState(() => _wearer = Wearer.man),
@@ -228,7 +263,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               suffix: Icon(
                                 Icons.calendar_today_outlined,
                                 size: 18,
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: AppColors.muted,
                               ),
                             ),
                             child: Text(
@@ -238,7 +273,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: AppColors.ink,
                               ),
                             ),
                           ),
@@ -251,8 +286,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: FilledButton(
                       onPressed: _start,
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.ink,
+                        backgroundColor: AppColors.ink,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: const StadiumBorder(),
                         textStyle: GoogleFonts.plusJakartaSans(
@@ -278,7 +313,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       style: GoogleFonts.plusJakartaSans(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: Colors.white,
+        color: AppColors.ink,
       ),
     );
   }

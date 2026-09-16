@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/settings_button.dart';
 import 'day_look_screen.dart';
@@ -25,6 +26,7 @@ class CompletedDaysScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: const Text('Completed'),
         actions: const [SettingsButton()],
       ),

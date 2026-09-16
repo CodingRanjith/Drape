@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/outfit_look.dart';
 import 'garment_detail_screen.dart';
@@ -28,6 +29,7 @@ class DayLookScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(DateFormat('EEEE d MMM').format(day.date)),
         actions: [
           IconButton(

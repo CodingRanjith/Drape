@@ -5,10 +5,12 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/clothes_photo_row.dart';
-import '../widgets/logout_button.dart';
-import '../widgets/settings_button.dart';
+import '../widgets/page_background.dart';
+import '../widgets/profile_avatar.dart';
 import 'full_look_screen.dart';
+import 'notifications_screen.dart';
 
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
@@ -24,12 +26,18 @@ class TodayScreen extends StatelessWidget {
         .where((g) => g.items.isNotEmpty)
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Today'),
-        actions: const [
-          LogoutButton(),
-          SettingsButton(),
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+        leading: const AppBackIcon(),
+        title: const Text('Home'),
+        actions: [
+          _NoticeBell(count: state.homeNoticeCount),
+          const Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: ProfileAvatar()),
+          ),
         ],
       ),
       body: ListView(
@@ -53,7 +61,7 @@ class TodayScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           if (groups.isEmpty)
-            const Text('No clothes added yet. Open Closet to add photos.')
+            const Text('No clothes added yet. Open Add clothes to add photos.')
           else ...[
             for (final group in groups) ...[
               Text(
@@ -102,11 +110,36 @@ class TodayScreen extends StatelessWidget {
               ),
             const SizedBox(height: 10),
             const Text(
-              'Tap a photo to choose it. Open Closet to add more.',
+              'Tap a photo to choose it. Open Add clothes to add more.',
               textAlign: TextAlign.center,
             ),
           ],
         ],
+      ),
+      ),
+    );
+  }
+}
+
+class _NoticeBell extends StatelessWidget {
+  const _NoticeBell({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Notifications',
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+        );
+      },
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text('$count'),
+        backgroundColor: AppColors.terracotta,
+        child: const Icon(Icons.notifications_outlined, size: 26),
       ),
     );
   }

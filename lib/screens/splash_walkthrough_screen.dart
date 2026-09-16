@@ -100,6 +100,12 @@ class _SplashWalkthroughScreenState extends State<SplashWalkthroughScreen> {
             count: _slides.length,
             onSkip: widget.onFinished,
             onNext: _goNext,
+            onBack: i == 0
+                ? null
+                : () => _pages.previousPage(
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutCubic,
+                  ),
           );
         },
       ),
@@ -128,6 +134,7 @@ class _WalkthroughPage extends StatelessWidget {
     required this.count,
     required this.onSkip,
     required this.onNext,
+    this.onBack,
   });
 
   final _Slide slide;
@@ -135,6 +142,7 @@ class _WalkthroughPage extends StatelessWidget {
   final int count;
   final VoidCallback onSkip;
   final VoidCallback onNext;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -174,13 +182,29 @@ class _WalkthroughPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Drape',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    if (onBack != null)
+                      IconButton(
+                        tooltip: 'Back',
+                        onPressed: onBack,
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 8),
+                    Text(
+                      'Drape',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 Text(

@@ -7,12 +7,14 @@ import 'package:provider/provider.dart';
 import '../app_nav.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
-import '../screens/settings_screen.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
+import '../widgets/page_background.dart';
+import '../widgets/profile_avatar.dart';
 import 'day_look_screen.dart';
 import 'event_editor_screen.dart';
 import 'party_wear_editor_screen.dart';
@@ -112,8 +114,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
 
-    return Scaffold(
-      backgroundColor: AppColors.parchment,
+    return PageBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       floatingActionButton: _tab == 1
           ? FloatingActionButton.extended(
               onPressed: () => Navigator.of(context).push(
@@ -129,9 +132,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
               child: Row(
                 children: [
+                  const AppBackIcon(),
                   Expanded(
                     child: Text(
                       'Your Outfit Calendar',
@@ -143,21 +147,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsScreen(),
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.clay,
-                      child: Icon(
-                        Icons.person_outline_rounded,
-                        size: 20,
-                        color: AppColors.ink,
-                      ),
-                    ),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: ProfileAvatar(radius: 20),
                   ),
                 ],
               ),
@@ -196,6 +188,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

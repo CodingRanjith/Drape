@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const parchment = Color(0xFFF6F1EA);
-  static const paper = Color(0xFFFFFBF7);
+  static const parchment = Color(0xFFF7F7F7);
+  static const paper = Color(0xFFFFFFFF);
   static const ink = Color(0xFF1C1612);
   static const muted = Color(0xFF7A7068);
-  static const line = Color(0xFFE4D9CC);
+  static const line = Color(0xFFE8E4DF);
   static const terracotta = Color(0xFFC45C26);
   static const terracottaSoft = Color(0xFFF3E1D4);
   static const sage = Color(0xFF3F5E51);
@@ -29,6 +29,7 @@ class AppTheme {
       onSecondary: Colors.white,
       surface: AppColors.paper,
       onSurface: AppColors.ink,
+      surfaceTint: Colors.transparent,
     );
 
     return ThemeData(
@@ -77,8 +78,9 @@ class AppTheme {
         labelLarge: body.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.parchment,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.ink,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -90,6 +92,7 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.paper,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),

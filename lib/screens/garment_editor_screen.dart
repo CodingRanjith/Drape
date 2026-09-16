@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/color_pick.dart';
 import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
@@ -140,6 +141,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(
           widget.existing == null
               ? 'Upload ${_garment.typeLabel.toLowerCase()}'

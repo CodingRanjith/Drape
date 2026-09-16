@@ -98,10 +98,20 @@ class DrapeBackup {
       eventMaps.add(map);
     }
 
+    final profileMap = profile.toJson();
+    profileMap['photoPath'] = await pack(
+      profile.photoPath,
+      'media/profile/avatar.${fileExt(profile.photoPath)}',
+    );
+    profileMap['officeAlarmMusicPath'] = await pack(
+      profile.officeAlarmMusicPath,
+      'media/profile/office-alarm.${fileExt(profile.officeAlarmMusicPath, fallback: 'mp3')}',
+    );
+
     final json = <String, dynamic>{
       'version': version,
       'createdAt': DateTime.now().toIso8601String(),
-      'profile': profile.toJson(),
+      'profile': profileMap,
       'garments': garmentMaps,
       'week': week?.toJson(),
       'events': eventMaps,

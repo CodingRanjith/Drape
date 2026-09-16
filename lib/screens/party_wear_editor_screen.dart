@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/life.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/garment_photo.dart';
 
 class PartyWearEditorScreen extends StatefulWidget {
@@ -74,6 +75,7 @@ class _PartyWearEditorScreenState extends State<PartyWearEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(widget.existing == null ? 'Add party wear' : 'Edit party wear'),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),

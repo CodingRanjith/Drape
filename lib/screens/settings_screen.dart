@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -6,9 +8,10 @@ import '../data/backup_share.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/closet_add.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/logout_button.dart';
-import 'garment_editor_screen.dart';
+import '../widgets/page_background.dart';
+import '../widgets/profile_avatar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,26 +21,19 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const days = [
-    (1, 'Monday'),
-    (2, 'Tuesday'),
-    (3, 'Wednesday'),
-    (4, 'Thursday'),
-    (5, 'Friday'),
-    (6, 'Saturday'),
-    (7, 'Sunday'),
-  ];
-
   late final TextEditingController _name;
-  var _named = false;
+  var _filled = false;
   var _busy = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_named) return;
-    _name = TextEditingController(text: context.read<DrapeState>().profile.name);
-    _named = true;
+    if (_filled) return;
+    final profile = context.read<DrapeState>().profile;
+    _name = TextEditingController(
+      text: profile.name == 'there' ? '' : profile.name,
+    );
+    _filled = true;
   }
 
   @override
@@ -46,197 +42,327 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _persist(void Function(UserProfile profile) change) async {
+    final state = context.read<DrapeState>();
+    change(state.profile);
+    await state.updateProfile(state.profile);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
-    final profile = state.profile;
+    final profile = context.watch<DrapeState>().profile;
+    final name = profile.name.isEmpty || profile.name == 'there'
+        ? 'Your name'
+        : profile.name;
+    final subtitle = profile.wearer.genderLabel;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
-          Text('Add, backup, import', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          const Text(
-            'Add clothes to your closet. Backup saves a zip file with every uploaded photo, music, clothes and events. Import that zip to bring it all back.',
-          ),
-          const SizedBox(height: 14),
-          _ActionCard(
-            icon: Icons.add_photo_alternate_outlined,
-            title: 'Add',
-            subtitle: 'Add a photo and name to your closet',
-            onTap: _busy ? null : _addClothes,
-          ),
-          const SizedBox(height: 10),
-          _ActionCard(
-            icon: Icons.backup_outlined,
-            title: 'Backup',
-            subtitle: 'Save a zip with all uploaded files',
-            onTap: _busy ? null : _backup,
-          ),
-          const SizedBox(height: 10),
-          _ActionCard(
-            icon: Icons.file_download_outlined,
-            title: 'Import',
-            subtitle: 'Pick the backup zip to restore files',
-            onTap: _busy ? null : _import,
-          ),
-          if (_busy) ...[
-            const SizedBox(height: 14),
-            const Center(child: CircularProgressIndicator()),
-          ],
-          const SizedBox(height: 28),
-          Text('Your name', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Name'),
-            onChanged: (v) {
-              profile.name = v;
-              state.updateProfile(profile);
-            },
-          ),
-          const SizedBox(height: 24),
-          Text('Closet for', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          const Text('Women: top, pant, shawl, slippers, earrings. Men: shirt or T-shirt, and pant.'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: Wearer.values.map((w) {
-              final selected = profile.wearer == w;
-              return ChoiceChip(
-                label: Text(w.label),
-                selected: selected,
-                onSelected: (_) {
-                  profile.wearer = w;
-                  state.updateProfile(profile);
-                },
-                selectedColor: AppColors.ink,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.ink,
-                  fontWeight: FontWeight.w700,
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 8, 20, 28),
+          children: [
+            Row(
+              children: [
+                const AppBackIcon(),
+                Expanded(
+                  child: Text(
+                    'My Profile',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          Text('Office days', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          const Text('Choose the days you go to the office. Monday to Friday is already selected.'),
-          const SizedBox(height: 12),
-          ...days.map((d) {
-            final selected = profile.workdays.contains(d.$1);
-            return SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                d.$2,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+                _LogoutMark(onTap: () => confirmLogout(context)),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _WhiteCard(
+              onTap: _editIdentity,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+                child: Row(
+                  children: [
+                    ProfileAvatar(
+                      radius: 26,
+                      onTap: _changePhoto,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFFB7AFA7),
+                    ),
+                  ],
                 ),
               ),
-              value: selected,
-              activeThumbColor: AppColors.terracotta,
-              onChanged: (v) {
-                if (!v && profile.workdays.length == 1) return;
-                if (v) {
-                  profile.workdays.add(d.$1);
-                } else {
-                  profile.workdays.remove(d.$1);
-                }
-                state.updateProfile(profile);
-              },
-            );
-          }),
-          const SizedBox(height: 12),
-          Text('Office style', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: Formality.values.map((f) {
-              final selected = profile.workStyle == f;
-              return ChoiceChip(
-                label: Text(f.label),
-                selected: selected,
-                onSelected: (_) {
-                  profile.workStyle = f;
-                  state.updateProfile(profile);
-                },
-                selectedColor: AppColors.ink,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.ink,
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          Text('Do not repeat too soon', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text('Do not wear the same item again for ${profile.minRepeatDays} days.'),
-          Slider(
-            value: profile.minRepeatDays.toDouble(),
-            min: 1,
-            max: 10,
-            divisions: 9,
-            label: '${profile.minRepeatDays}d',
-            activeColor: AppColors.terracotta,
-            onChanged: (v) {
-              profile.minRepeatDays = v.round();
-              state.updateProfile(profile);
-            },
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () => state.refreshWeek(keepLocks: true),
-            child: const Text('Make new outfits for this week'),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: () => state.refreshWeek(keepLocks: false),
-            child: const Text('Make new outfits for every day'),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'Backup makes a .zip file. Every photo and song you uploaded is inside that zip. Keep the zip in Drive or Files. After uninstall, tap Import and pick that zip.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 28),
-          Text('Logout', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          const Text(
-            'Logout takes you back to Women or Men selection. Your clothes stay on this phone.',
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Logout'),
-          ),
-        ],
+            ),
+            const SizedBox(height: 22),
+            const _SectionLabel('Details'),
+            _WhiteCard(
+              child: Column(
+                children: [
+                  _MenuRow(
+                    icon: Icons.wc_outlined,
+                    title: 'Gender',
+                    value: profile.wearer.genderLabel,
+                    onTap: _pickGender,
+                  ),
+                  _MenuRow(
+                    icon: Icons.cake_outlined,
+                    title: 'Date of birth',
+                    value: profile.dateOfBirth == null
+                        ? 'Add date'
+                        : DateFormat('d MMMM y').format(profile.dateOfBirth!),
+                    onTap: _pickDob,
+                  ),
+                  _MenuRow(
+                    icon: Icons.monitor_weight_outlined,
+                    title: 'Weight',
+                    value: profile.weightKg == null
+                        ? 'Add weight'
+                        : '${_pretty(profile.weightKg!)} kg',
+                    onTap: () => _pickNumber(
+                      title: 'Weight',
+                      suffix: 'kg',
+                      value: profile.weightKg,
+                      onSave: (v) => _persist((p) => p.weightKg = v),
+                    ),
+                  ),
+                  _MenuRow(
+                    icon: Icons.height_rounded,
+                    title: 'Height',
+                    value: profile.heightCm == null
+                        ? 'Add height'
+                        : '${_pretty(profile.heightCm!)} cm',
+                    onTap: () => _pickNumber(
+                      title: 'Height',
+                      suffix: 'cm',
+                      value: profile.heightCm,
+                      onSave: (v) => _persist((p) => p.heightCm = v),
+                    ),
+                  ),
+                  _MenuRow(
+                    icon: Icons.monitor_heart_outlined,
+                    title: 'BMI',
+                    value: profile.bmiLabel,
+                    showChevron: false,
+                    showDivider: false,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const _SectionLabel('Backup'),
+            _WhiteCard(
+              child: Column(
+                children: [
+                  _MenuRow(
+                    icon: Icons.ios_share_rounded,
+                    title: 'Export',
+                    value: 'Save a backup zip',
+                    onTap: _busy ? null : _backup,
+                  ),
+                  _MenuRow(
+                    icon: Icons.download_outlined,
+                    title: 'Import',
+                    value: 'Restore from backup zip',
+                    showDivider: false,
+                    onTap: _busy ? null : _import,
+                  ),
+                ],
+              ),
+            ),
+            if (_busy) ...[
+              const SizedBox(height: 14),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ],
+        ),
+        ),
       ),
     );
   }
 
-  Future<void> _logout() => confirmLogout(context);
+  String _pretty(double value) =>
+      value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(1);
 
-  Future<void> _addClothes() async {
-    await pickClothesType(
-      context,
-      title: 'Add clothes',
-      onPick: (type) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => GarmentEditorScreen(
-              initialCategory: type.category,
-              initialTopKind: type.topKind,
-            ),
+  Future<void> _changePhoto() async {
+    final bytes = await pickProfileImage(context);
+    if (bytes == null || !mounted) return;
+    await context.read<DrapeState>().saveProfilePhoto(bytes);
+  }
+
+  Future<void> _editIdentity() async {
+    _name.text = context.read<DrapeState>().profile.name == 'there'
+        ? ''
+        : context.read<DrapeState>().profile.name;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ProfileAvatar(
+                radius: 40,
+                showEditBadge: true,
+                onTap: _changePhoto,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    await _persist((p) => p.name = _name.text.trim());
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _pickGender() async {
+    final profile = context.read<DrapeState>().profile;
+    final picked = await showModalBottomSheet<Wearer>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final wearer in Wearer.values)
+                ListTile(
+                  leading: Icon(
+                    wearer == Wearer.woman
+                        ? Icons.female_rounded
+                        : Icons.male_rounded,
+                  ),
+                  title: Text(wearer.genderLabel),
+                  trailing: profile.wearer == wearer
+                      ? const Icon(Icons.check_rounded, color: AppColors.terracotta)
+                      : null,
+                  onTap: () => Navigator.pop(context, wearer),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked == null) return;
+    await _persist((p) => p.wearer = picked);
+  }
+
+  Future<void> _pickDob() async {
+    final profile = context.read<DrapeState>().profile;
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: profile.dateOfBirth ?? DateTime(now.year - 18, now.month, now.day),
+      firstDate: DateTime(1920),
+      lastDate: now,
+      helpText: 'Date of birth',
+    );
+    if (picked == null) return;
+    await _persist((p) => p.dateOfBirth = picked);
+  }
+
+  Future<void> _pickNumber({
+    required String title,
+    required String suffix,
+    required double? value,
+    required Future<void> Function(double value) onSave,
+  }) async {
+    final controller = TextEditingController(
+      text: value == null ? '' : _pretty(value),
+    );
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          decoration: InputDecoration(suffixText: suffix),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final parsed = double.tryParse(controller.text.trim());
+    if (parsed == null || parsed <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid $title.')),
+      );
+      return;
+    }
+    await onSave(parsed);
   }
 
   Future<void> _backup() async {
@@ -249,13 +375,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Backup zip is ready. It has your uploaded photos and files.'),
+          content: Text('Export ready. The zip is your backup of photos and files.'),
         ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup failed. Please try again.')),
+        const SnackBar(content: Text('Export failed. Please try again.')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -268,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Import backup?'),
         content: const Text(
-          'Pick the .zip backup file. All uploaded photos and music in that zip will come back. This replaces clothes and events now in the app.',
+          'Pick the export zip. Photos, music, clothes and events in that zip will come back.',
         ),
         actions: [
           TextButton(
@@ -290,6 +416,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (bytes == null || !mounted) return;
       final result = await context.read<DrapeState>().restoreBackup(bytes);
       if (!mounted) return;
+      final profile = context.read<DrapeState>().profile;
+      _name.text = profile.name;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -313,69 +441,159 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+class _LogoutMark extends StatelessWidget {
+  const _LogoutMark({required this.onTap});
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.paper,
-      borderRadius: BorderRadius.circular(16),
+      color: const Color(0x14C45C26),
+      shape: const CircleBorder(),
       child: InkWell(
+        customBorder: const CircleBorder(),
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.terracottaSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: AppColors.terracotta),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
-            ],
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.logout_rounded,
+            size: 20,
+            color: Color(0xFFE24B4B),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 10),
+      child: Text(
+        text.toUpperCase(),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
+          color: const Color(0xFF9A928A),
+        ),
+      ),
+    );
+  }
+}
+
+class _WhiteCard extends StatelessWidget {
+  const _WhiteCard({required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = Material(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      elevation: 0,
+      borderRadius: BorderRadius.circular(22),
+      child: child,
+    );
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      elevation: 0,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.title,
+    this.value,
+    this.onTap,
+    this.showChevron = true,
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? value;
+  final VoidCallback? onTap;
+  final bool showChevron;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Row(
+              children: [
+                Icon(icon, size: 22, color: const Color(0xFF8A827A)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      if (value != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          value!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (showChevron)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFB7AFA7),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (showDivider)
+          const Padding(
+            padding: EdgeInsets.only(left: 52),
+            child: Divider(height: 1, color: Color(0xFFF0EBE6)),
+          ),
+      ],
     );
   }
 }

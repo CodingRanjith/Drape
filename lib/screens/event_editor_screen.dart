@@ -10,6 +10,7 @@ import '../models/life.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/back_icon.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
@@ -149,6 +150,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     final state = context.watch<DrapeState>();
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackIcon(),
         title: Text(widget.existing == null ? 'Add event' : 'Edit event'),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),

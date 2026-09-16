@@ -73,6 +73,9 @@ class ClothesType {
 
 extension WearerX on Wearer {
   String get label => this == Wearer.woman ? 'Women' : 'Men';
+  String get genderLabel => this == Wearer.woman ? 'Female' : 'Male';
+  String get portraitAsset =>
+      this == Wearer.woman ? 'assets/gender_female.png' : 'assets/gender_male.png';
 }
 
 extension TopKindX on TopKind {
@@ -514,6 +517,16 @@ class UserProfile {
     this.walkthroughSeen = false,
     this.wearer = Wearer.woman,
     this.dateOfBirth,
+    this.photoPath,
+    this.weightKg,
+    this.heightCm,
+    this.description = '',
+    this.officeAlarmOn = false,
+    this.officeAlarmHour = 7,
+    this.officeAlarmMinute = 30,
+    this.officeAlarmMusicPath,
+    this.officeAlarmMusicName,
+    this.officeAlarmFiredOn,
   }) : workdays = workdays ?? {1, 2, 3, 4, 5};
 
   String name;
@@ -524,6 +537,33 @@ class UserProfile {
   bool walkthroughSeen;
   Wearer wearer;
   DateTime? dateOfBirth;
+  String? photoPath;
+  double? weightKg;
+  double? heightCm;
+  String description;
+  bool officeAlarmOn;
+  int officeAlarmHour;
+  int officeAlarmMinute;
+  String? officeAlarmMusicPath;
+  String? officeAlarmMusicName;
+  String? officeAlarmFiredOn;
+
+  double? get bmi {
+    final w = weightKg;
+    final h = heightCm;
+    if (w == null || h == null || w <= 0 || h <= 0) return null;
+    final m = h / 100;
+    return w / (m * m);
+  }
+
+  String get bmiLabel {
+    final value = bmi;
+    if (value == null) return 'Add height and weight';
+    return value.toStringAsFixed(1);
+  }
+
+  TimeOfDay get officeAlarmTime =>
+      TimeOfDay(hour: officeAlarmHour, minute: officeAlarmMinute);
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -534,6 +574,16 @@ class UserProfile {
     'walkthroughSeen': walkthroughSeen,
     'wearer': wearer.name,
     'dateOfBirth': dateOfBirth?.toIso8601String(),
+    'photoPath': photoPath,
+    'weightKg': weightKg,
+    'heightCm': heightCm,
+    'description': description,
+    'officeAlarmOn': officeAlarmOn,
+    'officeAlarmHour': officeAlarmHour,
+    'officeAlarmMinute': officeAlarmMinute,
+    'officeAlarmMusicPath': officeAlarmMusicPath,
+    'officeAlarmMusicName': officeAlarmMusicName,
+    'officeAlarmFiredOn': officeAlarmFiredOn,
   };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -551,6 +601,16 @@ class UserProfile {
     dateOfBirth: json['dateOfBirth'] == null
         ? null
         : DateTime.tryParse(json['dateOfBirth'] as String),
+    photoPath: json['photoPath'] as String?,
+    weightKg: (json['weightKg'] as num?)?.toDouble(),
+    heightCm: (json['heightCm'] as num?)?.toDouble(),
+    description: json['description'] as String? ?? '',
+    officeAlarmOn: json['officeAlarmOn'] as bool? ?? false,
+    officeAlarmHour: json['officeAlarmHour'] as int? ?? 7,
+    officeAlarmMinute: json['officeAlarmMinute'] as int? ?? 30,
+    officeAlarmMusicPath: json['officeAlarmMusicPath'] as String?,
+    officeAlarmMusicName: json['officeAlarmMusicName'] as String?,
+    officeAlarmFiredOn: json['officeAlarmFiredOn'] as String?,
   );
 }
 
