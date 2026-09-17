@@ -2,6 +2,35 @@ import 'package:flutter/material.dart';
 
 enum GarmentCategory { top, bottom, dress, outerwear, shoes, accessory }
 
+/// Fine-grained wardrobe shelves shown on My Wardrobe (cupboard UI).
+enum WardrobeCategory {
+  topwear,
+  tshirts,
+  shirts,
+  bottomwear,
+  jeans,
+  trousers,
+  shorts,
+  skirts,
+  dresses,
+  ethnicWear,
+  sarees,
+  outerwear,
+  sweaters,
+  activewear,
+  sleepwear,
+  footwear,
+  sandals,
+  innerwear,
+  socks,
+  accessories,
+  jewellery,
+  bags,
+  belts,
+  scarves,
+  caps,
+}
+
 enum Formality { casual, smartCasual, formal }
 
 enum Season { allSeason, summer, monsoon, winter }
@@ -76,6 +105,15 @@ extension WearerX on Wearer {
   String get genderLabel => this == Wearer.woman ? 'Female' : 'Male';
   String get portraitAsset =>
       this == Wearer.woman ? 'assets/gender_female.png' : 'assets/gender_male.png';
+
+  /// Cupboard categories for this gender (~20 each).
+  List<WardrobeCategory> get wardrobeCategories =>
+      WardrobeCategoryX.forWearer(this);
+
+  /// Search-field examples that match this gender's shelves.
+  String get categorySearchHint => this == Wearer.man
+      ? 'Search shirts, jeans, footwear…'
+      : 'Search tops, saree, jewellery…';
 }
 
 extension TopKindX on TopKind {
@@ -112,6 +150,167 @@ extension GarmentCategoryX on GarmentCategory {
     GarmentCategory.outerwear => Icons.layers_outlined,
     GarmentCategory.shoes => Icons.ice_skating_outlined,
     GarmentCategory.accessory => Icons.diamond_outlined,
+  };
+
+  WardrobeCategory get defaultWardrobeCategory => switch (this) {
+    GarmentCategory.top => WardrobeCategory.topwear,
+    GarmentCategory.bottom => WardrobeCategory.bottomwear,
+    GarmentCategory.dress => WardrobeCategory.dresses,
+    GarmentCategory.outerwear => WardrobeCategory.outerwear,
+    GarmentCategory.shoes => WardrobeCategory.footwear,
+    GarmentCategory.accessory => WardrobeCategory.accessories,
+  };
+}
+
+extension WardrobeCategoryX on WardrobeCategory {
+  String get label => switch (this) {
+    WardrobeCategory.topwear => 'Topwear',
+    WardrobeCategory.tshirts => 'T-shirts',
+    WardrobeCategory.shirts => 'Shirts',
+    WardrobeCategory.bottomwear => 'Bottomwear',
+    WardrobeCategory.jeans => 'Jeans',
+    WardrobeCategory.trousers => 'Trousers',
+    WardrobeCategory.shorts => 'Shorts',
+    WardrobeCategory.skirts => 'Skirts',
+    WardrobeCategory.dresses => 'Dresses',
+    WardrobeCategory.ethnicWear => 'Ethnic wear',
+    WardrobeCategory.sarees => 'Sarees',
+    WardrobeCategory.outerwear => 'Outerwear',
+    WardrobeCategory.sweaters => 'Sweaters',
+    WardrobeCategory.activewear => 'Activewear',
+    WardrobeCategory.sleepwear => 'Sleepwear',
+    WardrobeCategory.footwear => 'Footwear',
+    WardrobeCategory.sandals => 'Sandals',
+    WardrobeCategory.innerwear => 'Innerwear',
+    WardrobeCategory.socks => 'Socks',
+    WardrobeCategory.accessories => 'Accessories',
+    WardrobeCategory.jewellery => 'Jewellery',
+    WardrobeCategory.bags => 'Bags',
+    WardrobeCategory.belts => 'Belts',
+    WardrobeCategory.scarves => 'Scarves',
+    WardrobeCategory.caps => 'Caps & hats',
+  };
+
+  IconData get icon => switch (this) {
+    WardrobeCategory.topwear => Icons.checkroom_outlined,
+    WardrobeCategory.tshirts => Icons.dry_cleaning_outlined,
+    WardrobeCategory.shirts => Icons.checkroom,
+    WardrobeCategory.bottomwear => Icons.straighten,
+    WardrobeCategory.jeans => Icons.accessibility_new_outlined,
+    WardrobeCategory.trousers => Icons.view_day_outlined,
+    WardrobeCategory.shorts => Icons.crop_16_9_outlined,
+    WardrobeCategory.skirts => Icons.woman_outlined,
+    WardrobeCategory.dresses => Icons.dry_cleaning,
+    WardrobeCategory.ethnicWear => Icons.spa_outlined,
+    WardrobeCategory.sarees => Icons.auto_awesome_outlined,
+    WardrobeCategory.outerwear => Icons.layers_outlined,
+    WardrobeCategory.sweaters => Icons.ac_unit_outlined,
+    WardrobeCategory.activewear => Icons.fitness_center_outlined,
+    WardrobeCategory.sleepwear => Icons.bedtime_outlined,
+    WardrobeCategory.footwear => Icons.ice_skating_outlined,
+    WardrobeCategory.sandals => Icons.beach_access_outlined,
+    WardrobeCategory.innerwear => Icons.loyalty_outlined,
+    WardrobeCategory.socks => Icons.texture_outlined,
+    WardrobeCategory.accessories => Icons.watch_outlined,
+    WardrobeCategory.jewellery => Icons.diamond_outlined,
+    WardrobeCategory.bags => Icons.shopping_bag_outlined,
+    WardrobeCategory.belts => Icons.horizontal_rule,
+    WardrobeCategory.scarves => Icons.air_outlined,
+    WardrobeCategory.caps => Icons.sports_baseball_outlined,
+  };
+
+  /// Cupboard categories for this gender only (~20).
+  static List<WardrobeCategory> forWearer(Wearer wearer) {
+    return List<WardrobeCategory>.from(
+      wearer == Wearer.man ? _menCategories : _womenCategories,
+    );
+  }
+
+  static const List<WardrobeCategory> _womenCategories = [
+    WardrobeCategory.topwear,
+    WardrobeCategory.tshirts,
+    WardrobeCategory.shirts,
+    WardrobeCategory.bottomwear,
+    WardrobeCategory.jeans,
+    WardrobeCategory.trousers,
+    WardrobeCategory.skirts,
+    WardrobeCategory.dresses,
+    WardrobeCategory.ethnicWear,
+    WardrobeCategory.sarees,
+    WardrobeCategory.outerwear,
+    WardrobeCategory.sweaters,
+    WardrobeCategory.activewear,
+    WardrobeCategory.sleepwear,
+    WardrobeCategory.footwear,
+    WardrobeCategory.sandals,
+    WardrobeCategory.innerwear,
+    WardrobeCategory.accessories,
+    WardrobeCategory.jewellery,
+    WardrobeCategory.bags,
+  ];
+
+  static const List<WardrobeCategory> _menCategories = [
+    WardrobeCategory.topwear,
+    WardrobeCategory.tshirts,
+    WardrobeCategory.shirts,
+    WardrobeCategory.bottomwear,
+    WardrobeCategory.jeans,
+    WardrobeCategory.trousers,
+    WardrobeCategory.shorts,
+    WardrobeCategory.ethnicWear,
+    WardrobeCategory.outerwear,
+    WardrobeCategory.sweaters,
+    WardrobeCategory.activewear,
+    WardrobeCategory.sleepwear,
+    WardrobeCategory.footwear,
+    WardrobeCategory.sandals,
+    WardrobeCategory.innerwear,
+    WardrobeCategory.socks,
+    WardrobeCategory.accessories,
+    WardrobeCategory.bags,
+    WardrobeCategory.belts,
+    WardrobeCategory.caps,
+  ];
+
+  bool isForWearer(Wearer wearer) => forWearer(wearer).contains(this);
+
+  /// Maps cupboard shelf types onto outfit planning slots.
+  GarmentCategory get garmentCategory => switch (this) {
+    WardrobeCategory.topwear ||
+    WardrobeCategory.tshirts ||
+    WardrobeCategory.shirts ||
+    WardrobeCategory.sweaters ||
+    WardrobeCategory.activewear ||
+    WardrobeCategory.sleepwear ||
+    WardrobeCategory.innerwear =>
+      GarmentCategory.top,
+    WardrobeCategory.bottomwear ||
+    WardrobeCategory.jeans ||
+    WardrobeCategory.trousers ||
+    WardrobeCategory.shorts ||
+    WardrobeCategory.skirts ||
+    WardrobeCategory.socks =>
+      GarmentCategory.bottom,
+    WardrobeCategory.dresses ||
+    WardrobeCategory.ethnicWear ||
+    WardrobeCategory.sarees =>
+      GarmentCategory.dress,
+    WardrobeCategory.outerwear || WardrobeCategory.scarves =>
+      GarmentCategory.outerwear,
+    WardrobeCategory.footwear || WardrobeCategory.sandals =>
+      GarmentCategory.shoes,
+    WardrobeCategory.accessories ||
+    WardrobeCategory.jewellery ||
+    WardrobeCategory.bags ||
+    WardrobeCategory.belts ||
+    WardrobeCategory.caps =>
+      GarmentCategory.accessory,
+  };
+
+  TopKind get topKind => switch (this) {
+    WardrobeCategory.shirts => TopKind.shirt,
+    WardrobeCategory.tshirts => TopKind.tshirt,
+    _ => TopKind.top,
   };
 }
 
@@ -200,8 +399,13 @@ class Garment {
     List<String>? pairsWithIds,
     this.topKind = TopKind.top,
     this.styleCollection,
+    WardrobeCategory? wardrobeCategory,
+    this.customShelf,
+    this.cost,
   }) : createdAt = createdAt ?? DateTime.now(),
-       pairsWithIds = pairsWithIds ?? [];
+       pairsWithIds = pairsWithIds ?? [],
+       wardrobeCategory =
+           wardrobeCategory ?? category.defaultWardrobeCategory;
 
   final String id;
   String name;
@@ -220,8 +424,24 @@ class Garment {
   TopKind topKind;
   /// When set, this piece is a single item under that collection card.
   StyleCollection? styleCollection;
+  WardrobeCategory wardrobeCategory;
+  /// User-created shelf name (dynamic category). When set, cupboard groups by this.
+  String? customShelf;
+  /// Optional purchase / item cost.
+  double? cost;
+
+  String get shelfLabel {
+    final custom = customShelf?.trim();
+    if (custom != null && custom.isNotEmpty) return custom;
+    return wardrobeCategory.label;
+  }
 
   String get typeLabel {
+    final custom = customShelf?.trim();
+    if (custom != null && custom.isNotEmpty) return custom;
+    if (wardrobeCategory != category.defaultWardrobeCategory) {
+      return wardrobeCategory.label;
+    }
     if (category == GarmentCategory.top) return topKind.label;
     return category.label;
   }
@@ -252,32 +472,43 @@ class Garment {
     'pairsWithIds': pairsWithIds,
     'topKind': topKind.name,
     'styleCollection': styleCollection?.name,
+    'wardrobeCategory': wardrobeCategory.name,
+    'customShelf': customShelf,
+    'cost': cost,
   };
 
-  factory Garment.fromJson(Map<String, dynamic> json) => Garment(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    category: GarmentCategory.values.byName(json['category'] as String),
-    colors: (json['colors'] as List).map((e) => (e as num).toInt()).toList(),
-    formality: Formality.values.byName(json['formality'] as String),
-    season: Season.values.byName(json['season'] as String),
-    imagePath: json['imagePath'] as String?,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    lastWornAt: json['lastWornAt'] == null
-        ? null
-        : DateTime.parse(json['lastWornAt'] as String),
-    wearCount: json['wearCount'] as int? ?? 0,
-    inLaundry: json['inLaundry'] as bool? ?? false,
-    favorite: json['favorite'] as bool? ?? false,
-    notes: json['notes'] as String? ?? '',
-    pairsWithIds: ((json['pairsWithIds'] as List?) ?? const [])
-        .map((e) => e as String)
-        .toList(),
-    topKind: TopKind.values.byName(json['topKind'] as String? ?? TopKind.top.name),
-    styleCollection: json['styleCollection'] == null
-        ? null
-        : StyleCollection.values.byName(json['styleCollection'] as String),
-  );
+  factory Garment.fromJson(Map<String, dynamic> json) {
+    final category = GarmentCategory.values.byName(json['category'] as String);
+    return Garment(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      category: category,
+      colors: (json['colors'] as List).map((e) => (e as num).toInt()).toList(),
+      formality: Formality.values.byName(json['formality'] as String),
+      season: Season.values.byName(json['season'] as String),
+      imagePath: json['imagePath'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      lastWornAt: json['lastWornAt'] == null
+          ? null
+          : DateTime.parse(json['lastWornAt'] as String),
+      wearCount: json['wearCount'] as int? ?? 0,
+      inLaundry: json['inLaundry'] as bool? ?? false,
+      favorite: json['favorite'] as bool? ?? false,
+      notes: json['notes'] as String? ?? '',
+      pairsWithIds: ((json['pairsWithIds'] as List?) ?? const [])
+          .map((e) => e as String)
+          .toList(),
+      topKind: TopKind.values.byName(json['topKind'] as String? ?? TopKind.top.name),
+      styleCollection: json['styleCollection'] == null
+          ? null
+          : StyleCollection.values.byName(json['styleCollection'] as String),
+      wardrobeCategory: json['wardrobeCategory'] == null
+          ? category.defaultWardrobeCategory
+          : WardrobeCategory.values.byName(json['wardrobeCategory'] as String),
+      customShelf: json['customShelf'] as String?,
+      cost: (json['cost'] as num?)?.toDouble(),
+    );
+  }
 }
 
 class Outfit {
@@ -553,7 +784,9 @@ class UserProfile {
     this.officeAlarmMusicPath,
     this.officeAlarmMusicName,
     this.officeAlarmFiredOn,
-  }) : workdays = workdays ?? {1, 2, 3, 4, 5};
+    List<String>? customShelves,
+  }) : workdays = workdays ?? {1, 2, 3, 4, 5},
+       customShelves = customShelves ?? [];
 
   String name;
   Set<int> workdays;
@@ -573,6 +806,8 @@ class UserProfile {
   String? officeAlarmMusicPath;
   String? officeAlarmMusicName;
   String? officeAlarmFiredOn;
+  /// User-created cupboard categories (dynamic), shared for this profile.
+  List<String> customShelves;
 
   double? get bmi {
     final w = weightKg;
@@ -619,6 +854,7 @@ class UserProfile {
     'officeAlarmMusicPath': officeAlarmMusicPath,
     'officeAlarmMusicName': officeAlarmMusicName,
     'officeAlarmFiredOn': officeAlarmFiredOn,
+    'customShelves': customShelves,
   };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -646,6 +882,10 @@ class UserProfile {
     officeAlarmMusicPath: json['officeAlarmMusicPath'] as String?,
     officeAlarmMusicName: json['officeAlarmMusicName'] as String?,
     officeAlarmFiredOn: json['officeAlarmFiredOn'] as String?,
+    customShelves: ((json['customShelves'] as List?) ?? const [])
+        .map((e) => e as String)
+        .where((e) => e.trim().isNotEmpty)
+        .toList(),
   );
 }
 

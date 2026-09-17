@@ -10,11 +10,15 @@ class PhotoTile extends StatelessWidget {
     required this.garment,
     this.radius = 18,
     this.showName = false,
+    this.fit = BoxFit.cover,
+    this.backgroundColor,
   });
 
   final Garment garment;
   final double radius;
   final bool showName;
+  final BoxFit fit;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +29,14 @@ class PhotoTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          ColoredBox(color: backgroundColor ?? garment.primaryColor),
           if (photo != null)
-            Image(image: photo, fit: BoxFit.cover)
+            Image(image: photo, fit: fit)
           else
-            ColoredBox(
-              color: garment.primaryColor,
-              child: Icon(
-                garment.category.icon,
-                color: _onColor(garment.primaryColor),
-                size: 36,
-              ),
+            Icon(
+              garment.category.icon,
+              color: _onColor(backgroundColor ?? garment.primaryColor),
+              size: 36,
             ),
           if (showName)
             Align(

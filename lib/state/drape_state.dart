@@ -203,6 +203,18 @@ class DrapeState extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> addCustomShelf(String name) async {
+    final label = name.trim();
+    if (label.isEmpty) return;
+    final exists = profile.customShelves.any(
+      (e) => e.toLowerCase() == label.toLowerCase(),
+    );
+    if (exists) return;
+    profile.customShelves = [...profile.customShelves, label];
+    notifyListeners();
+    await _persist();
+  }
+
   Garment? garmentById(String? id) {
     if (id == null) return null;
     for (final g in garments) {

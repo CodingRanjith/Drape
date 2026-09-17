@@ -4,50 +4,88 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/add_item_form_dialog.dart';
 import '../widgets/back_icon.dart';
-import '../widgets/closet_add.dart';
 import '../widgets/common.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
 import 'add_clothes_screen.dart';
 import 'garment_detail_screen.dart';
-import 'garment_editor_screen.dart';
 
 class ClosetScreen extends StatelessWidget {
   const ClosetScreen({super.key});
 
-  Future<void> _addCategoryWise(BuildContext context) async {
-    await pickClothesType(
+  Future<void> _openAddForm(
+    BuildContext context, {
+    WardrobeCategory? category,
+    String? customShelf,
+  }) async {
+    await showAddItemFormDialog(
       context,
-      title: 'Add by category',
-      onPick: (type) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => GarmentEditorScreen(
-              initialCategory: type.category,
-              initialTopKind: type.topKind,
-            ),
-          ),
-        );
-      },
+      initialCategory: category,
+      initialCustomShelf: customShelf,
     );
   }
 
-  Future<void> _addForType(BuildContext context, ClothesType type) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GarmentEditorScreen(
-          initialCategory: type.category,
-          initialTopKind: type.topKind,
+  List<_ShelfRowData> _populatedRows(
+    List<Garment> garments,
+    Wearer wearer,
+    List<String> customShelves,
+  ) {
+    final byShelf = <String, List<Garment>>{};
+    for (final garment in garments) {
+      byShelf.putIfAbsent(garment.shelfLabel, () => []).add(garment);
+    }
+
+    final rows = <_ShelfRowData>[];
+    for (final category in wearer.wardrobeCategories) {
+      final items = byShelf.remove(category.label);
+      if (items != null && items.isNotEmpty) {
+        rows.add(
+          _ShelfRowData(
+            label: category.label,
+            icon: category.icon,
+            category: category,
+            garments: items,
+          ),
+        );
+      }
+    }
+    for (final custom in customShelves) {
+      final items = byShelf.remove(custom);
+      if (items != null && items.isNotEmpty) {
+        rows.add(
+          _ShelfRowData(
+            label: custom,
+            icon: Icons.category_outlined,
+            customShelf: custom,
+            garments: items,
+          ),
+        );
+      }
+    }
+    for (final entry in byShelf.entries) {
+      if (entry.value.isEmpty) continue;
+      rows.add(
+        _ShelfRowData(
+          label: entry.key,
+          icon: Icons.category_outlined,
+          customShelf: entry.key,
+          garments: entry.value,
         ),
-      ),
-    );
+      );
+    }
+    return rows;
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
-    final types = ClothesType.forWearer(state.profile.wearer);
+    final rows = _populatedRows(
+      state.garments,
+      state.profile.wearer,
+      state.profile.customShelves,
+    );
     final total = state.garments.length;
 
     return PageBackground(
@@ -88,43 +126,117 @@ class ClosetScreen extends StatelessWidget {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _addCategoryWise(context),
+          onPressed: () => _openAddForm(context),
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add'),
+          label: const Text('Add items'),
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+        body: rows.isEmpty
+            ? _EmptyWardrobe(onAdd: () => _openAddForm(context))
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                children: [
+                  Text(
+                    '$total ${total == 1 ? 'item' : 'items'} · ${rows.length} ${rows.length == 1 ? 'category' : 'categories'}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your cupboard',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Swipe each row left to right. Categories appear here only after you add items.',
+                  ),
+                  const SizedBox(height: 20),
+                  for (final row in rows)
+                    _CategoryRow(
+                      label: row.label,
+                      icon: row.icon,
+                      garments: row.garments,
+                      onAdd: () => _openAddForm(
+                        context,
+                        category: row.category,
+                        customShelf: row.customShelf,
+                      ),
+                      onOpen: (g) => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => GarmentDetailScreen(id: g.id),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _ShelfRowData {
+  const _ShelfRowData({
+    required this.label,
+    required this.icon,
+    required this.garments,
+    this.category,
+    this.customShelf,
+  });
+
+  final String label;
+  final IconData icon;
+  final WardrobeCategory? category;
+  final String? customShelf;
+  final List<Garment> garments;
+}
+
+class _EmptyWardrobe extends StatelessWidget {
+  const _EmptyWardrobe({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(32, 8, 32, 100),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              total == 0
-                  ? 'Your wardrobe is empty'
-                  : '$total ${total == 1 ? 'item' : 'items'} across categories',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppColors.muted,
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: AppColors.terracottaSoft,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: const Icon(
+                Icons.checkroom_outlined,
+                size: 40,
+                color: AppColors.terracotta,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 20),
             Text(
-              'Browse by category',
+              'Cupboard is empty',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             const Text(
-              'Each row is one clothing type. Swipe sideways to see more, or tap Add to grow that row.',
-            ),
-            const SizedBox(height: 18),
-            for (final type in types)
-              _CategoryRow(
-                type: type,
-                garments: state.garments.where(type.matches).toList(),
-                onAdd: () => _addForType(context, type),
-                onOpen: (g) => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => GarmentDetailScreen(id: g.id),
-                  ),
-                ),
+              'Tap Add items, pick a category, and upload a photo. That category row appears here once saved.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.muted,
+                fontWeight: FontWeight.w600,
               ),
+            ),
+            const SizedBox(height: 22),
+            FilledButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add items'),
+            ),
           ],
         ),
       ),
@@ -134,13 +246,15 @@ class ClosetScreen extends StatelessWidget {
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
-    required this.type,
+    required this.label,
+    required this.icon,
     required this.garments,
     required this.onAdd,
     required this.onOpen,
   });
 
-  final ClothesType type;
+  final String label;
+  final IconData icon;
   final List<Garment> garments;
   final VoidCallback onAdd;
   final void Function(Garment garment) onOpen;
@@ -148,47 +262,53 @@ class _CategoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: onAdd,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(type.category.icon, color: AppColors.terracotta, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${type.label} · ${garments.length}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.muted.withValues(alpha: 0.8),
-                  ),
-                ],
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.terracottaSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppColors.terracotta, size: 18),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '$label  ·  ${garments.length}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onAdd,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.terracotta,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text(
+                  'Add',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 108,
+            height: 118,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: garments.isEmpty ? 1 : garments.length + 1,
+              physics: const BouncingScrollPhysics(),
+              itemCount: garments.length + 1,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
-                if (garments.isEmpty) {
-                  return _EmptyTile(onAdd: onAdd);
-                }
                 if (index == garments.length) {
                   return _AddTile(onAdd: onAdd);
                 }
@@ -197,53 +317,32 @@ class _CategoryRow extends StatelessWidget {
                   onTap: () => onOpen(garment),
                   onDoubleTap: () => showPhotoZoom(context, garment),
                   child: SizedBox(
-                    width: 88,
-                    height: 108,
-                    child: PhotoTile(garment: garment, radius: 16),
+                    width: 92,
+                    height: 118,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: PhotoTile(
+                        garment: garment,
+                        radius: 18,
+                        fit: BoxFit.contain,
+                        backgroundColor: const Color(0xFFF3EBE3),
+                      ),
+                    ),
                   ),
                 );
               },
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptyTile extends StatelessWidget {
-  const _EmptyTile({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onAdd,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 88,
-        height: 108,
-        decoration: BoxDecoration(
-          color: AppColors.paper,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.line, style: BorderStyle.solid),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, color: AppColors.terracotta),
-            SizedBox(height: 6),
-            Text(
-              'Add',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                color: AppColors.muted,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -258,16 +357,30 @@ class _AddTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onAdd,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        width: 72,
-        height: 108,
+        width: 76,
+        height: 118,
         decoration: BoxDecoration(
           color: AppColors.terracottaSoft,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.line),
         ),
-        child: const Icon(Icons.add_rounded, color: AppColors.terracotta),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded, color: AppColors.terracotta),
+            SizedBox(height: 4),
+            Text(
+              'Add',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: AppColors.muted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -56,6 +56,16 @@ class GarmentDetailScreen extends StatelessWidget {
           Text(
             '${garment.typeLabel} · ${garment.formality.label} · ${garment.season.label}',
           ),
+          if (garment.cost != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Cost · ₹${garment.cost!.toStringAsFixed(garment.cost! % 1 == 0 ? 0 : 2)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.muted,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text('Color', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 10),
