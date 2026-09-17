@@ -15,6 +15,7 @@ import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
 import 'day_look_screen.dart';
 import 'event_editor_screen.dart';
+import 'outfit_full_view_screen.dart';
 
 class WeekScreen extends StatefulWidget {
   const WeekScreen({super.key});
@@ -24,17 +25,17 @@ class WeekScreen extends StatefulWidget {
 }
 
 class _WeekScreenState extends State<WeekScreen> {
-  DateTime _selected = DateTime.now();
+  late DateTime _weekAnchor;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _selected = DateTime(now.year, now.month, now.day);
+    _weekAnchor = DateTime(now.year, now.month, now.day);
   }
 
-  DateTime get _weekStart => dateOnly(_selected).subtract(
-        Duration(days: _selected.weekday - DateTime.monday),
+  DateTime get _weekStart => dateOnly(_weekAnchor).subtract(
+        Duration(days: _weekAnchor.weekday - DateTime.monday),
       );
 
   List<DateTime> get _weekDays =>
@@ -43,32 +44,27 @@ class _WeekScreenState extends State<WeekScreen> {
   void _shiftWeek(int weeks) {
     HapticFeedback.selectionClick();
     setState(() {
-      _selected = dateOnly(_selected.add(Duration(days: 7 * weeks)));
+      _weekAnchor = dateOnly(_weekAnchor.add(Duration(days: 7 * weeks)));
     });
   }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selected,
+      initialDate: _weekAnchor,
       firstDate: DateTime(DateTime.now().year - 1),
       lastDate: DateTime(DateTime.now().year + 5),
     );
     if (picked == null) return;
     setState(() {
-      _selected = DateTime(picked.year, picked.month, picked.day);
+      _weekAnchor = DateTime(picked.year, picked.month, picked.day);
     });
-  }
-
-  void _selectDay(DateTime date) {
-    HapticFeedback.selectionClick();
-    setState(() => _selected = dateOnly(date));
   }
 
   void _openWardrobe() => goToShellTab?.call(2);
 
-  Future<void> _openLook(DrapeState state) async {
-    final dayEvents = state.eventsOn(_selected);
+  Future<void> _openEdit(DateTime date, DrapeState state) async {
+    final dayEvents = state.eventsOn(date);
     if (dayEvents.isNotEmpty) {
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -77,24 +73,70 @@ class _WeekScreenState extends State<WeekScreen> {
       );
       return;
     }
-    final plan = state.week?.forDate(_selected);
+    final plan = state.week?.forDate(date);
     if (plan != null) {
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => DayLookScreen(date: _selected)),
+        MaterialPageRoute(builder: (_) => DayLookScreen(date: date)),
       );
+    } else {
+      _openWardrobe();
     }
+  }
+
+  Future<void> _addLook(DateTime date, DrapeState state) async {
+    final plan = state.week?.forDate(date);
+    if (plan == null) {
+      _openWardrobe();
+      return;
+    }
+    if (plan.outfit == null || plan.outfit!.isEmpty) {
+      await state.shuffleDay(plan);
+    }
+    if (!mounted) return;
+    await _openEdit(date, state);
+  }
+
+  Future<void> _cycleLook(DateTime date, DrapeState state, int dir) async {
+    final plan = state.week?.forDate(date);
+    if (plan == null) return;
+    if (plan.locked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This look is locked.')),
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    await state.cycleDayLook(plan, dir);
+  }
+
+  void _openFullView(
+    DateTime date,
+    List<Garment> pieces, {
+    int initialIndex = 0,
+  }) {
+    if (pieces.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OutfitFullViewScreen(
+          pieces: pieces,
+          date: date,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
-    final look = _LookData.resolve(state, _selected);
+    final days = _weekDays;
 
     return PageBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
@@ -119,102 +161,45 @@ class _WeekScreenState extends State<WeekScreen> {
                   ],
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: _WeekNav(
+                  weekStart: _weekStart,
+                  onPrev: () => _shiftWeek(-1),
+                  onNext: () => _shiftWeek(1),
+                  onPickDate: _pickDate,
+                ),
+              ),
+              const SizedBox(height: 8),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Column(
-                    children: [
-                      _WeekNav(
-                        weekStart: _weekStart,
-                        onPrev: () => _shiftWeek(-1),
-                        onNext: () => _shiftWeek(1),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            DateFormat('EEEE').format(_selected),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: _pickDate,
-                            borderRadius: BorderRadius.circular(8),
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.calendar_today_outlined,
-                                size: 16,
-                                color: AppColors.muted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 320,
-                              maxHeight: 480,
-                            ),
-                            child: AspectRatio(
-                              aspectRatio: 3 / 4.25,
-                              child: _LookFrame(
-                                look: look,
-                                weekday: DateFormat('EEEE').format(_selected),
-                                onOpen: () => _openLook(state),
-                                onAddClothes: _openWardrobe,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          for (final day in _weekDays)
-                            Expanded(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 3),
-                                child: _DateChip(
-                                  date: day,
-                                  selected: sameDay(day, _selected),
-                                  marked:
-                                      _LookData.resolve(state, day).hasVisual,
-                                  onTap: () => _selectDay(day),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _openWardrobe,
-                          icon: const Icon(Icons.checkroom_outlined, size: 20),
-                          label: const Text('Go to the wardrobe'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.ink,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: const StadiumBorder(),
-                            textStyle: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: days.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, i) {
+                    final date = days[i];
+                    final look = _LookData.resolve(state, date);
+                    final plan = state.week?.forDate(date);
+                    return _DayOutfitCard(
+                      date: date,
+                      look: look,
+                      plan: plan,
+                      onAdd: () => _addLook(date, state),
+                      onPrev: () => _cycleLook(date, state, -1),
+                      onNext: () => _cycleLook(date, state, 1),
+                      onOpenPiece: (index) =>
+                          _openFullView(date, look.pieces, initialIndex: index),
+                      onOpenPhoto: () {
+                        if (look.photo != null && look.event != null) {
+                          _openEdit(date, state);
+                        } else if (look.pieces.isNotEmpty) {
+                          _openFullView(date, look.pieces);
+                        } else {
+                          _addLook(date, state);
+                        }
+                      },
+                    );
+                  },
                 ),
               ),
             ],
@@ -230,11 +215,13 @@ class _WeekNav extends StatelessWidget {
     required this.weekStart,
     required this.onPrev,
     required this.onNext,
+    required this.onPickDate,
   });
 
   final DateTime weekStart;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final VoidCallback onPickDate;
 
   @override
   Widget build(BuildContext context) {
@@ -246,13 +233,31 @@ class _WeekNav extends StatelessWidget {
           icon: const Icon(Icons.chevron_left_rounded),
         ),
         Expanded(
-          child: Text(
-            'Week of ${DateFormat('d MMM').format(weekStart)}',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
+          child: InkWell(
+            onTap: onPickDate,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Week of ${DateFormat('d MMM').format(weekStart)}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: AppColors.muted,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -279,7 +284,8 @@ class _LookData {
 
   bool get hasVisual =>
       photo != null ||
-      pieces.any((g) => garmentImageProvider(g.imagePath) != null);
+      pieces.any((g) => garmentImageProvider(g.imagePath) != null) ||
+      pieces.isNotEmpty;
 
   static _LookData resolve(DrapeState state, DateTime date) {
     final events = state.eventsOn(date);
@@ -304,46 +310,124 @@ class _LookData {
   }
 }
 
-class _LookFrame extends StatelessWidget {
-  const _LookFrame({
+class _DayOutfitCard extends StatelessWidget {
+  const _DayOutfitCard({
+    required this.date,
     required this.look,
-    required this.weekday,
-    required this.onOpen,
-    required this.onAddClothes,
+    required this.plan,
+    required this.onAdd,
+    required this.onPrev,
+    required this.onNext,
+    required this.onOpenPiece,
+    required this.onOpenPhoto,
   });
 
+  final DateTime date;
   final _LookData look;
-  final String weekday;
-  final VoidCallback onOpen;
-  final VoidCallback onAddClothes;
+  final DayPlan? plan;
+  final VoidCallback onAdd;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final ValueChanged<int> onOpenPiece;
+  final VoidCallback onOpenPhoto;
 
   @override
   Widget build(BuildContext context) {
+    final hasLook = look.hasVisual;
+    final locked = plan?.locked ?? false;
+
     return Material(
       color: Colors.white,
-      elevation: 0,
-      shadowColor: Colors.black26,
-      borderRadius: BorderRadius.circular(44),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
-        onTap: look.hasVisual ? onOpen : onAddClothes,
-        borderRadius: BorderRadius.circular(44),
+        onTap: hasLook ? onOpenPhoto : onAdd,
+        borderRadius: BorderRadius.circular(22),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(44),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.line),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 28,
-                offset: const Offset(0, 14),
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(44),
-            child: look.hasVisual
-                ? _LookVisual(look: look)
-                : _EmptyLook(weekday: weekday),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('EEEE').format(date),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          Text(
+                            DateFormat('d MMM').format(date),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (locked)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 16,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _IconAction(
+                      tooltip: 'Previous look',
+                      icon: Icons.chevron_left_rounded,
+                      onTap: plan == null || locked ? null : onPrev,
+                      filled: true,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: SizedBox(
+                        height: 78,
+                        child: hasLook
+                            ? _LookRow(
+                                look: look,
+                                onOpenPiece: onOpenPiece,
+                                onOpenPhoto: onOpenPhoto,
+                              )
+                            : _EmptyLookRow(onAdd: onAdd),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    _IconAction(
+                      tooltip: 'Next look',
+                      icon: Icons.chevron_right_rounded,
+                      onTap: plan == null || locked ? null : onNext,
+                      filled: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -351,191 +435,145 @@ class _LookFrame extends StatelessWidget {
   }
 }
 
-class _EmptyLook extends StatelessWidget {
-  const _EmptyLook({required this.weekday});
-
-  final String weekday;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-          Container(
-            width: 84,
-            height: 84,
-            decoration: const BoxDecoration(
-              color: AppColors.terracottaSoft,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.checkroom_outlined,
-              color: AppColors.terracotta,
-              size: 38,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No outfit for $weekday',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 24,
-              height: 1.2,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'No look planned for this day yet.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              height: 1.4,
-              fontWeight: FontWeight.w500,
-              color: AppColors.muted,
-            ),
-          ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _LookVisual extends StatelessWidget {
-  const _LookVisual({required this.look});
+class _LookRow extends StatelessWidget {
+  const _LookRow({
+    required this.look,
+    required this.onOpenPiece,
+    required this.onOpenPhoto,
+  });
 
   final _LookData look;
+  final ValueChanged<int> onOpenPiece;
+  final VoidCallback onOpenPhoto;
 
   @override
   Widget build(BuildContext context) {
     if (look.photo != null) {
-      return Image(
-        image: look.photo!,
-        fit: BoxFit.cover,
-        alignment: const Alignment(0, -0.2),
-        width: double.infinity,
-        height: double.infinity,
+      return GestureDetector(
+        onTap: onOpenPhoto,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image(
+            image: look.photo!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: 78,
+          ),
+        ),
       );
     }
 
-    final photos = look.pieces
-        .where((g) => garmentImageProvider(g.imagePath) != null)
-        .toList();
-    if (photos.length == 1) {
-      return Image(
-        image: garmentImageProvider(photos.first.imagePath)!,
-        fit: BoxFit.cover,
-        alignment: const Alignment(0, -0.2),
-        width: double.infinity,
-        height: double.infinity,
-      );
-    }
-
-    final dress = photos.where((g) => g.category == GarmentCategory.dress);
-    final tops = photos.where((g) => g.category == GarmentCategory.top);
-    final bottoms = photos.where((g) => g.category == GarmentCategory.bottom);
-    final extras = photos.where(
-      (g) =>
-          g.category == GarmentCategory.outerwear ||
-          g.category == GarmentCategory.shoes ||
-          g.category == GarmentCategory.accessory,
-    );
-
-    final stack = <Garment>[
-      ...dress,
-      ...tops,
-      ...bottoms,
-      ...extras,
-    ];
-    if (stack.isEmpty) stack.addAll(photos);
-
-    return Column(
-      children: [
-        for (final piece in stack.take(3))
-          Expanded(
-            flex: piece.category == GarmentCategory.shoes ? 2 : 3,
-            child: Image(
-              image: garmentImageProvider(piece.imagePath)!,
-              fit: BoxFit.cover,
-              width: double.infinity,
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: look.pieces.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, i) {
+        final g = look.pieces[i];
+        final photo = garmentImageProvider(g.imagePath);
+        return GestureDetector(
+          onTap: () => onOpenPiece(i),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 64,
+              height: 78,
+              child: photo != null
+                  ? Image(image: photo, fit: BoxFit.cover)
+                  : ColoredBox(
+                      color: g.primaryColor,
+                      child: Icon(
+                        g.category.icon,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
             ),
           ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _DateChip extends StatelessWidget {
-  const _DateChip({
-    required this.date,
-    required this.selected,
-    required this.marked,
-    required this.onTap,
-  });
+class _EmptyLookRow extends StatelessWidget {
+  const _EmptyLookRow({required this.onAdd});
 
-  final DateTime date;
-  final bool selected;
-  final bool marked;
-  final VoidCallback onTap;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final fg = selected ? Colors.white : AppColors.ink;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+    return InkWell(
+      onTap: onAdd,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
         decoration: BoxDecoration(
-          color: selected ? AppColors.ink : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.terracottaSoft.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.line),
         ),
-        child: Column(
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              DateFormat('MMM').format(date),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white70 : AppColors.muted,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat('dd').format(date),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: fg,
-              ),
-            ),
-            const SizedBox(height: 4),
             Container(
-              width: 5,
-              height: 5,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: marked
-                    ? (selected ? Colors.white : AppColors.terracotta)
-                    : Colors.transparent,
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: const Icon(Icons.add_rounded, color: AppColors.terracotta),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Add or select look',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.muted,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _IconAction extends StatelessWidget {
+  const _IconAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.color,
+    this.filled = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color? color;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final fg = color ?? (enabled ? AppColors.ink : AppColors.line);
+
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+      style: filled
+          ? IconButton.styleFrom(
+              backgroundColor: enabled
+                  ? AppColors.parchment
+                  : AppColors.line.withValues(alpha: 0.35),
+              foregroundColor: fg,
+            )
+          : null,
+      icon: Icon(icon, size: filled ? 22 : 20, color: fg),
     );
   }
 }

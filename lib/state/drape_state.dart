@@ -488,6 +488,48 @@ class DrapeState extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> clearDayOutfit(DayPlan day) async {
+    if (day.locked) return;
+    day.outfit = null;
+    if (day.worn) {
+      day.worn = false;
+      completedDays.remove(dateKey(day.date));
+    }
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Cycles to the next/previous alternate look for [day] (`direction` ±1).
+  Future<void> cycleDayLook(DayPlan day, int direction) async {
+    if (day.locked) return;
+    final choices = _stylist.buildChoices(
+      wardrobe: garments,
+      profile: profile,
+      date: day.date,
+      usedIds: _usedIds(except: day),
+    );
+    if (choices.isEmpty) {
+      await shuffleDay(day);
+      return;
+    }
+
+    var index = 0;
+    final currentIds = {...?day.outfit?.pieceIds};
+    if (currentIds.isNotEmpty) {
+      final found = choices.indexWhere(
+        (o) =>
+            o.pieceIds.length == currentIds.length &&
+            o.pieceIds.every(currentIds.contains),
+      );
+      if (found >= 0) index = found;
+    }
+
+    final next = (index + direction) % choices.length;
+    day.outfit = choices[next < 0 ? next + choices.length : next];
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> shuffleToday() => showNextLook();
 
   Future<void> swapPiece(DayPlan day, GarmentCategory category) async {
