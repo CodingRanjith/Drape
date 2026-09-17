@@ -97,7 +97,7 @@ class _WeekScreenState extends State<WeekScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+                padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
                 child: Row(
                   children: [
                     const AppBackIcon(),

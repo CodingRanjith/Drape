@@ -55,8 +55,10 @@ class PageBackground extends StatelessWidget {
         ),
         SafeArea(
           bottom: false,
-          minimum: const EdgeInsets.only(top: 16),
-          child: child,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: child,
+          ),
         ),
       ],
     );

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../data/app_store.dart';
 import '../data/backup.dart';
 import '../data/media_bytes.dart';
+import '../data/persist_image.dart';
 import '../logic/stylist.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
@@ -160,6 +161,38 @@ class DrapeState extends ChangeNotifier {
   Future<void> logoutToWearerChoice() async {
     profile.onboarded = false;
     notifyListeners();
+    await _persist();
+  }
+
+  Future<void> clearAllData() async {
+    for (final event in events) {
+      await cancelEventAlarm(event.alarmId);
+    }
+    await stopRinging();
+    for (var day = DateTime.monday; day <= DateTime.sunday; day++) {
+      await cancelEventAlarm(officeNotifId(day));
+    }
+    await cancelEventAlarm(_officeSnoozeNotifId);
+
+    final seenWalkthrough = profile.walkthroughSeen;
+    profile = UserProfile(
+      walkthroughSeen: seenWalkthrough,
+      onboarded: true,
+    );
+    garments = [];
+    week = null;
+    events = [];
+    partyLooks = [];
+    completedDays = {};
+    clothSets = [];
+    todayChoices = [];
+    todayIndex = 0;
+    ringingEvent = null;
+    _ensureCurrentWeek();
+    _rebuildTodayChoices();
+    notifyListeners();
+    await _store.clear();
+    await clearPersistedMedia();
     await _persist();
   }
 

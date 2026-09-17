@@ -12,6 +12,7 @@ import '../widgets/back_icon.dart';
 import '../widgets/logout_button.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
+import 'clear_data_screen.dart';
 import 'notifications_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -58,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
+          padding: const EdgeInsets.fromLTRB(12, 12, 20, 8),
           child: Column(
             children: [
               Row(
@@ -85,6 +86,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: _WhiteCard(
                   child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 20),
                     child: Column(
                     children: [
                       _MenuRow(
@@ -147,7 +152,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _MenuRow(
                         icon: Icons.download_outlined,
                         title: 'Import',
+                        groupEnd: true,
                         onTap: _busy ? null : _import,
+                      ),
+                      _MenuRow(
+                        icon: Icons.delete_forever_outlined,
+                        title: 'Clear data',
+                        danger: true,
+                        onTap: _busy ? null : _openClearData,
                       ),
                       if (_busy) ...[
                         const SizedBox(height: 12),
@@ -230,6 +242,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (context.mounted) Navigator.pop(context);
                   },
                   child: const Text('Save'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _busy
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        _openClearData();
+                      },
+                child: const Text(
+                  'Clear data',
+                  style: TextStyle(
+                    color: Color(0xFFE24B4B),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -406,6 +434,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) setState(() => _busy = false);
     }
   }
+
+  void _openClearData() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ClearDataScreen()),
+    );
+  }
 }
 
 class _LogoutMark extends StatelessWidget {
@@ -448,6 +482,7 @@ class _WhiteCard extends StatelessWidget {
       shadowColor: Colors.transparent,
       elevation: 0,
       borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
       child: child,
     );
   }
@@ -462,6 +497,7 @@ class _MenuRow extends StatelessWidget {
     this.onTap,
     this.showChevron = true,
     this.groupEnd = false,
+    this.danger = false,
   });
 
   final IconData icon;
@@ -471,10 +507,14 @@ class _MenuRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool showChevron;
   final bool groupEnd;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final color = danger ? const Color(0xFFE24B4B) : AppColors.ink;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
       children: [
         InkWell(
           onTap: onTap,
@@ -482,7 +522,7 @@ class _MenuRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: AppColors.ink),
+                Icon(icon, size: 22, color: color),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -490,7 +530,7 @@ class _MenuRow extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
+                      color: color,
                     ),
                   ),
                 ),
@@ -520,6 +560,7 @@ class _MenuRow extends StatelessWidget {
             child: Divider(height: 1, color: Color(0xFFE6E0DA)),
           ),
       ],
+      ),
     );
   }
 }

@@ -213,7 +213,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 12, 12, 0),
+                padding: const EdgeInsets.fromLTRB(8, 16, 12, 0),
                 child: Row(
                   children: [
                     const AppBackIcon(),

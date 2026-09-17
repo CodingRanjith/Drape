@@ -8,3 +8,5 @@ Future<String> persistBytesImpl(
 ) async {
   return 'data:$mime;base64,${base64Encode(bytes)}';
 }
+
+Future<void> clearPersistedMediaImpl() async {}

@@ -59,7 +59,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Row(
                 children: [
                   Expanded(

@@ -13,3 +13,5 @@ Future<String> persistAudio(
   String ext = 'mp3',
   String mime = 'audio/mpeg',
 }) => persistBytesImpl(bytes, '$id.$ext', mime);
+
+Future<void> clearPersistedMedia() => clearPersistedMediaImpl();
