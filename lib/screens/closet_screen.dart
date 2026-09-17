@@ -6,82 +6,241 @@ import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/closet_add.dart';
+import '../widgets/common.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
-import 'collection_sets_screen.dart';
+import 'add_clothes_screen.dart';
+import 'garment_detail_screen.dart';
 import 'garment_editor_screen.dart';
 
 class ClosetScreen extends StatelessWidget {
   const ClosetScreen({super.key});
 
+  Future<void> _addCategoryWise(BuildContext context) async {
+    await pickClothesType(
+      context,
+      title: 'Add by category',
+      onPick: (type) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => GarmentEditorScreen(
+              initialCategory: type.category,
+              initialTopKind: type.topKind,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _addForType(BuildContext context, ClothesType type) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GarmentEditorScreen(
+          initialCategory: type.category,
+          initialTopKind: type.topKind,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
+    final types = ClothesType.forWearer(state.profile.wearer);
+    final total = state.garments.length;
 
     return PageBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           leading: const AppBackIcon(),
-          title: const Text('Add clothes'),
-          actions: const [
+          title: const Text('My Wardrobe'),
+          actions: [
             Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AddClothesScreen(),
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.ink,
+                    backgroundColor: AppColors.terracottaSoft,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'My outfit',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
               padding: EdgeInsets.only(right: 12),
               child: Center(child: ProfileAvatar()),
             ),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => pickClothesType(
-            context,
-            title: 'Add clothes',
-            onPick: (type) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => GarmentEditorScreen(
-                    initialCategory: type.category,
-                    initialTopKind: type.topKind,
-                  ),
-                ),
-              );
-            },
-          ),
+          onPressed: () => _addCategoryWise(context),
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add clothes'),
+          label: const Text('Add'),
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           children: [
             Text(
-              '${state.garments.length} items',
+              total == 0
+                  ? 'Your wardrobe is empty'
+                  : '$total ${total == 1 ? 'item' : 'items'} across categories',
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 color: AppColors.muted,
               ),
             ),
             const SizedBox(height: 4),
-            Text('Collections', style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'Browse by category',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
             const Text(
-              'Open a card for singles or sets. Empty cards show Coming soon until you add something.',
+              'Each row is one clothing type. Swipe sideways to see more, or tap Add to grow that row.',
             ),
             const SizedBox(height: 18),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.88,
-              children: [
-                for (final collection in StyleCollection.values)
-                  _CollectionCard(
-                    collection: collection,
-                    setCount: state.setsFor(collection).length,
-                    singleCount: state.singlesFor(collection).length,
-                    isEmpty: !state.collectionHasContent(collection),
+            for (final type in types)
+              _CategoryRow(
+                type: type,
+                garments: state.garments.where(type.matches).toList(),
+                onAdd: () => _addForType(context, type),
+                onOpen: (g) => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => GarmentDetailScreen(id: g.id),
                   ),
-              ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryRow extends StatelessWidget {
+  const _CategoryRow({
+    required this.type,
+    required this.garments,
+    required this.onAdd,
+    required this.onOpen,
+  });
+
+  final ClothesType type;
+  final List<Garment> garments;
+  final VoidCallback onAdd;
+  final void Function(Garment garment) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onAdd,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(type.category.icon, color: AppColors.terracotta, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${type.label} · ${garments.length}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.muted.withValues(alpha: 0.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: garments.isEmpty ? 1 : garments.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                if (garments.isEmpty) {
+                  return _EmptyTile(onAdd: onAdd);
+                }
+                if (index == garments.length) {
+                  return _AddTile(onAdd: onAdd);
+                }
+                final garment = garments[index];
+                return GestureDetector(
+                  onTap: () => onOpen(garment),
+                  onDoubleTap: () => showPhotoZoom(context, garment),
+                  child: SizedBox(
+                    width: 88,
+                    height: 108,
+                    child: PhotoTile(garment: garment, radius: 16),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyTile extends StatelessWidget {
+  const _EmptyTile({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onAdd,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 88,
+        height: 108,
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line, style: BorderStyle.solid),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded, color: AppColors.terracotta),
+            SizedBox(height: 6),
+            Text(
+              'Add',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: AppColors.muted,
+              ),
             ),
           ],
         ),
@@ -90,98 +249,25 @@ class ClosetScreen extends StatelessWidget {
   }
 }
 
-class _CollectionCard extends StatelessWidget {
-  const _CollectionCard({
-    required this.collection,
-    required this.setCount,
-    required this.singleCount,
-    required this.isEmpty,
-  });
+class _AddTile extends StatelessWidget {
+  const _AddTile({required this.onAdd});
 
-  final StyleCollection collection;
-  final int setCount;
-  final int singleCount;
-  final bool isEmpty;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final status = isEmpty
-        ? 'Coming soon'
-        : [
-            if (singleCount > 0) '$singleCount items',
-            if (setCount > 0) '$setCount sets',
-          ].join(' · ');
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CollectionSetsScreen(collection: collection),
-          ),
+    return InkWell(
+      onTap: onAdd,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 72,
+        height: 108,
+        decoration: BoxDecoration(
+          color: AppColors.terracottaSoft,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
         ),
-        child: Ink(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                collection.coverAsset,
-                fit: BoxFit.cover,
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      collection.coverGradient.first.withValues(alpha: 0.45),
-                      collection.coverGradient.last.withValues(alpha: 0.88),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(collection.icon, color: Colors.white),
-                    ),
-                    const Spacer(),
-                    Text(
-                      collection.label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: isEmpty
-                            ? const Color(0xFFFFD8C2)
-                            : Colors.white.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: const Icon(Icons.add_rounded, color: AppColors.terracotta),
       ),
     );
   }

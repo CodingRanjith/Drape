@@ -197,7 +197,7 @@ class _AddNavItem extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'Add clothes',
+                'My Wardrobe',
                 maxLines: 1,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 10,
