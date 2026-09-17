@@ -20,7 +20,6 @@ class TodayScreen extends StatelessWidget {
     final state = context.watch<DrapeState>();
     final today = DateTime.now();
     final plan = state.todayPlan;
-    final woman = state.profile.wearer == Wearer.woman;
     final groups = ClothesType.todaySlots(state.profile.wearer)
         .map((type) => (type: type, items: state.optionsFor(type)))
         .where((g) => g.items.isNotEmpty)
@@ -59,14 +58,6 @@ class TodayScreen extends StatelessWidget {
               ),
               _NoticeBell(count: state.homeNoticeCount),
             ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            woman ? 'Women view' : 'Men view',
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              color: AppColors.terracotta,
-            ),
           ),
           const SizedBox(height: 18),
           if (groups.isEmpty)

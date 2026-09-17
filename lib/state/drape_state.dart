@@ -667,17 +667,40 @@ class DrapeState extends ChangeNotifier {
   Future<bool> assignPiece(
     DayPlan day,
     GarmentCategory category,
-    String? garmentId,
-  ) async {
+    String? garmentId, {
+    TopKind topKind = TopKind.top,
+  }) async {
     if (garmentId != null &&
         isUsedElsewhereThisWeek(garmentId, except: day)) {
       return false;
     }
     day.outfit ??= Outfit(id: _uuid.v4());
-    _putOnOutfit(day.outfit!, category, garmentId);
+    final garment = garmentId == null ? null : garmentById(garmentId);
+    final kind = garment?.topKind ?? topKind;
+    if (kind == TopKind.tshirt) {
+      day.outfit!.tshirtId = garmentId;
+      if (garmentId != null) day.outfit!.dressId = null;
+    } else {
+      _putOnOutfit(day.outfit!, category, garmentId);
+    }
     notifyListeners();
     await _persist();
     return true;
+  }
+
+  /// Removes a specific wardrobe piece from [day]'s outfit.
+  Future<void> clearGarmentFromDay(DayPlan day, Garment garment) async {
+    final outfit = day.outfit;
+    if (outfit == null) return;
+    if (outfit.tshirtId == garment.id) {
+      outfit.tshirtId = null;
+    } else if (outfit.idFor(garment.category) == garment.id) {
+      _putOnOutfit(outfit, garment.category, null);
+    } else {
+      return;
+    }
+    notifyListeners();
+    await _persist();
   }
 
   void _putOnOutfit(Outfit outfit, GarmentCategory category, String? garmentId) {
@@ -685,7 +708,8 @@ class DrapeState extends ChangeNotifier {
       outfit
         ..dressId = garmentId
         ..topId = null
-        ..bottomId = null;
+        ..bottomId = null
+        ..tshirtId = null;
     } else if (category == GarmentCategory.top ||
         category == GarmentCategory.bottom) {
       outfit.setIdFor(category, garmentId);

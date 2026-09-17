@@ -4,17 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../app_nav.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
+import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
-import 'day_look_screen.dart';
 import 'event_editor_screen.dart';
+import 'garment_detail_screen.dart';
 import 'outfit_full_view_screen.dart';
 
 class WeekScreen extends StatefulWidget {
@@ -72,53 +72,14 @@ class _WeekScreenState extends State<WeekScreen> {
     });
   }
 
-  void _openWardrobe() => goToShellTab?.call(2);
-
   Future<void> _openEdit(DateTime date, DrapeState state) async {
     final dayEvents = state.eventsOn(date);
-    if (dayEvents.isNotEmpty) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => EventEditorScreen(existing: dayEvents.first),
-        ),
-      );
-      return;
-    }
-    final plan = state.week?.forDate(date);
-    if (plan != null) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => DayLookScreen(date: date)),
-      );
-    } else {
-      _openWardrobe();
-    }
-  }
-
-  Future<void> _addLook(DateTime date, DrapeState state) async {
-    final plan = state.week?.forDate(date);
-    if (plan == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Looks can only be edited for the current week.'),
-        ),
-      );
-      return;
-    }
+    if (dayEvents.isEmpty) return;
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => DayLookScreen(date: date)),
+      MaterialPageRoute(
+        builder: (_) => EventEditorScreen(existing: dayEvents.first),
+      ),
     );
-  }
-
-  Future<void> _removeLook(DateTime date, DrapeState state) async {
-    final plan = state.week?.forDate(date);
-    if (plan == null || plan.outfit == null) return;
-    if (plan.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock this day before removing.')),
-      );
-      return;
-    }
-    await state.clearDayOutfit(plan);
   }
 
   void _openFullView(
@@ -135,6 +96,69 @@ class _WeekScreenState extends State<WeekScreen> {
           initialIndex: initialIndex,
         ),
       ),
+    );
+  }
+
+  Future<void> _pickShelf(
+    DateTime date,
+    _WeekShelf shelf,
+    DrapeState state,
+  ) async {
+    final plan = state.week?.forDate(date);
+    if (plan == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Looks can only be edited for the current week.'),
+        ),
+      );
+      return;
+    }
+    if (plan.locked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock this day before changing items.')),
+      );
+      return;
+    }
+
+    final used = {
+      for (final d in state.week!.days)
+        if (!sameDay(d.date, plan.date)) ...?d.outfit?.pieceIds,
+    };
+    final options = state.garments
+        .where((g) => shelf.matches(g) && !g.inLaundry)
+        .toList();
+    final available = options.where((g) => !used.contains(g.id)).toList();
+    final taken = options.where((g) => used.contains(g.id)).toList();
+    final selected = shelf.selectedOn(plan, state);
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return _ShelfZoomPicker(
+          shelf: shelf,
+          plan: plan,
+          state: state,
+          selected: selected,
+          available: available,
+          taken: taken,
+          hostContext: context,
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(scale: curved, child: child),
+        );
+      },
     );
   }
 
@@ -195,18 +219,6 @@ class _WeekScreenState extends State<WeekScreen> {
                   onPickDate: _pickDate,
                 ),
               ),
-              if (lookCount > 0 && lookCount < 7)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Text(
-                    'Upload ${7 - lookCount} more set${7 - lookCount == 1 ? '' : 's'} for auto week suggestions.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.separated(
@@ -226,8 +238,8 @@ class _WeekScreenState extends State<WeekScreen> {
                       date: date,
                       look: look,
                       plan: plan,
-                      onAdd: () => _addLook(date, state),
-                      onRemove: () => _removeLook(date, state),
+                      state: state,
+                      onPickShelf: (shelf) => _pickShelf(date, shelf, state),
                       onOpenPiece: (index) => _openFullView(
                         date,
                         look.pieces,
@@ -238,8 +250,6 @@ class _WeekScreenState extends State<WeekScreen> {
                           _openEdit(date, state);
                         } else if (look.pieces.isNotEmpty) {
                           _openFullView(date, look.pieces);
-                        } else {
-                          _addLook(date, state);
                         }
                       },
                     );
@@ -247,6 +257,294 @@ class _WeekScreenState extends State<WeekScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShelfZoomPicker extends StatefulWidget {
+  const _ShelfZoomPicker({
+    required this.shelf,
+    required this.plan,
+    required this.state,
+    required this.selected,
+    required this.available,
+    required this.taken,
+    required this.hostContext,
+  });
+
+  final _WeekShelf shelf;
+  final DayPlan plan;
+  final DrapeState state;
+  final Garment? selected;
+  final List<Garment> available;
+  final List<Garment> taken;
+  final BuildContext hostContext;
+
+  @override
+  State<_ShelfZoomPicker> createState() => _ShelfZoomPickerState();
+}
+
+class _ShelfZoomPickerState extends State<_ShelfZoomPicker> {
+  late bool _replacing;
+  Garment? _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.selected;
+    _replacing = widget.selected == null;
+  }
+
+  Future<void> _assign(Garment g) async {
+    final messenger = ScaffoldMessenger.maybeOf(widget.hostContext);
+    final ok = await widget.state.assignPiece(
+      widget.plan,
+      g.category,
+      g.id,
+      topKind: g.topKind,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'That item is already planned another day this week.',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _current = g;
+      _replacing = false;
+    });
+  }
+
+  Future<void> _remove() async {
+    final current = _current;
+    if (current == null) return;
+    await widget.state.clearGarmentFromDay(widget.plan, current);
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  void _openDetail(Garment g) {
+    Navigator.pop(context);
+    Navigator.of(widget.hostContext).push(
+      MaterialPageRoute(builder: (_) => GarmentDetailScreen(id: g.id)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final photo = _current == null
+        ? null
+        : garmentImageProvider(_current!.imagePath);
+    final showList = _replacing || _current == null;
+
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: size.width.clamp(280.0, 420.0),
+            maxHeight: size.height * 0.88,
+          ),
+          child: Material(
+            color: AppColors.paper,
+            elevation: 16,
+            shadowColor: Colors.black45,
+            borderRadius: BorderRadius.circular(28),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 6, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.shelf.label,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                      if (_current != null)
+                        IconButton(
+                          tooltip: 'Replace',
+                          onPressed: () => setState(() => _replacing = true),
+                          icon: Icon(
+                            Icons.swap_horiz_rounded,
+                            color: _replacing
+                                ? AppColors.terracotta
+                                : AppColors.ink,
+                          ),
+                        ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                  child: Text(
+                    showList
+                        ? 'Only items from this category. Tap one to use it.'
+                        : 'Tap replace to change this item.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+                if (!showList) ...[
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: photo == null
+                            ? ColoredBox(
+                                color: AppColors.terracottaSoft,
+                                child: Center(
+                                  child: Icon(
+                                    widget.shelf.icon,
+                                    size: 56,
+                                    color: AppColors.terracotta,
+                                  ),
+                                ),
+                              )
+                            : Image(
+                                image: photo,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                    child: Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: _remove,
+                          icon: const Icon(Icons.hide_source_outlined, size: 18),
+                          label: const Text('Remove'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.muted,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () => _openDetail(_current!),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          label: const Text('Details'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else
+                  Expanded(
+                    child: widget.available.isEmpty && widget.taken.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                'Nothing in ${widget.shelf.label} yet. Add pieces in My Wardrobe.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ),
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                            children: [
+                              ...widget.available.map(
+                                (g) => ListTile(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  selected: _current?.id == g.id,
+                                  selectedTileColor: AppColors.terracottaSoft
+                                      .withValues(alpha: 0.55),
+                                  leading: SizedBox(
+                                    width: 52,
+                                    height: 52,
+                                    child: PhotoTile(garment: g, radius: 12),
+                                  ),
+                                  title: Text(
+                                    g.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  subtitle: Text(g.typeLabel),
+                                  trailing: IconButton(
+                                    tooltip: 'Open',
+                                    icon: const Icon(
+                                      Icons.open_in_new_rounded,
+                                    ),
+                                    onPressed: () => _openDetail(g),
+                                  ),
+                                  onTap: () => _assign(g),
+                                ),
+                              ),
+                              if (widget.taken.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    'Already used this week',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
+                                ),
+                                ...widget.taken.map(
+                                  (g) => ListTile(
+                                    enabled: false,
+                                    leading: SizedBox(
+                                      width: 52,
+                                      height: 52,
+                                      child: Opacity(
+                                        opacity: 0.45,
+                                        child: PhotoTile(
+                                          garment: g,
+                                          radius: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(g.name),
+                                    subtitle: const Text(
+                                      'Planned on another day',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -356,13 +654,67 @@ class _LookData {
   }
 }
 
+class _WeekShelf {
+  const _WeekShelf({
+    required this.label,
+    required this.icon,
+    this.category,
+    this.customShelf,
+  });
+
+  final String label;
+  final IconData icon;
+  final WardrobeCategory? category;
+  final String? customShelf;
+
+  bool matches(Garment g) => g.shelfLabel == label;
+
+  Garment? selectedOn(DayPlan? plan, DrapeState state) {
+    final outfit = plan?.outfit;
+    if (outfit == null) return null;
+    for (final id in outfit.pieceIds) {
+      final g = state.garmentById(id);
+      if (g != null && matches(g)) return g;
+    }
+    return null;
+  }
+
+  static List<_WeekShelf> allFor(
+    Wearer wearer,
+    List<String> customShelves,
+  ) {
+    final shelves = <_WeekShelf>[
+      for (final category in wearer.wardrobeCategories)
+        _WeekShelf(
+          label: category.label,
+          icon: category.icon,
+          category: category,
+        ),
+    ];
+    final seen = {for (final s in shelves) s.label.toLowerCase()};
+    for (final custom in customShelves) {
+      final label = custom.trim();
+      if (label.isEmpty) continue;
+      if (!seen.add(label.toLowerCase())) continue;
+      shelves.add(
+        _WeekShelf(
+          label: label,
+          icon: Icons.category_outlined,
+          customShelf: label,
+        ),
+      );
+    }
+    return shelves;
+  }
+}
+
 class _DayOutfitCard extends StatelessWidget {
   const _DayOutfitCard({
     required this.date,
     required this.look,
     required this.plan,
-    required this.onAdd,
-    required this.onRemove,
+    required this.state,
+    required this.onPickShelf,
     required this.onOpenPiece,
     required this.onOpenPhoto,
   });
@@ -370,15 +722,19 @@ class _DayOutfitCard extends StatelessWidget {
   final DateTime date;
   final _LookData look;
   final DayPlan? plan;
-  final VoidCallback onAdd;
-  final VoidCallback onRemove;
+  final DrapeState state;
+  final ValueChanged<_WeekShelf> onPickShelf;
   final ValueChanged<int> onOpenPiece;
   final VoidCallback onOpenPhoto;
 
   @override
   Widget build(BuildContext context) {
-    final hasLook = look.hasVisual;
     final locked = plan?.locked ?? false;
+    final eventLook = look.event != null && look.hasVisual;
+    final shelves = _WeekShelf.allFor(
+      state.profile.wearer,
+      state.profile.customShelves,
+    );
 
     return Material(
       color: Colors.white,
@@ -434,38 +790,33 @@ class _DayOutfitCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Center: add or remove that day's wear set
-              SizedBox(
-                height: 88,
-                child: hasLook
-                    ? Row(
-                        children: [
-                          Expanded(
-                            child: _LookRow(
-                              look: look,
-                              onOpenPiece: onOpenPiece,
-                              onOpenPhoto: onOpenPhoto,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _CenterAction(
-                            icon: Icons.remove_rounded,
-                            label: 'Remove',
-                            color: AppColors.terracotta,
-                            onTap: locked ? null : onRemove,
-                          ),
-                        ],
-                      )
-                    : Center(
-                        child: _CenterAction(
-                          icon: Icons.add_rounded,
-                          label: 'Add set',
-                          color: AppColors.ink,
-                          wide: true,
-                          onTap: onAdd,
-                        ),
-                      ),
-              ),
+              if (eventLook)
+                SizedBox(
+                  height: 88,
+                  child: _LookRow(
+                    look: look,
+                    onOpenPiece: onOpenPiece,
+                    onOpenPhoto: onOpenPhoto,
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 108,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: shelves.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) {
+                      final shelf = shelves[i];
+                      final garment = shelf.selectedOn(plan, state);
+                      return _CategorySlot(
+                        shelf: shelf,
+                        garment: garment,
+                        onTap: () => onPickShelf(shelf),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -474,49 +825,69 @@ class _DayOutfitCard extends StatelessWidget {
   }
 }
 
-class _CenterAction extends StatelessWidget {
-  const _CenterAction({
-    required this.icon,
-    required this.label,
-    required this.color,
+class _CategorySlot extends StatelessWidget {
+  const _CategorySlot({
+    required this.shelf,
+    required this.garment,
     required this.onTap,
-    this.wide = false,
   });
 
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-  final bool wide;
+  final _WeekShelf shelf;
+  final Garment? garment;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
+    final photo =
+        garment == null ? null : garmentImageProvider(garment!.imagePath);
     return Material(
-      color: enabled
-          ? color.withValues(alpha: wide ? 0.08 : 0.1)
-          : AppColors.line.withValues(alpha: 0.35),
+      color: AppColors.parchment.withValues(alpha: 0.7),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: SizedBox(
-          width: wide ? 160 : 72,
-          height: wide ? 72 : 88,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: enabled ? color : AppColors.muted, size: 26),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: enabled ? color : AppColors.muted,
+          width: 78,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: photo == null
+                        ? ColoredBox(
+                            color: AppColors.terracottaSoft,
+                            child: Center(
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: AppColors.terracotta,
+                                size: 28,
+                              ),
+                            ),
+                          )
+                        : Image(
+                            image: photo,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  shelf.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

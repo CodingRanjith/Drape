@@ -84,19 +84,27 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
         _categorySearch.text = _category!.label;
       }
     }
-    _refreshSuggestions();
+    _refreshSuggestions(forceAll: true);
     _categorySearch.addListener(_onSearchChanged);
     _categoryFocus.addListener(_onCategoryFocusChanged);
-    // Show the gender category list immediately so users can tap without fighting focus.
-    _showSuggestions = true;
+    // List opens on field tap / chevron — not on dialog open.
+    _showSuggestions = false;
+  }
+
+  /// Empty query when browsing (field empty or still showing the selected label).
+  String get _browseOrSearchQuery {
+    final text = _categorySearch.text.trim();
+    if (text.isEmpty) return '';
+    final selected = _selectedLabel;
+    if (selected != null && text.toLowerCase() == selected.toLowerCase()) {
+      return '';
+    }
+    return text;
   }
 
   void _onCategoryFocusChanged() {
     if (_categoryFocus.hasFocus) {
-      setState(() {
-        _showSuggestions = true;
-        _refreshSuggestions();
-      });
+      _openCategoryList();
       return;
     }
     // Delay hide so a suggestion tap can register before the list is removed.
@@ -106,9 +114,28 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     });
   }
 
-  void _refreshSuggestions() {
+  void _openCategoryList() {
+    setState(() {
+      _showSuggestions = true;
+      _refreshSuggestions(forceAll: true);
+    });
+    if (!_categoryFocus.hasFocus) {
+      _categoryFocus.requestFocus();
+    }
+  }
+
+  void _toggleCategoryList() {
+    if (_showSuggestions) {
+      setState(() => _showSuggestions = false);
+      _categoryFocus.unfocus();
+      return;
+    }
+    _openCategoryList();
+  }
+
+  void _refreshSuggestions({bool forceAll = false}) {
     _suggestions = searchWardrobeCategories(
-      _categorySearch.text,
+      forceAll ? '' : _browseOrSearchQuery,
       wearer: _wearer,
       customShelves: context.read<DrapeState>().profile.customShelves,
     );
@@ -116,15 +143,17 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
 
   void _onSearchChanged() {
     final query = _categorySearch.text;
+    final selected = _selectedLabel;
+    final browsingSelected = selected != null &&
+        query.trim().toLowerCase() == selected.toLowerCase();
     final next = searchWardrobeCategories(
-      query,
+      browsingSelected ? '' : query,
       wearer: _wearer,
       customShelves: _customShelves,
     );
     setState(() {
       _suggestions = next;
       _showSuggestions = true;
-      final selected = _selectedLabel;
       if (selected != null &&
           query.trim().toLowerCase() != selected.toLowerCase()) {
         _category = null;
@@ -219,7 +248,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       setState(() {
         _error = 'That category already exists. Select it from the list.';
         _categorySearch.text = name;
-        _refreshSuggestions();
+        _refreshSuggestions(forceAll: true);
         _showSuggestions = true;
       });
       return;
@@ -368,7 +397,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     final maxW = size.width.clamp(280.0, 420.0);
     final busy = _processing || _saving;
     final query = _categorySearch.text.trim();
-    final visibleSuggestions = _suggestions.take(24).toList();
+    final visibleSuggestions = _suggestions;
     final selectedLabel = _selectedLabel;
     final showingHint = query.isNotEmpty &&
         selectedLabel == null &&
@@ -471,6 +500,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                         focusNode: _categoryFocus,
                         enabled: !busy,
                         textCapitalization: TextCapitalization.sentences,
+                        onTap: busy ? null : _openCategoryList,
                         decoration: InputDecoration(
                           hintText: _wearer.categorySearchHint,
                           filled: true,
@@ -482,37 +512,37 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                     : Icons.search_rounded),
                             color: AppColors.terracotta,
                           ),
-                          suffixIcon: query.isEmpty
-                              ? IconButton(
-                                  tooltip: 'Show categories',
-                                  onPressed: () {
-                                    setState(() {
-                                      _showSuggestions = !_showSuggestions;
-                                      if (_showSuggestions) _refreshSuggestions();
-                                    });
-                                    if (_showSuggestions) {
-                                      _categoryFocus.requestFocus();
-                                    }
-                                  },
-                                  icon: Icon(
-                                    _showSuggestions
-                                        ? Icons.expand_less_rounded
-                                        : Icons.expand_more_rounded,
-                                  ),
-                                )
-                              : IconButton(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (query.isNotEmpty)
+                                IconButton(
                                   tooltip: 'Clear',
-                                  onPressed: () {
-                                    _categorySearch.clear();
-                                    setState(() {
-                                      _category = null;
-                                      _customShelf = null;
-                                      _showSuggestions = true;
-                                    });
-                                    _categoryFocus.requestFocus();
-                                  },
+                                  onPressed: busy
+                                      ? null
+                                      : () {
+                                          _categorySearch.clear();
+                                          setState(() {
+                                            _category = null;
+                                            _customShelf = null;
+                                          });
+                                          _openCategoryList();
+                                        },
                                   icon: const Icon(Icons.close_rounded, size: 18),
                                 ),
+                              IconButton(
+                                tooltip: _showSuggestions
+                                    ? 'Hide categories'
+                                    : 'Show all categories',
+                                onPressed: busy ? null : _toggleCategoryList,
+                                icon: Icon(
+                                  _showSuggestions
+                                      ? Icons.expand_less_rounded
+                                      : Icons.expand_more_rounded,
+                                ),
+                              ),
+                            ],
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: const BorderSide(color: AppColors.line),
