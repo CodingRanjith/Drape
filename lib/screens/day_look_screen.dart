@@ -134,9 +134,18 @@ class _Slot extends StatelessWidget {
   }
 
   Future<void> _pick(BuildContext context, DrapeState state) async {
+    final used = state.week == null
+        ? <String>{}
+        : {
+            for (final d in state.week!.days)
+              if (!sameDay(d.date, day.date)) ...?d.outfit?.pieceIds,
+          };
     final options = state.garments
         .where((g) => g.category == category && !g.inLaundry)
         .toList();
+    final available = options.where((g) => !used.contains(g.id)).toList();
+    final taken = options.where((g) => used.contains(g.id)).toList();
+
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -150,6 +159,11 @@ class _Slot extends StatelessWidget {
               Text(
                 ClothesType.slotLabel(category, state.profile.wearer),
                 style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Items already planned another day this week stay hidden from picks.',
+                style: TextStyle(color: AppColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 12),
               if (options.isEmpty)
@@ -166,7 +180,7 @@ class _Slot extends StatelessWidget {
                           Navigator.pop(context);
                         },
                       ),
-                      ...options.map(
+                      ...available.map(
                         (g) => ListTile(
                           leading: SizedBox(
                             width: 48,
@@ -186,12 +200,48 @@ class _Slot extends StatelessWidget {
                               );
                             },
                           ),
-                          onTap: () {
-                            state.assignPiece(day, category, g.id);
+                          onTap: () async {
+                            final ok =
+                                await state.assignPiece(day, category, g.id);
+                            if (!context.mounted) return;
                             Navigator.pop(context);
+                            if (!ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'That item is already planned another day this week.',
+                                  ),
+                                ),
+                              );
+                            }
                           },
                         ),
                       ),
+                      if (taken.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Already used this week',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        ...taken.map(
+                          (g) => ListTile(
+                            enabled: false,
+                            leading: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Opacity(
+                                opacity: 0.45,
+                                child: PhotoTile(garment: g, radius: 12),
+                              ),
+                            ),
+                            title: Text(g.name),
+                            subtitle: const Text('Planned on another day'),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

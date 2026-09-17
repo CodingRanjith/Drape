@@ -12,6 +12,7 @@ import '../widgets/clothes_photo_row.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
 import 'event_editor_screen.dart';
+import 'outfit_full_view_screen.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -34,10 +35,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _selectDay(DateTime date) {
     HapticFeedback.selectionClick();
+    final day = dateOnly(date);
     setState(() {
-      _selected = dateOnly(date);
+      _selected = day;
       _month = DateTime(date.year, date.month);
     });
+    final pieces = context.read<DrapeState>().outfitPiecesFor(day);
+    if (pieces.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OutfitFullViewScreen(pieces: pieces, date: day),
+      ),
+    );
   }
 
   @override
@@ -183,6 +192,44 @@ class _EventsTab extends StatelessWidget {
         const SizedBox(height: 8),
         if (state.isDayCompleted(selected))
           const Text('Office outfit completed this day.'),
+        Builder(
+          builder: (context) {
+            final pieces = state.outfitPiecesFor(selected);
+            if (pieces.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Outfit that day',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClothesPhotoRow(
+                    garments: pieces,
+                    height: 110,
+                    onTap: (g) {
+                      final i = pieces.indexOf(g);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OutfitFullViewScreen(
+                            pieces: pieces,
+                            date: selected,
+                            initialIndex: i < 0 ? 0 : i,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         if (dayEvents.isEmpty)
           const Padding(
             padding: EdgeInsets.only(top: 8),

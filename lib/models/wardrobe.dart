@@ -352,8 +352,8 @@ class Outfit {
     setIdFor(type.category, id);
   }
 
-  Outfit copy() => Outfit(
-    id: id,
+  Outfit copy({String? id}) => Outfit(
+    id: id ?? this.id,
     topId: topId,
     bottomId: bottomId,
     dressId: dressId,

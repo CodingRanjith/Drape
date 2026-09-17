@@ -26,12 +26,14 @@ class WeekScreen extends StatefulWidget {
 
 class _WeekScreenState extends State<WeekScreen> {
   late DateTime _weekAnchor;
+  var _didAutoSuggest = false;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _weekAnchor = DateTime(now.year, now.month, now.day);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSuggest());
   }
 
   DateTime get _weekStart => dateOnly(_weekAnchor).subtract(
@@ -40,6 +42,15 @@ class _WeekScreenState extends State<WeekScreen> {
 
   List<DateTime> get _weekDays =>
       List.generate(7, (i) => _weekStart.add(Duration(days: i)));
+
+  Future<void> _maybeSuggest() async {
+    if (_didAutoSuggest || !mounted) return;
+    final state = context.read<DrapeState>();
+    if (state.suggestableLookCount < 7) return;
+    _didAutoSuggest = true;
+    // 14+: reshuffle for a fresh different set each day this week.
+    await state.suggestWeekSets(reshuffle: state.suggestableLookCount >= 14);
+  }
 
   void _shiftWeek(int weeks) {
     HapticFeedback.selectionClick();
@@ -86,27 +97,28 @@ class _WeekScreenState extends State<WeekScreen> {
   Future<void> _addLook(DateTime date, DrapeState state) async {
     final plan = state.week?.forDate(date);
     if (plan == null) {
-      _openWardrobe();
-      return;
-    }
-    if (plan.outfit == null || plan.outfit!.isEmpty) {
-      await state.shuffleDay(plan);
-    }
-    if (!mounted) return;
-    await _openEdit(date, state);
-  }
-
-  Future<void> _cycleLook(DateTime date, DrapeState state, int dir) async {
-    final plan = state.week?.forDate(date);
-    if (plan == null) return;
-    if (plan.locked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This look is locked.')),
+        const SnackBar(
+          content: Text('Looks can only be edited for the current week.'),
+        ),
       );
       return;
     }
-    HapticFeedback.selectionClick();
-    await state.cycleDayLook(plan, dir);
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => DayLookScreen(date: date)),
+    );
+  }
+
+  Future<void> _removeLook(DateTime date, DrapeState state) async {
+    final plan = state.week?.forDate(date);
+    if (plan == null || plan.outfit == null) return;
+    if (plan.locked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock this day before removing.')),
+      );
+      return;
+    }
+    await state.clearDayOutfit(plan);
   }
 
   void _openFullView(
@@ -130,10 +142,23 @@ class _WeekScreenState extends State<WeekScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<DrapeState>();
     final days = _weekDays;
+    final lookCount = state.suggestableLookCount;
 
     return PageBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        floatingActionButton: lookCount >= 7
+            ? FloatingActionButton.extended(
+                onPressed: () => state.suggestWeekSets(reshuffle: true),
+                backgroundColor: AppColors.ink,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.casino_outlined),
+                label: Text(
+                  lookCount >= 14 ? 'New random week' : 'Suggest week',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                ),
+              )
+            : null,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -170,10 +195,27 @@ class _WeekScreenState extends State<WeekScreen> {
                   onPickDate: _pickDate,
                 ),
               ),
+              if (lookCount > 0 && lookCount < 7)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Text(
+                    'Upload ${7 - lookCount} more set${7 - lookCount == 1 ? '' : 's'} for auto week suggestions.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    lookCount >= 7 ? 88 : 24,
+                  ),
                   itemCount: days.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
@@ -185,10 +227,12 @@ class _WeekScreenState extends State<WeekScreen> {
                       look: look,
                       plan: plan,
                       onAdd: () => _addLook(date, state),
-                      onPrev: () => _cycleLook(date, state, -1),
-                      onNext: () => _cycleLook(date, state, 1),
-                      onOpenPiece: (index) =>
-                          _openFullView(date, look.pieces, initialIndex: index),
+                      onRemove: () => _removeLook(date, state),
+                      onOpenPiece: (index) => _openFullView(
+                        date,
+                        look.pieces,
+                        initialIndex: index,
+                      ),
                       onOpenPhoto: () {
                         if (look.photo != null && look.event != null) {
                           _openEdit(date, state);
@@ -282,10 +326,13 @@ class _LookData {
   final List<Garment> pieces;
   final LifeEvent? event;
 
-  bool get hasVisual =>
-      photo != null ||
-      pieces.any((g) => garmentImageProvider(g.imagePath) != null) ||
-      pieces.isNotEmpty;
+  bool get hasVisual => photo != null || pieces.isNotEmpty;
+
+  static List<Garment> _uploadedPieces(Iterable<Garment> garments) {
+    return garments
+        .where((g) => garmentImageProvider(g.imagePath) != null)
+        .toList();
+  }
 
   static _LookData resolve(DrapeState state, DateTime date) {
     final events = state.eventsOn(date);
@@ -297,16 +344,15 @@ class _LookData {
       }
     }
     for (final event in events) {
-      final clothes = event.garmentIds
-          .map(state.garmentById)
-          .whereType<Garment>()
-          .toList();
+      final clothes = _uploadedPieces(
+        event.garmentIds.map(state.garmentById).whereType<Garment>(),
+      );
       if (clothes.isNotEmpty) {
         return _LookData(pieces: clothes, event: event);
       }
     }
     final plan = state.week?.forDate(date);
-    return _LookData(pieces: state.piecesOf(plan?.outfit));
+    return _LookData(pieces: _uploadedPieces(state.piecesOf(plan?.outfit)));
   }
 }
 
@@ -316,8 +362,7 @@ class _DayOutfitCard extends StatelessWidget {
     required this.look,
     required this.plan,
     required this.onAdd,
-    required this.onPrev,
-    required this.onNext,
+    required this.onRemove,
     required this.onOpenPiece,
     required this.onOpenPhoto,
   });
@@ -326,8 +371,7 @@ class _DayOutfitCard extends StatelessWidget {
   final _LookData look;
   final DayPlan? plan;
   final VoidCallback onAdd;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
+  final VoidCallback onRemove;
   final ValueChanged<int> onOpenPiece;
   final VoidCallback onOpenPhoto;
 
@@ -339,95 +383,140 @@ class _DayOutfitCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        onTap: hasLook ? onOpenPhoto : onAdd,
-        borderRadius: BorderRadius.circular(22),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppColors.line),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat('EEEE').format(date),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        Text(
+                          DateFormat('d MMM').format(date),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (locked)
+                    const Icon(
+                      Icons.lock_rounded,
+                      size: 16,
+                      color: AppColors.muted,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Center: add or remove that day's wear set
+              SizedBox(
+                height: 88,
+                child: hasLook
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: _LookRow(
+                              look: look,
+                              onOpenPiece: onOpenPiece,
+                              onOpenPhoto: onOpenPhoto,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _CenterAction(
+                            icon: Icons.remove_rounded,
+                            label: 'Remove',
+                            color: AppColors.terracotta,
+                            onTap: locked ? null : onRemove,
+                          ),
+                        ],
+                      )
+                    : Center(
+                        child: _CenterAction(
+                          icon: Icons.add_rounded,
+                          label: 'Add set',
+                          color: AppColors.ink,
+                          wide: true,
+                          onTap: onAdd,
+                        ),
+                      ),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat('EEEE').format(date),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          Text(
-                            DateFormat('d MMM').format(date),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (locked)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(
-                          Icons.lock_rounded,
-                          size: 16,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                  ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CenterAction extends StatelessWidget {
+  const _CenterAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.wide = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Material(
+      color: enabled
+          ? color.withValues(alpha: wide ? 0.08 : 0.1)
+          : AppColors.line.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: wide ? 160 : 72,
+          height: wide ? 72 : 88,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: enabled ? color : AppColors.muted, size: 26),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: enabled ? color : AppColors.muted,
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _IconAction(
-                      tooltip: 'Previous look',
-                      icon: Icons.chevron_left_rounded,
-                      onTap: plan == null || locked ? null : onPrev,
-                      filled: true,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: SizedBox(
-                        height: 78,
-                        child: hasLook
-                            ? _LookRow(
-                                look: look,
-                                onOpenPiece: onOpenPiece,
-                                onOpenPhoto: onOpenPhoto,
-                              )
-                            : _EmptyLookRow(onAdd: onAdd),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    _IconAction(
-                      tooltip: 'Next look',
-                      icon: Icons.chevron_right_rounded,
-                      onTap: plan == null || locked ? null : onNext,
-                      filled: true,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -457,7 +546,7 @@ class _LookRow extends StatelessWidget {
             image: look.photo!,
             fit: BoxFit.cover,
             width: double.infinity,
-            height: 78,
+            height: 88,
           ),
         ),
       );
@@ -469,111 +558,19 @@ class _LookRow extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(width: 8),
       itemBuilder: (context, i) {
         final g = look.pieces[i];
-        final photo = garmentImageProvider(g.imagePath);
+        final photo = garmentImageProvider(g.imagePath)!;
         return GestureDetector(
           onTap: () => onOpenPiece(i),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: SizedBox(
-              width: 64,
-              height: 78,
-              child: photo != null
-                  ? Image(image: photo, fit: BoxFit.cover)
-                  : ColoredBox(
-                      color: g.primaryColor,
-                      child: Icon(
-                        g.category.icon,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
+              width: 68,
+              height: 88,
+              child: Image(image: photo, fit: BoxFit.cover),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class _EmptyLookRow extends StatelessWidget {
-  const _EmptyLookRow({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onAdd,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.terracottaSoft.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.line),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: const Icon(Icons.add_rounded, color: AppColors.terracotta),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Add or select look',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.muted,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IconAction extends StatelessWidget {
-  const _IconAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-    this.color,
-    this.filled = false,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onTap;
-  final Color? color;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    final fg = color ?? (enabled ? AppColors.ink : AppColors.line);
-
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onTap,
-      visualDensity: VisualDensity.compact,
-      style: filled
-          ? IconButton.styleFrom(
-              backgroundColor: enabled
-                  ? AppColors.parchment
-                  : AppColors.line.withValues(alpha: 0.35),
-              foregroundColor: fg,
-            )
-          : null,
-      icon: Icon(icon, size: filled ? 22 : 20, color: fg),
     );
   }
 }

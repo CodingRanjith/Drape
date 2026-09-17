@@ -97,6 +97,7 @@ class DrapeState extends ChangeNotifier {
         );
       }
     }
+    _suggestWeekFromSets(reshuffle: false);
   }
 
   void _syncCompletedFromWeek() {
@@ -225,6 +226,18 @@ class DrapeState extends ChangeNotifier {
     final key = dateKey(date);
     return events.where((e) => dateKey(e.at) == key).toList()
       ..sort((a, b) => a.at.compareTo(b.at));
+  }
+
+  /// Outfit pieces for a calendar day: event clothes first, then week plan.
+  List<Garment> outfitPiecesFor(DateTime date) {
+    for (final event in eventsOn(date)) {
+      final clothes = event.garmentIds
+          .map(garmentById)
+          .whereType<Garment>()
+          .toList();
+      if (clothes.isNotEmpty) return clothes;
+    }
+    return piecesOf(week?.forDate(date)?.outfit);
   }
 
   List<LifeEvent> get upcomingEvents {
@@ -398,11 +411,89 @@ class DrapeState extends ChangeNotifier {
       existing: keepLocks ? week : null,
     );
     todayIndex = 0;
+    _suggestWeekFromSets(reshuffle: false);
     _rebuildTodayChoices();
   }
 
   Future<void> refreshWeek({bool keepLocks = true}) async {
     regenerateWeek(keepLocks: keepLocks);
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Cloth sets that have at least one uploaded photo piece.
+  List<ClothSet> get readyClothSets {
+    return clothSets.where((set) {
+      for (final id in set.outfit.pieceIds) {
+        final g = garmentById(id);
+        if (g != null &&
+            g.imagePath != null &&
+            g.imagePath!.trim().isNotEmpty &&
+            !g.inLaundry) {
+          return true;
+        }
+      }
+      return false;
+    }).toList();
+  }
+
+  /// Uploaded dress looks usable as a one-piece set.
+  List<Outfit> get readyDressLooks {
+    return garments
+        .where(
+          (g) =>
+              g.category == GarmentCategory.dress &&
+              !g.inLaundry &&
+              g.imagePath != null &&
+              g.imagePath!.trim().isNotEmpty,
+        )
+        .map((g) => Outfit(id: _uuid.v4(), dressId: g.id))
+        .toList();
+  }
+
+  List<Outfit> get _suggestableLooks {
+    final looks = <Outfit>[
+      for (final set in readyClothSets) set.outfit.copy(id: _uuid.v4()),
+    ];
+    if (looks.length >= 7) return looks;
+    // Fall back to uploaded dresses so week can still auto-fill.
+    looks.addAll(readyDressLooks);
+    return looks;
+  }
+
+  int get suggestableLookCount => _suggestableLooks.length;
+
+  /// Randomly fills Mon–Sun from uploaded sets.
+  /// - Need **7+** looks to auto-suggest.
+  /// - With **14+** looks, [reshuffle] assigns a fresh different set each day.
+  void _suggestWeekFromSets({required bool reshuffle}) {
+    if (week == null) return;
+    final looks = [..._suggestableLooks];
+    if (looks.length < 7) return;
+
+    looks.shuffle();
+    final picks = looks.take(7).toList();
+
+    for (var i = 0; i < week!.days.length; i++) {
+      final day = week!.days[i];
+      if (day.locked || day.worn) continue;
+      final hasLook = day.outfit != null && !day.outfit!.isEmpty;
+
+      // 7–13 sets: only fill empty days (unless forced reshuffle from UI).
+      // 14+ sets: reshuffle replaces unlocked days with new random picks.
+      if (hasLook) {
+        if (!reshuffle) continue;
+        if (looks.length < 14) continue;
+      }
+
+      day.outfit = picks[i].copy(id: _uuid.v4());
+    }
+  }
+
+  Future<void> suggestWeekSets({bool reshuffle = false}) async {
+    _ensureCurrentWeek();
+    final force = reshuffle || suggestableLookCount >= 14;
+    _suggestWeekFromSets(reshuffle: force);
     notifyListeners();
     await _persist();
   }
@@ -419,12 +510,18 @@ class DrapeState extends ChangeNotifier {
     final day = todayPlan;
     if (day == null || day.locked || day.worn) return;
     day.outfit ??= Outfit(id: _uuid.v4());
+    final used = _usedIds(except: day);
     for (final type in ClothesType.todaySlots(profile.wearer)) {
       final current = garmentById(day.outfit!.idForType(type));
-      if (current != null && type.matches(current) && !current.inLaundry) {
+      if (current != null &&
+          type.matches(current) &&
+          !current.inLaundry &&
+          !used.contains(current.id)) {
         continue;
       }
-      final options = optionsFor(type);
+      final options = optionsFor(type)
+          .where((g) => !used.contains(g.id))
+          .toList();
       day.outfit!.setIdForType(type, options.isEmpty ? null : options.first.id);
     }
   }
@@ -432,6 +529,7 @@ class DrapeState extends ChangeNotifier {
   Future<void> selectTodaySlot(ClothesType type, String garmentId) async {
     final day = todayPlan;
     if (day == null || day.locked || day.worn) return;
+    if (isUsedElsewhereThisWeek(garmentId, except: day)) return;
     day.outfit ??= Outfit(id: _uuid.v4());
     day.outfit!.setIdForType(type, garmentId);
     notifyListeners();
@@ -500,14 +598,19 @@ class DrapeState extends ChangeNotifier {
   }
 
   /// Cycles to the next/previous alternate look for [day] (`direction` ±1).
+  /// Skips any look that reuses items already planned on another day this week.
   Future<void> cycleDayLook(DayPlan day, int direction) async {
     if (day.locked) return;
-    final choices = _stylist.buildChoices(
-      wardrobe: garments,
-      profile: profile,
-      date: day.date,
-      usedIds: _usedIds(except: day),
-    );
+    final used = _usedIds(except: day);
+    final choices = _stylist
+        .buildChoices(
+          wardrobe: garments,
+          profile: profile,
+          date: day.date,
+          usedIds: used,
+        )
+        .where((o) => o.pieceIds.every((id) => !used.contains(id)))
+        .toList();
     if (choices.isEmpty) {
       await shuffleDay(day);
       return;
@@ -548,15 +651,21 @@ class DrapeState extends ChangeNotifier {
     await _persist();
   }
 
-  Future<void> assignPiece(
+  /// Returns `false` if [garmentId] is already used on another day this week.
+  Future<bool> assignPiece(
     DayPlan day,
     GarmentCategory category,
     String? garmentId,
   ) async {
+    if (garmentId != null &&
+        isUsedElsewhereThisWeek(garmentId, except: day)) {
+      return false;
+    }
     day.outfit ??= Outfit(id: _uuid.v4());
     _putOnOutfit(day.outfit!, category, garmentId);
     notifyListeners();
     await _persist();
+    return true;
   }
 
   void _putOnOutfit(Outfit outfit, GarmentCategory category, String? garmentId) {
@@ -637,6 +746,7 @@ class DrapeState extends ChangeNotifier {
     final set = clothSetById(setId);
     if (set == null) return;
     _putOnOutfit(set.outfit, category, garmentId);
+    _suggestWeekFromSets(reshuffle: false);
     notifyListeners();
     await _persist();
   }
@@ -679,6 +789,24 @@ class DrapeState extends ChangeNotifier {
       ids.addAll(day.outfit?.pieceIds ?? const []);
     }
     return ids;
+  }
+
+  /// True if this garment is already on another day's look this week.
+  bool isUsedElsewhereThisWeek(String garmentId, {DayPlan? except}) {
+    return _usedIds(except: except).contains(garmentId);
+  }
+
+  /// Closet options for [category] that are still free this week for [day].
+  List<Garment> availableForDay(DayPlan day, GarmentCategory category) {
+    final used = _usedIds(except: day);
+    return garments
+        .where(
+          (g) =>
+              g.category == category &&
+              !g.inLaundry &&
+              !used.contains(g.id),
+        )
+        .toList();
   }
 
   List<Garment> neglected({int days = 14}) {

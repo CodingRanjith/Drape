@@ -25,7 +25,10 @@ class Stylist {
     required DateTime date,
     Set<String> usedIds = const {},
   }) {
-    final pool = wardrobe.where((g) => !g.inLaundry).toList();
+    // Never reuse items already planned elsewhere this week.
+    final pool = wardrobe
+        .where((g) => !g.inLaundry && !usedIds.contains(g.id))
+        .toList();
     final tops = pool.where((g) => g.category == GarmentCategory.top).toList();
     final pants = pool.where((g) => g.category == GarmentCategory.bottom).toList();
     final dresses = pool.where((g) => g.category == GarmentCategory.dress).toList();
@@ -85,62 +88,15 @@ class Stylist {
     WeekPlan? existing,
   }) {
     final days = <DayPlan>[];
-    final used = <String>{};
-    if (existing != null && sameDay(existing.weekStart, weekStart)) {
-      for (final day in existing.days) {
-        if (day.locked && day.outfit != null) {
-          used.addAll(day.outfit!.pieceIds);
-        }
-      }
-    }
 
     for (var i = 0; i < 7; i++) {
       final date = weekStart.add(Duration(days: i));
       final previous = existing?.forDate(date);
-      if (!profile.workdays.contains(date.weekday)) {
-        days.add(
-          DayPlan(date: date, outfit: previous?.outfit, locked: previous?.locked ?? false, worn: previous?.worn ?? false),
-        );
-        continue;
-      }
-      if (previous != null && previous.locked && previous.outfit != null) {
-        days.add(previous);
-        continue;
-      }
-      final choices = buildChoices(
-        wardrobe: wardrobe,
-        profile: profile,
-        date: date,
-        usedIds: used,
-      );
-      Outfit? outfit;
-      for (final candidate in choices) {
-        final cores = _byIds(wardrobe, candidate.pieceIds).where(
-          (g) =>
-              g.category == GarmentCategory.top ||
-              g.category == GarmentCategory.dress,
-        );
-        if (cores.any((g) => used.contains(g.id))) continue;
-        outfit = candidate;
-        break;
-      }
-      outfit ??= choices.isEmpty ? null : choices.first;
-      if (outfit != null) {
-        used.addAll(
-          _byIds(wardrobe, outfit.pieceIds)
-              .where(
-                (g) =>
-                    g.category == GarmentCategory.top ||
-                    g.category == GarmentCategory.dress,
-              )
-              .map((g) => g.id),
-        );
-      }
       days.add(
         DayPlan(
           date: date,
-          outfit: outfit,
-          locked: false,
+          outfit: previous?.outfit,
+          locked: previous?.locked ?? false,
           worn: previous?.worn ?? false,
         ),
       );
@@ -238,11 +194,10 @@ class Stylist {
     List<Garment> partners = const [],
     bool optional = false,
   }) {
-    var list = items.toList();
-    if (list.isEmpty) return null;
-    if (!optional) {
-      final unused = list.where((g) => !usedIds.contains(g.id)).toList();
-      if (unused.isNotEmpty) list = unused;
+    var list = items.where((g) => !usedIds.contains(g.id)).toList();
+    if (list.isEmpty) {
+      // Hard rule: do not repeat any item already used this week.
+      return null;
     }
     list.sort((a, b) {
       final score = _score(b, profile, date, partners, usedIds)
@@ -270,8 +225,9 @@ class Stylist {
     if (g.daysSinceWorn(date) < profile.minRepeatDays && g.lastWornAt != null) {
       score -= 50;
     }
-    if (usedIds.contains(g.id) && _isCore(g)) score -= 55;
-    if (usedIds.contains(g.id) && !_isCore(g)) score -= 8;
+    // Same-week item repeats are blocked at pick/buildChoices; keep a heavy
+    // penalty as a safety net for any leftover scoring paths.
+    if (usedIds.contains(g.id)) score -= 120;
 
     final styleGap = (g.formality.index - profile.workStyle.index).abs();
     score -= styleGap * 12;
@@ -286,11 +242,6 @@ class Stylist {
     score += _random.nextDouble() * 6;
     return score;
   }
-
-  bool _isCore(Garment g) =>
-      g.category == GarmentCategory.top ||
-      g.category == GarmentCategory.bottom ||
-      g.category == GarmentCategory.dress;
 
   List<Garment> _byIds(List<Garment> wardrobe, Iterable<String> ids) {
     final map = {for (final g in wardrobe) g.id: g};
