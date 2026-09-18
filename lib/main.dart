@@ -11,8 +11,9 @@ import 'screens/onboarding_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/splash_walkthrough_screen.dart';
 import 'services/notify.dart';
-import 'state/drape_state.dart';
+import 'state/mine_state.dart';
 import 'theme/app_theme.dart';
+import 'product.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,25 +23,25 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const DrapeRoot());
+  runApp(const MineRoot());
 }
 
-class DrapeRoot extends StatefulWidget {
-  const DrapeRoot({super.key});
+class MineRoot extends StatefulWidget {
+  const MineRoot({super.key});
 
   @override
-  State<DrapeRoot> createState() => _DrapeRootState();
+  State<MineRoot> createState() => _MineRootState();
 }
 
-class _DrapeRootState extends State<DrapeRoot> with WidgetsBindingObserver {
-  late final DrapeState _state;
+class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
+  late final MineState _state;
   String? _alarmRouteId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _state = DrapeState();
+    _state = MineState();
     _state.onShowAlarm = _openAlarm;
     unawaited(
       _state.boot().then((_) => initEventAlarms(onAlarm: _state.handleAlarm)),
@@ -85,7 +86,7 @@ class _DrapeRootState extends State<DrapeRoot> with WidgetsBindingObserver {
     return ChangeNotifierProvider.value(
       value: _state,
       child: MaterialApp(
-        title: 'Mine',
+        title: MineProduct.appName,
         navigatorKey: appNavigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
@@ -123,7 +124,7 @@ class _GateState extends State<_Gate> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final showLogo = state.loading || !_minElapsed;
 
     return AnimatedSwitcher(
@@ -143,7 +144,7 @@ class _GateState extends State<_Gate> {
 class _HomeFor extends StatelessWidget {
   const _HomeFor({required this.state});
 
-  final DrapeState state;
+  final MineState state;
 
   @override
   Widget build(BuildContext context) {

@@ -84,5 +84,5 @@ Future<Uint8List?> pickBackupFile({
       name.endsWith('.xlsx')) {
     return bytes;
   }
-  throw const FormatException('Please pick a Drape backup file.');
+  throw const FormatException('Please pick a Mine backup file.');
 }

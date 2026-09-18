@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/life.dart';
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/garment_photo.dart';
@@ -16,7 +16,7 @@ class AlarmRingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final event = state.eventById(eventId) ?? state.ringingEvent;
     if (event == null) {
       return const Scaffold(body: Center(child: Text('Alarm finished')));

@@ -1,7 +1,8 @@
 /// Product and developer identity for Mine.
-abstract final class DrapeProduct {
+abstract final class MineProduct {
   static const appName = 'Mine';
   static const company = 'Techackode';
+  static const packageId = 'com.techackode.mine';
   static const tagline = 'Wear what loves you back';
   static const developers = 'Ranjith Kumar C & Gayathri B';
 

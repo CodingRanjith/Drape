@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 
 Future<void> pickWardrobeCategory(
@@ -10,7 +10,7 @@ Future<void> pickWardrobeCategory(
   required void Function(WardrobeCategory category) onPick,
   String title = 'Add items',
 }) async {
-  final wearer = context.read<DrapeState>().profile.wearer;
+  final wearer = context.read<MineState>().profile.wearer;
   final categories = wearer.wardrobeCategories;
 
   final picked = await showModalBottomSheet<WardrobeCategory>(

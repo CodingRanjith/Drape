@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../data/backup_share.dart';
 import '../models/wardrobe.dart';
 import '../product.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/logout_button.dart';
@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_filled) return;
-    final profile = context.read<DrapeState>().profile;
+    final profile = context.read<MineState>().profile;
     _name = TextEditingController(
       text: profile.name == 'there' ? '' : profile.name,
     );
@@ -46,14 +46,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _persist(void Function(UserProfile profile) change) async {
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     change(state.profile);
     await state.updateProfile(state.profile);
   }
 
   @override
   Widget build(BuildContext context) {
-    final profile = context.watch<DrapeState>().profile;
+    final profile = context.watch<MineState>().profile;
 
     return PageBackground(
       child: Scaffold(
@@ -163,7 +163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       _MenuRow(
                         title: 'About',
-                        value: DrapeProduct.company,
+                        value: MineProduct.company,
                         groupEnd: true,
                         onTap: _showAbout,
                       ),
@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DrapeProduct.appName,
+                  MineProduct.appName,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
@@ -207,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  DrapeProduct.productLine,
+                  MineProduct.productLine,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -216,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  DrapeProduct.shortDescription,
+                  MineProduct.shortDescription,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     height: 1.45,
@@ -226,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  DrapeProduct.developedBy,
+                  MineProduct.developedBy,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -251,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String? _noticeValue(BuildContext context) {
-    final count = context.read<DrapeState>().homeNoticeCount;
+    final count = context.read<MineState>().homeNoticeCount;
     if (count <= 0) return null;
     return '$count new';
   }
@@ -274,13 +274,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _changePhoto() async {
     final bytes = await pickProfileImage(context);
     if (bytes == null || !mounted) return;
-    await context.read<DrapeState>().saveProfilePhoto(bytes);
+    await context.read<MineState>().saveProfilePhoto(bytes);
   }
 
   Future<void> _editIdentity() async {
-    _name.text = context.read<DrapeState>().profile.name == 'there'
+    _name.text = context.read<MineState>().profile.name == 'there'
         ? ''
-        : context.read<DrapeState>().profile.name;
+        : context.read<MineState>().profile.name;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -343,7 +343,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickGender() async {
-    final profile = context.read<DrapeState>().profile;
+    final profile = context.read<MineState>().profile;
     final picked = await showModalBottomSheet<Wearer>(
       context: context,
       backgroundColor: Colors.white,
@@ -376,7 +376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickDob() async {
-    final profile = context.read<DrapeState>().profile;
+    final profile = context.read<MineState>().profile;
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -471,17 +471,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final stamp = DateFormat('yyyy-MM-dd').format(DateTime.now());
       if (kind == BackupFileKind.excel) {
-        final excel = await context.read<DrapeState>().buildExcelBackup();
+        final excel = await context.read<MineState>().buildExcelBackup();
         await saveBackupFile(
           excel,
-          'drape-clothes-$stamp.xlsx',
+          'mine-clothes-$stamp.xlsx',
           kind: BackupFileKind.excel,
         );
       } else {
-        final zip = await context.read<DrapeState>().buildBackup();
+        final zip = await context.read<MineState>().buildBackup();
         await saveBackupFile(
           zip,
-          'drape-backup-$stamp.zip',
+          'mine-backup-$stamp.zip',
           kind: BackupFileKind.zip,
         );
       }
@@ -547,9 +547,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final bytes = await pickBackupFile(kind: kind);
       if (bytes == null || !mounted) return;
-      final result = await context.read<DrapeState>().restoreBackup(bytes);
+      final result = await context.read<MineState>().restoreBackup(bytes);
       if (!mounted) return;
-      final profile = context.read<DrapeState>().profile;
+      final profile = context.read<MineState>().profile;
       _name.text = profile.name;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 
 Future<void> confirmLogout(BuildContext context) async {
   final ok = await showDialog<bool>(
@@ -24,7 +24,7 @@ Future<void> confirmLogout(BuildContext context) async {
     ),
   );
   if (ok != true || !context.mounted) return;
-  await context.read<DrapeState>().logoutToWearerChoice();
+  await context.read<MineState>().logoutToWearerChoice();
   if (!context.mounted) return;
   Navigator.of(context).popUntil((route) => route.isFirst);
 }

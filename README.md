@@ -1,4 +1,4 @@
-# Drape
+# Mine
 
 Upload photos of your clothes. Each day the app shows one outfit to wear.
 

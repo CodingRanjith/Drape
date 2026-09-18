@@ -10,7 +10,8 @@ import '../models/wardrobe.dart';
 import 'persist_image.dart';
 
 class AppStore {
-  static const _key = 'drape_state_v1';
+  static const _key = 'mine_state_v1';
+  static const _legacyKey = 'drape_state_v1';
 
   Future<String> saveImage(Uint8List bytes, String id) => persistImage(bytes, id);
 
@@ -36,7 +37,7 @@ class AppStore {
   >
   load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+    final raw = prefs.getString(_key) ?? prefs.getString(_legacyKey);
     if (raw == null || raw.isEmpty) {
       return (
         profile: UserProfile(),

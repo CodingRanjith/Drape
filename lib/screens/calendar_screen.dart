@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../models/life.dart';
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/page_background.dart';
@@ -39,7 +39,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _selected = day;
       _month = DateTime(date.year, date.month);
     });
-    final pieces = context.read<DrapeState>().outfitPiecesFor(day);
+    final pieces = context.read<MineState>().outfitPiecesFor(day);
     if (pieces.isEmpty) return;
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -116,7 +116,7 @@ class _EventsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final dayEvents = state.eventsOn(selected);
 
     return ListView(
@@ -501,7 +501,7 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final look = state.partyLookById(event.partyLookId);
     final clothes = event.garmentIds
         .map(state.garmentById)

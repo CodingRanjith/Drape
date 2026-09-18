@@ -70,7 +70,7 @@ Future<void> scheduleEventAlarmImpl({
       tz.TZDateTime.from(at.toUtc(), tz.UTC),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'drape_alarms',
+          'mine_alarms',
           'Event alarms',
           channelDescription: 'Birthday, function and party reminders',
           importance: Importance.max,

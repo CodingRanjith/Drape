@@ -17,8 +17,8 @@ import '../models/wardrobe.dart';
 import '../services/alarm_tone.dart';
 import '../services/notify.dart';
 
-class DrapeState extends ChangeNotifier {
-  DrapeState({AppStore? store, Stylist? stylist})
+class MineState extends ChangeNotifier {
+  MineState({AppStore? store, Stylist? stylist})
     : _store = store ?? AppStore(),
       _stylist = stylist ?? Stylist();
 
@@ -58,7 +58,7 @@ class DrapeState extends ChangeNotifier {
       _ensureCurrentWeek();
       _syncCompletedFromWeek();
     } catch (e, st) {
-      debugPrint('Drape boot failed: $e\n$st');
+      debugPrint('Mine boot failed: $e\n$st');
       _ensureCurrentWeek();
     } finally {
       _rebuildTodayChoices();
@@ -69,7 +69,7 @@ class DrapeState extends ChangeNotifier {
       await _persist();
       await _resyncAlarms();
     } catch (e, st) {
-      debugPrint('Drape persist failed: $e\n$st');
+      debugPrint('Mine persist failed: $e\n$st');
     }
     _alarmWatch?.cancel();
     _alarmWatch = Timer.periodic(const Duration(seconds: 8), (_) {
@@ -1400,7 +1400,7 @@ class DrapeState extends ChangeNotifier {
   }
 
   Future<Uint8List> buildBackup() {
-    return DrapeBackup.encode(
+    return MineBackup.encode(
       profile: profile,
       garments: garments,
       week: week,
@@ -1428,13 +1428,13 @@ class DrapeState extends ChangeNotifier {
   Future<({int clothes, int looks, int events})> restoreBackup(
     Uint8List bytes,
   ) async {
-    final packed = DrapeBackup.decode(bytes);
+    final packed = MineBackup.decode(bytes);
     final json = packed.json;
     final importedClothes = json['garments'] as List? ?? const [];
     if (!packed.hasProfile &&
         packed.imageFiles().isEmpty &&
         importedClothes.isEmpty) {
-      throw const FormatException('This is not a Drape backup file.');
+      throw const FormatException('This is not a Mine backup file.');
     }
 
     final usedKeys = <String>{};

@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
@@ -40,7 +40,7 @@ class _WeekScreenState extends State<WeekScreen> {
 
   Future<void> _maybeSuggest() async {
     if (_didAutoSuggest || !mounted) return;
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     if (state.readySetCount < 7) return;
     _didAutoSuggest = true;
     await state.suggestWeekSets(reshuffle: state.readySetCount >= 14);
@@ -62,7 +62,7 @@ class _WeekScreenState extends State<WeekScreen> {
       );
       return;
     }
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     final sets = state.availableSetsForDay(day);
     final dresses = state.availableDressesForDay(day);
     if (sets.isEmpty && dresses.isEmpty) {
@@ -201,7 +201,7 @@ class _WeekScreenState extends State<WeekScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final days = _weekDays;
     final setCount = state.readySetCount;
     final range =

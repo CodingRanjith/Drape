@@ -47,7 +47,7 @@ class _ShellScreenState extends State<ShellScreen> {
     return Scaffold(
       backgroundColor: AppColors.parchment,
       body: IndexedStack(index: _index, children: pages),
-      bottomNavigationBar: _DrapeNavBar(
+      bottomNavigationBar: _MineNavBar(
         index: _index,
         onSelect: (i) => setState(() => _index = i),
       ),
@@ -55,8 +55,8 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 }
 
-class _DrapeNavBar extends StatelessWidget {
-  const _DrapeNavBar({required this.index, required this.onSelect});
+class _MineNavBar extends StatelessWidget {
+  const _MineNavBar({required this.index, required this.onSelect});
 
   final int index;
   final ValueChanged<int> onSelect;

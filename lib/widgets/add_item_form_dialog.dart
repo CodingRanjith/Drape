@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../logic/wardrobe_category_search.dart';
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import 'color_pick.dart';
 
@@ -59,7 +59,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   final FocusNode _categoryFocus = FocusNode();
 
   List<String> get _customShelves =>
-      context.read<DrapeState>().profile.customShelves;
+      context.read<MineState>().profile.customShelves;
 
   String? get _selectedLabel {
     if (_customShelf != null) return _customShelf;
@@ -69,7 +69,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   @override
   void initState() {
     super.initState();
-    _wearer = context.read<DrapeState>().profile.wearer;
+    _wearer = context.read<MineState>().profile.wearer;
     final allowed = _wearer.wardrobeCategories;
     final initialCustom = widget.initialCustomShelf?.trim();
     if (initialCustom != null && initialCustom.isNotEmpty) {
@@ -137,7 +137,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     _suggestions = searchWardrobeCategories(
       forceAll ? '' : _browseOrSearchQuery,
       wearer: _wearer,
-      customShelves: context.read<DrapeState>().profile.customShelves,
+      customShelves: context.read<MineState>().profile.customShelves,
     );
   }
 
@@ -186,7 +186,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   Future<void> _createCustomShelf(String name) async {
     final label = name.trim();
     if (label.isEmpty) return;
-    await context.read<DrapeState>().addCustomShelf(label);
+    await context.read<MineState>().addCustomShelf(label);
     if (!mounted) return;
     _categorySearch.removeListener(_onSearchChanged);
     setState(() {
@@ -241,7 +241,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     final existsBuiltin = _wearer.wardrobeCategories.any(
       (c) => c.label.toLowerCase() == name.toLowerCase(),
     );
-    final existsCustom = context.read<DrapeState>().profile.customShelves.any(
+    final existsCustom = context.read<MineState>().profile.customShelves.any(
       (c) => c.toLowerCase() == name.toLowerCase(),
     );
     if (existsBuiltin || existsCustom) {
@@ -378,7 +378,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     );
 
     try {
-      final state = context.read<DrapeState>();
+      final state = context.read<MineState>();
       if (custom != null) await state.addCustomShelf(custom);
       await state.saveGarment(garment, imageBytes: bytes);
       if (mounted) Navigator.pop(context, true);
@@ -405,7 +405,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     final offerCreate = canCreateCustomShelf(
       query,
       wearer: _wearer,
-      customShelves: context.watch<DrapeState>().profile.customShelves,
+      customShelves: context.watch<MineState>().profile.customShelves,
     );
 
     return Dialog(

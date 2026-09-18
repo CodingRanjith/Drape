@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -61,7 +61,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     _filled = true;
     final existing = widget.existing;
     if (existing == null) return;
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     for (final garment in state.piecesOf(existing.outfit)) {
       _pickedByShelf[garment.shelfLabel] = garment;
     }
@@ -83,7 +83,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     setState(() => _saving = true);
     try {
       final ids = _pickedByShelf.values.map((g) => g.id).toList();
-      final state = context.read<DrapeState>();
+      final state = context.read<MineState>();
       if (_editing) {
         await state.replaceClothSetPieces(
           widget.existing!.id,
@@ -106,7 +106,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final shelves = state.populatedShelves();
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final available = shelves

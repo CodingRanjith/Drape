@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
@@ -14,7 +14,7 @@ class CompletedDaysScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final week = state.week;
     final workdays = week?.days
             .where((d) => state.profile.workdays.contains(d.date.weekday))

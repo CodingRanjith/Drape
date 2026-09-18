@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
@@ -16,7 +16,7 @@ class DayLookScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final day = state.week?.forDate(date);
     if (day == null) {
       return const Scaffold(body: Center(child: Text('Day not found')));
@@ -93,7 +93,7 @@ class _Slot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -133,7 +133,7 @@ class _Slot extends StatelessWidget {
     );
   }
 
-  Future<void> _pick(BuildContext context, DrapeState state) async {
+  Future<void> _pick(BuildContext context, MineState state) async {
     final used = state.week == null
         ? <String>{}
         : {

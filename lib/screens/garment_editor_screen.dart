@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/color_pick.dart';
@@ -90,7 +90,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
       return false;
     }
     _garment.name = name;
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     await state.saveGarment(
       _garment,
       imageBytes: _pickedBytes,
@@ -132,7 +132,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final preview = _pickedBytes != null
         ? MemoryImage(_pickedBytes!)
         : garmentImageProvider(_garment.imagePath);

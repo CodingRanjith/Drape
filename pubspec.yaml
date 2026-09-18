@@ -1,5 +1,5 @@
-name: drape
-description: Drape by Techackode — upload your clothes and see what to wear each day. Developed by Ranjith Kumar C & Gayathri B.
+name: mine
+description: Mine by Techackode — upload your clothes and see what to wear each day. Developed by Ranjith Kumar C & Gayathri B.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -42,7 +42,7 @@ flutter_launcher_icons:
   windows:
     generate: true
   image_path: assets/brand/app_icon.png
-  adaptive_icon_background: "#1C1612"
+  adaptive_icon_background: "#F5F0EA"
   adaptive_icon_foreground: assets/brand/app_icon.png
   min_sdk_android: 21
 

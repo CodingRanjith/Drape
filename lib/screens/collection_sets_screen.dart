@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
@@ -29,7 +29,7 @@ class CollectionSetsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final sets = state.setsFor(collection);
 
     return PageBackground(
@@ -269,7 +269,7 @@ class _SetDetailsPopup extends StatelessWidget {
   }
 
   Future<void> _addFromWardrobe(BuildContext context, ClothSet set) async {
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     final shelves = state.populatedShelves();
     if (shelves.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -382,13 +382,13 @@ class _SetDetailsPopup extends StatelessWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    await context.read<DrapeState>().deleteClothSet(set.id);
+    await context.read<MineState>().deleteClothSet(set.id);
     if (context.mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final set = state.clothSetById(setId);
     if (set == null) {
       return const SizedBox.shrink();

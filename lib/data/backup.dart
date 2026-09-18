@@ -51,7 +51,7 @@ class PackedBackup {
       files.entries.where((e) => isImageZipEntry(e.key));
 }
 
-class DrapeBackup {
+class MineBackup {
   static const version = 1;
   static const jsonName = 'backup.json';
 

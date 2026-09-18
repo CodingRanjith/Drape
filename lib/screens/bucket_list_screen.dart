@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/bucket_list.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/garment_photo.dart';
@@ -82,7 +82,7 @@ class _BucketListScreenState extends State<BucketListScreen>
       builder: (context) => _BucketEditorSheet(existing: existing),
     );
     if (!mounted || result == null) return;
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     final isExisting = existing != null && existing.id != 'draft';
     if (!isExisting) {
       await state.addBucketItem(
@@ -105,7 +105,7 @@ class _BucketListScreenState extends State<BucketListScreen>
   }
 
   Future<void> _complete(StyleBucketItem item, Offset global) async {
-    await context.read<DrapeState>().completeBucketItem(item.id);
+    await context.read<MineState>().completeBucketItem(item.id);
     if (!mounted) return;
     await _celebrate(global);
     if (!mounted) return;
@@ -120,7 +120,7 @@ class _BucketListScreenState extends State<BucketListScreen>
         action: SnackBarAction(
           label: 'Undo',
           textColor: AppColors.terracottaSoft,
-          onPressed: () => context.read<DrapeState>().reopenBucketItem(item.id),
+          onPressed: () => context.read<MineState>().reopenBucketItem(item.id),
         ),
       ),
     );
@@ -128,7 +128,7 @@ class _BucketListScreenState extends State<BucketListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<DrapeState>();
+    final state = context.watch<MineState>();
     final open = state.openBucketItems;
     final done = state.completedBucketItems;
     final total = state.bucketList.length;
@@ -234,7 +234,7 @@ class _BucketListScreenState extends State<BucketListScreen>
                           onAdd: () => _openEditor(),
                           onEdit: (item) => _openEditor(existing: item),
                           onStar: (item) =>
-                              context.read<DrapeState>().toggleBucketStar(item.id),
+                              context.read<MineState>().toggleBucketStar(item.id),
                           onPrimary: (item, offset) => _complete(item, offset),
                           primaryLabel: 'Done',
                           primaryIcon: Icons.check_rounded,
@@ -247,10 +247,10 @@ class _BucketListScreenState extends State<BucketListScreen>
                           onAdd: () => _tabs.animateTo(0),
                           onEdit: (item) => _openEditor(existing: item),
                           onStar: (item) =>
-                              context.read<DrapeState>().toggleBucketStar(item.id),
+                              context.read<MineState>().toggleBucketStar(item.id),
                           onPrimary: (item, _) async {
                             await context
-                                .read<DrapeState>()
+                                .read<MineState>()
                                 .reopenBucketItem(item.id);
                             HapticFeedback.selectionClick();
                           },
@@ -593,7 +593,7 @@ class _BucketListPane extends StatelessWidget {
                 ),
               );
               if (ok == true && context.mounted) {
-                await context.read<DrapeState>().deleteBucketItem(item.id);
+                await context.read<MineState>().deleteBucketItem(item.id);
               }
             },
           ),

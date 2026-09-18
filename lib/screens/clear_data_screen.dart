@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/page_background.dart';
@@ -21,7 +21,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
   var _busy = false;
 
   String get _expectedName {
-    final name = context.read<DrapeState>().profile.name.trim();
+    final name = context.read<MineState>().profile.name.trim();
     if (name.isEmpty || name == 'there') return 'CLEAR';
     return name;
   }
@@ -69,7 +69,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
     if (!_matches || _busy) return;
     setState(() => _busy = true);
     try {
-      await context.read<DrapeState>().clearAllData();
+      await context.read<MineState>().clearAllData();
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       await showGeneralDialog<void>(
@@ -93,7 +93,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
         },
       );
       if (!mounted) return;
-      await context.read<DrapeState>().logoutToWearerChoice();
+      await context.read<MineState>().logoutToWearerChoice();
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (_) {

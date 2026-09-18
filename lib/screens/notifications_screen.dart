@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/notice.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/page_background.dart';
@@ -23,13 +23,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<DrapeState>().markNoticesRead();
+      context.read<MineState>().markNoticesRead();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final feed = context.watch<DrapeState>().notificationFeed;
+    final feed = context.watch<MineState>().notificationFeed;
 
     return PageBackground(
       child: Scaffold(
@@ -104,7 +104,7 @@ class _NoticeCard extends StatelessWidget {
     final eventId = notice.id.startsWith('live-event-')
         ? notice.id.substring('live-event-'.length)
         : null;
-    final state = context.read<DrapeState>();
+    final state = context.read<MineState>();
     final event = eventId == null ? null : state.eventById(eventId);
 
     return Material(

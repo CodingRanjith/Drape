@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../product.dart';
 import '../theme/app_theme.dart';
 
 class SplashWalkthroughScreen extends StatefulWidget {
@@ -197,7 +198,7 @@ class _WalkthroughPage extends StatelessWidget {
                     else
                       const SizedBox(width: 8),
                     Text(
-                      'Mine',
+                      MineProduct.appName,
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,

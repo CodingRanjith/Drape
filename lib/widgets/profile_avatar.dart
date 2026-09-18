@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../app_nav.dart';
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import 'garment_photo.dart';
 
@@ -69,7 +69,7 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profile = context.watch<DrapeState>().profile;
+    final profile = context.watch<MineState>().profile;
     final path = photoPath ?? profile.photoPath;
     final photo = imageBytes != null
         ? MemoryImage(imageBytes!)

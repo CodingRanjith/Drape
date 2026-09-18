@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/life.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/page_background.dart';
@@ -132,7 +132,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     _event
       ..title = title
       ..notes = _notes.text.trim();
-    await context.read<DrapeState>().saveEvent(
+    await context.read<MineState>().saveEvent(
           _event,
           musicBytes: _musicBytes,
           musicExt: _musicExt,

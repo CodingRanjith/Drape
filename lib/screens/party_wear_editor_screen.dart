@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/life.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/garment_photo.dart';
@@ -63,7 +63,7 @@ class _PartyWearEditorScreenState extends State<PartyWearEditorScreen> {
       return;
     }
     _look.name = name;
-    await context.read<DrapeState>().savePartyLook(_look, imageBytes: _photo);
+    await context.read<MineState>().savePartyLook(_look, imageBytes: _photo);
     if (mounted) Navigator.pop(context);
   }
 

@@ -314,7 +314,7 @@ class _LogoPrepageScreenState extends State<LogoPrepageScreen>
                             child: Column(
                               children: [
                                 Text(
-                                  DrapeProduct.tagline,
+                                  MineProduct.tagline,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
@@ -325,7 +325,7 @@ class _LogoPrepageScreenState extends State<LogoPrepageScreen>
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  DrapeProduct.productLine,
+                                  MineProduct.productLine,
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11,
@@ -438,7 +438,7 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const word = 'Mine';
+    final word = MineProduct.appName;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

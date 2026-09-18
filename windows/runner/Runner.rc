@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.drape" "\0"
-            VALUE "FileDescription", "Drape" "\0"
+            VALUE "CompanyName", "Techackode" "\0"
+            VALUE "FileDescription", "Mine" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "drape" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.drape. All rights reserved." "\0"
-            VALUE "OriginalFilename", "drape.exe" "\0"
-            VALUE "ProductName", "Drape" "\0"
+            VALUE "InternalName", "mine" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Techackode. All rights reserved." "\0"
+            VALUE "OriginalFilename", "mine.exe" "\0"
+            VALUE "ProductName", "Mine" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

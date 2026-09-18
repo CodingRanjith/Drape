@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 
 Future<void> pickClothesType(
@@ -10,7 +10,7 @@ Future<void> pickClothesType(
   required void Function(ClothesType type) onPick,
   String title = 'Add to this set',
 }) async {
-  final wearer = context.read<DrapeState>().profile.wearer;
+  final wearer = context.read<MineState>().profile.wearer;
   final types = ClothesType.forWearer(wearer);
   final picked = await showDialog<ClothesType>(
     context: context,

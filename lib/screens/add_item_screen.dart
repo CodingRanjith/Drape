@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/page_background.dart';
@@ -133,7 +133,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       cost: cost,
     );
 
-    await context.read<DrapeState>().saveGarment(garment, imageBytes: bytes);
+    await context.read<MineState>().saveGarment(garment, imageBytes: bytes);
     if (mounted) Navigator.pop(context, true);
   }
 

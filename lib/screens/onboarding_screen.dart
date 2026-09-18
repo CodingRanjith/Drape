@@ -7,7 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../product.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -41,7 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_filled) return;
-    final profile = context.read<DrapeState>().profile;
+    final profile = context.read<MineState>().profile;
     if (profile.name.isNotEmpty && profile.name != 'there') {
       _name.text = profile.name;
     }
@@ -95,7 +96,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       );
       return;
     }
-    await context.read<DrapeState>().completeOnboarding(
+    await context.read<MineState>().completeOnboarding(
       name: _name.text,
       workdays: {1, 2, 3, 4, 5},
       workStyle: Formality.smartCasual,
@@ -167,7 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mine',
+                    MineProduct.appName,
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
@@ -194,7 +195,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               Text(
                                 _photoBytes != null ||
                                         (context
-                                                .watch<DrapeState>()
+                                                .watch<MineState>()
                                                 .profile
                                                 .photoPath
                                                 ?.isNotEmpty ??

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/wardrobe.dart';
-import '../state/drape_state.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 
 class PageBackground extends StatelessWidget {
@@ -24,7 +24,7 @@ class PageBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wearer = context.watch<DrapeState>().profile.wearer;
+    final wearer = context.watch<MineState>().profile.wearer;
     final size = MediaQuery.sizeOf(context);
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final cacheWidth = (size.width * dpr).round().clamp(1, 4096);

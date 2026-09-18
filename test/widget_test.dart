@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:drape/data/sample_closet.dart';
-import 'package:drape/logic/stylist.dart';
-import 'package:drape/models/wardrobe.dart';
+import 'package:mine/data/sample_closet.dart';
+import 'package:mine/logic/stylist.dart';
+import 'package:mine/models/wardrobe.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:drape/data/backup.dart';
-import 'package:drape/data/excel_backup.dart';
-import 'package:drape/data/excel_sheet.dart';
-import 'package:drape/models/wardrobe.dart';
+import 'package:mine/data/backup.dart';
+import 'package:mine/data/excel_backup.dart';
+import 'package:mine/data/excel_sheet.dart';
+import 'package:mine/models/wardrobe.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -26,8 +26,8 @@ void main() {
       'completedDays': const ['2026-08-21'],
     };
 
-    final zip = DrapeBackup.zipOf(json, {'media/garments/g1.jpg': photo});
-    final packed = DrapeBackup.decode(zip);
+    final zip = MineBackup.zipOf(json, {'media/garments/g1.jpg': photo});
+    final packed = MineBackup.decode(zip);
 
     expect(packed.json['garments'], isNotEmpty);
     expect(packed.fileFor('media/garments/g1.jpg'), photo);
@@ -51,7 +51,7 @@ void main() {
     );
     expect(SimpleXlsx.isXlsx(bytes), isTrue);
 
-    final packed = DrapeBackup.decode(bytes);
+    final packed = MineBackup.decode(bytes);
     final clothes = packed.json['garments'] as List;
     expect(clothes, isNotEmpty);
     expect(clothes.first['name'], 'Linen shirt');
@@ -74,18 +74,18 @@ void main() {
         ).toJson(),
       ],
     };
-    final zip = DrapeBackup.zipOf(json, {'Folder/media/garments/g2.jpg': photo});
-    final packed = DrapeBackup.decode(zip);
+    final zip = MineBackup.zipOf(json, {'Folder/media/garments/g2.jpg': photo});
+    final packed = MineBackup.decode(zip);
     expect(packed.fileFor('media/garments/g2.jpg', id: 'g2'), photo);
   });
 
   test('zip of uploaded photos can be imported without backup.json', () {
     final photo = Uint8List.fromList([7, 7, 7, 7]);
-    final zip = DrapeBackup.zipOf(
+    final zip = MineBackup.zipOf(
       {'filesOnly': true, 'garments': const []},
       {'photos/office-top.jpg': photo},
     );
-    final packed = DrapeBackup.decode(zip);
+    final packed = MineBackup.decode(zip);
     expect(packed.hasProfile, isFalse);
     expect(packed.imageFiles().single.value, photo);
   });
