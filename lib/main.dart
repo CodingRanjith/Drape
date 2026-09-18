@@ -85,7 +85,7 @@ class _DrapeRootState extends State<DrapeRoot> with WidgetsBindingObserver {
     return ChangeNotifierProvider.value(
       value: _state,
       child: MaterialApp(
-        title: 'Drape',
+        title: 'Mine',
         navigatorKey: appNavigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),

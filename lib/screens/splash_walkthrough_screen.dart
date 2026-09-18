@@ -30,7 +30,7 @@ class _SplashWalkthroughScreenState extends State<SplashWalkthroughScreen> {
       image: 'assets/walkthrough/closet.png',
       title: 'Your Closet, Elevated',
       body:
-          'Photograph every piece once. Drape keeps your wardrobe organized, ready, and easy to mix into beautiful looks.',
+          'Photograph every piece once. Mine keeps your wardrobe organized, ready, and easy to mix into beautiful looks.',
       wash: Color(0xFF1F6F6A),
     ),
     _Slide(
@@ -197,7 +197,7 @@ class _WalkthroughPage extends StatelessWidget {
                     else
                       const SizedBox(width: 8),
                     Text(
-                      'Drape',
+                      'Mine',
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,

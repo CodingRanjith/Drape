@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../product.dart';
 import '../theme/app_theme.dart';
 
 /// Cinematic brand intro with motion + sound.
@@ -310,15 +311,32 @@ class _LogoPrepageScreenState extends State<LogoPrepageScreen>
                           opacity: _tagFade.value,
                           child: Transform.translate(
                             offset: Offset(0, (1 - _tagFade.value) * 10),
-                            child: Text(
-                              'Wear what loves you back',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: _tagTrack.value,
-                                color: AppColors.muted,
-                              ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  DrapeProduct.tagline,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: _tagTrack.value,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  DrapeProduct.productLine,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                    color: AppColors.muted.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -420,7 +438,7 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const word = 'Drape';
+    const word = 'Mine';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

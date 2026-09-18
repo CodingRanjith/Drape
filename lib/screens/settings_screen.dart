@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../data/backup_share.dart';
 import '../models/wardrobe.dart';
+import '../product.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
@@ -160,6 +161,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         danger: true,
                         onTap: _busy ? null : _openClearData,
                       ),
+                      _MenuRow(
+                        title: 'About',
+                        value: DrapeProduct.company,
+                        groupEnd: true,
+                        onTap: _showAbout,
+                      ),
                       if (_busy) ...[
                         const SizedBox(height: 12),
                         const Center(child: CircularProgressIndicator()),
@@ -174,6 +181,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         ),
       ),
+    );
+  }
+
+  Future<void> _showAbout() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DrapeProduct.appName,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  DrapeProduct.productLine,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.terracotta,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  DrapeProduct.shortDescription,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  DrapeProduct.developedBy,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
