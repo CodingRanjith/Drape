@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/closet_add.dart';
 import '../widgets/page_background.dart';
-import '../widgets/profile_avatar.dart';
 import 'collection_sets_screen.dart';
 import 'garment_editor_screen.dart';
 
@@ -24,14 +23,8 @@ class AddClothesScreen extends StatelessWidget {
         appBar: AppBar(
           leading: const AppBackIcon(),
           title: const Text('My outfit'),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Center(child: ProfileAvatar()),
-            ),
-          ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton(
           onPressed: () => pickClothesType(
             context,
             title: 'Add clothes',
@@ -46,8 +39,7 @@ class AddClothesScreen extends StatelessWidget {
               );
             },
           ),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add clothes'),
+          child: const Icon(Icons.add_rounded),
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),

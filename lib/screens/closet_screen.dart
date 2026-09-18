@@ -126,10 +126,9 @@ class ClosetScreen extends StatelessWidget {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton(
           onPressed: () => _openAddForm(context),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add items'),
+          child: const Icon(Icons.add_rounded),
         ),
         body: rows.isEmpty
             ? _EmptyWardrobe(onAdd: () => _openAddForm(context))

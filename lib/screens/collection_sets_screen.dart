@@ -8,7 +8,6 @@ import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/closet_add.dart';
 import '../widgets/common.dart';
-import '../widgets/settings_button.dart';
 import '../widgets/swipe_arrow_row.dart';
 import 'garment_detail_screen.dart';
 import 'garment_editor_screen.dart';
@@ -189,12 +188,10 @@ class _CollectionSetsScreenState extends State<CollectionSetsScreen> {
       appBar: AppBar(
         leading: const AppBackIcon(),
         title: Text(collection.label),
-        actions: const [SettingsButton()],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddMenu(state),
-        icon: const Icon(Icons.add),
-        label: Text(hasContent ? 'Add' : 'Add first item'),
+        child: const Icon(Icons.add_rounded),
       ),
       body: !hasContent
           ? _ComingSoonEmpty(onAdd: () => _showAddMenu(state))

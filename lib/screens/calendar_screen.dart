@@ -10,7 +10,6 @@ import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/page_background.dart';
-import '../widgets/profile_avatar.dart';
 import 'event_editor_screen.dart';
 import 'outfit_full_view_screen.dart';
 
@@ -55,38 +54,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
       overlayColor: const Color(0xF2F7F7F7),
       child: Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => EventEditorScreen(initialDate: _selected),
           ),
         ),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Reminder'),
+        child: const Icon(Icons.add_rounded),
       ),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Your Outfit Calendar',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 26,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8),
-                    child: ProfileAvatar(radius: 20),
-                  ),
-                ],
+              child: Text(
+                'Your Outfit Calendar',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 26,
+                  height: 1.15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             const SizedBox(height: 16),

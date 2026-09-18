@@ -8,7 +8,6 @@ import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/page_background.dart';
-import '../widgets/profile_avatar.dart';
 import 'full_look_screen.dart';
 import 'notifications_screen.dart';
 
@@ -31,12 +30,6 @@ class TodayScreen extends StatelessWidget {
         appBar: AppBar(
         leading: const AppBackIcon(),
         title: const Text('Home'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Center(child: ProfileAvatar()),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),

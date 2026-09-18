@@ -77,8 +77,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                  ProfileAvatar(radius: 20, onTap: _changePhoto),
-                  const SizedBox(width: 4),
                   _LogoutMark(onTap: () => confirmLogout(context)),
                 ],
               ),

@@ -133,10 +133,9 @@ class _BucketListScreenState extends State<BucketListScreen>
       overlayColor: const Color(0xF0F7F7F7),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton(
           onPressed: () => _openEditor(),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('New dream'),
+          child: const Icon(Icons.add_rounded),
         ),
         body: Stack(
           children: [

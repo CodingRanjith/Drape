@@ -12,7 +12,6 @@ import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
 import '../widgets/page_background.dart';
-import '../widgets/profile_avatar.dart';
 import 'event_editor_screen.dart';
 import 'garment_detail_screen.dart';
 import 'outfit_full_view_screen.dart';
@@ -172,15 +171,11 @@ class _WeekScreenState extends State<WeekScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         floatingActionButton: lookCount >= 7
-            ? FloatingActionButton.extended(
+            ? FloatingActionButton(
                 onPressed: () => state.suggestWeekSets(reshuffle: true),
                 backgroundColor: AppColors.ink,
                 foregroundColor: Colors.white,
-                icon: const Icon(Icons.casino_outlined),
-                label: Text(
-                  lookCount >= 14 ? 'New random week' : 'Suggest week',
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-                ),
+                child: const Icon(Icons.casino_outlined),
               )
             : null,
         body: SafeArea(
@@ -202,10 +197,6 @@ class _WeekScreenState extends State<WeekScreen> {
                           color: AppColors.ink,
                         ),
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: ProfileAvatar(radius: 20),
                     ),
                   ],
                 ),
