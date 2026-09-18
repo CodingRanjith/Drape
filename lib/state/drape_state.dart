@@ -9,6 +9,7 @@ import '../data/backup.dart';
 import '../data/media_bytes.dart';
 import '../data/persist_image.dart';
 import '../logic/stylist.dart';
+import '../models/bucket_list.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
 import '../services/alarm_tone.dart';
@@ -35,6 +36,7 @@ class DrapeState extends ChangeNotifier {
   List<PartyLook> partyLooks = [];
   Set<String> completedDays = {};
   List<ClothSet> clothSets = [];
+  List<StyleBucketItem> bucketList = [];
   LifeEvent? ringingEvent;
   void Function(String eventId)? onShowAlarm;
 
@@ -48,6 +50,7 @@ class DrapeState extends ChangeNotifier {
       partyLooks = data.partyLooks;
       completedDays = {...data.completedDays};
       clothSets = data.clothSets;
+      bucketList = data.bucketList;
       _ensureCurrentWeek();
       _syncCompletedFromWeek();
     } catch (e, st) {
@@ -115,6 +118,7 @@ class DrapeState extends ChangeNotifier {
     partyLooks: partyLooks,
     completedDays: completedDays,
     clothSets: clothSets,
+    bucketList: bucketList,
   );
 
   Future<void> completeWalkthrough() async {
@@ -186,6 +190,7 @@ class DrapeState extends ChangeNotifier {
     partyLooks = [];
     completedDays = {};
     clothSets = [];
+    bucketList = [];
     todayChoices = [];
     todayIndex = 0;
     ringingEvent = null;
@@ -774,6 +779,102 @@ class DrapeState extends ChangeNotifier {
     await _persist();
   }
 
+  List<StyleBucketItem> get openBucketItems {
+    final items = bucketList.where((b) => !b.isCompleted).toList();
+    items.sort((a, b) {
+      if (a.starred != b.starred) return a.starred ? -1 : 1;
+      return b.createdAt.compareTo(a.createdAt);
+    });
+    return items;
+  }
+
+  List<StyleBucketItem> get completedBucketItems {
+    final items = bucketList.where((b) => b.isCompleted).toList();
+    items.sort(
+      (a, b) => (b.completedAt ?? b.createdAt).compareTo(
+        a.completedAt ?? a.createdAt,
+      ),
+    );
+    return items;
+  }
+
+  double get bucketProgress {
+    if (bucketList.isEmpty) return 0;
+    return completedBucketItems.length / bucketList.length;
+  }
+
+  StyleBucketItem? bucketById(String id) {
+    for (final item in bucketList) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
+  Future<StyleBucketItem> addBucketItem({
+    required String title,
+    String note = '',
+    BucketVibe vibe = BucketVibe.styleChallenge,
+  }) async {
+    final item = StyleBucketItem(
+      id: _uuid.v4(),
+      title: title.trim().isEmpty ? 'New style dream' : title.trim(),
+      note: note.trim(),
+      vibe: vibe,
+    );
+    bucketList = [item, ...bucketList];
+    notifyListeners();
+    await _persist();
+    return item;
+  }
+
+  Future<void> updateBucketItem(
+    String id, {
+    String? title,
+    String? note,
+    BucketVibe? vibe,
+  }) async {
+    final item = bucketById(id);
+    if (item == null) return;
+    if (title != null) {
+      final next = title.trim();
+      if (next.isNotEmpty) item.title = next;
+    }
+    if (note != null) item.note = note.trim();
+    if (vibe != null) item.vibe = vibe;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> toggleBucketStar(String id) async {
+    final item = bucketById(id);
+    if (item == null) return;
+    item.starred = !item.starred;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> completeBucketItem(String id) async {
+    final item = bucketById(id);
+    if (item == null || item.isCompleted) return;
+    item.completedAt = DateTime.now();
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> reopenBucketItem(String id) async {
+    final item = bucketById(id);
+    if (item == null || !item.isCompleted) return;
+    item.completedAt = null;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> deleteBucketItem(String id) async {
+    bucketList = bucketList.where((b) => b.id != id).toList();
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> assignToClothSet(
     String setId,
     GarmentCategory category,
@@ -1146,6 +1247,7 @@ class DrapeState extends ChangeNotifier {
       partyLooks: partyLooks,
       completedDays: completedDays,
       clothSets: clothSets,
+      bucketList: bucketList,
     );
   }
 
@@ -1174,6 +1276,9 @@ class DrapeState extends ChangeNotifier {
           .toSet();
       clothSets = ((json['clothSets'] as List?) ?? const [])
           .map((e) => ClothSet.fromJson(e as Map<String, dynamic>))
+          .toList();
+      bucketList = ((json['bucketList'] as List?) ?? const [])
+          .map((e) => StyleBucketItem.fromJson(e as Map<String, dynamic>))
           .toList();
     }
 

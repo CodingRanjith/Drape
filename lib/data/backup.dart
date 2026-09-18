@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
+import '../models/bucket_list.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
 import 'media_bytes.dart';
@@ -60,6 +61,7 @@ class DrapeBackup {
     required List<PartyLook> partyLooks,
     required Set<String> completedDays,
     List<ClothSet> clothSets = const [],
+    List<StyleBucketItem> bucketList = const [],
   }) async {
     final files = <String, Uint8List>{};
 
@@ -118,6 +120,7 @@ class DrapeBackup {
       'partyLooks': lookMaps,
       'completedDays': completedDays.toList(),
       'clothSets': clothSets.map((s) => s.toJson()).toList(),
+      'bucketList': bucketList.map((b) => b.toJson()).toList(),
     };
 
     return zipOf(json, files);
@@ -183,6 +186,7 @@ class DrapeBackup {
       'partyLooks': const [],
       'completedDays': const [],
       'clothSets': const [],
+      'bucketList': const [],
     };
     return PackedBackup(json: json, files: files);
   }

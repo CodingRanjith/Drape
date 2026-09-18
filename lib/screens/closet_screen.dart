@@ -8,8 +8,8 @@ import '../widgets/add_item_form_dialog.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/page_background.dart';
-import '../widgets/profile_avatar.dart';
 import 'add_clothes_screen.dart';
+import 'bucket_list_screen.dart';
 import 'garment_detail_screen.dart';
 
 class ClosetScreen extends StatelessWidget {
@@ -96,32 +96,33 @@ class ClosetScreen extends StatelessWidget {
           title: const Text('My Wardrobe'),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 12),
               child: Center(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AddClothesScreen(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _HeaderActionChip(
+                      label: 'My outfit',
+                      background: AppColors.terracottaSoft,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AddClothesScreen(),
+                        ),
+                      ),
                     ),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.ink,
-                    backgroundColor: AppColors.terracottaSoft,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                    const SizedBox(width: 8),
+                    _HeaderActionChip(
+                      label: 'My Bucketlist',
+                      background: AppColors.sageSoft,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BucketListScreen(),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'My outfit',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                  ),
+                  ],
                 ),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Center(child: ProfileAvatar()),
             ),
           ],
         ),
@@ -189,6 +190,39 @@ class _ShelfRowData {
   final WardrobeCategory? category;
   final String? customShelf;
   final List<Garment> garments;
+}
+
+class _HeaderActionChip extends StatelessWidget {
+  const _HeaderActionChip({
+    required this.label,
+    required this.background,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color background;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.ink,
+        backgroundColor: background,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+      ),
+    );
+  }
 }
 
 class _EmptyWardrobe extends StatelessWidget {

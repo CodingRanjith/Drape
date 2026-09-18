@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/bucket_list.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
 import 'persist_image.dart';
@@ -28,6 +29,7 @@ class AppStore {
       List<PartyLook> partyLooks,
       Set<String> completedDays,
       List<ClothSet> clothSets,
+      List<StyleBucketItem> bucketList,
     })
   >
   load() async {
@@ -42,6 +44,7 @@ class AppStore {
         partyLooks: <PartyLook>[],
         completedDays: <String>{},
         clothSets: <ClothSet>[],
+        bucketList: <StyleBucketItem>[],
       );
     }
     final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -65,6 +68,9 @@ class AppStore {
       clothSets: ((json['clothSets'] as List?) ?? const [])
           .map((e) => ClothSet.fromJson(e as Map<String, dynamic>))
           .toList(),
+      bucketList: ((json['bucketList'] as List?) ?? const [])
+          .map((e) => StyleBucketItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -76,6 +82,7 @@ class AppStore {
     required List<PartyLook> partyLooks,
     required Set<String> completedDays,
     required List<ClothSet> clothSets,
+    required List<StyleBucketItem> bucketList,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -88,6 +95,7 @@ class AppStore {
         'partyLooks': partyLooks.map((e) => e.toJson()).toList(),
         'completedDays': completedDays.toList(),
         'clothSets': clothSets.map((s) => s.toJson()).toList(),
+        'bucketList': bucketList.map((b) => b.toJson()).toList(),
       }),
     );
   }
