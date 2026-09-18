@@ -624,6 +624,10 @@ enum StyleCollection {
   marriageFunctions,
   outing,
   western,
+  traditional,
+  casual,
+  festival,
+  travel,
 }
 
 extension StyleCollectionX on StyleCollection {
@@ -634,6 +638,10 @@ extension StyleCollectionX on StyleCollection {
     StyleCollection.marriageFunctions => 'Marriage and functions',
     StyleCollection.outing => 'Outing',
     StyleCollection.western => 'Western',
+    StyleCollection.traditional => 'Traditional',
+    StyleCollection.casual => 'Casual',
+    StyleCollection.festival => 'Festival',
+    StyleCollection.travel => 'Travel',
   };
 
   String get subtitle => switch (this) {
@@ -643,16 +651,42 @@ extension StyleCollectionX on StyleCollection {
     StyleCollection.marriageFunctions => 'Wedding and function looks',
     StyleCollection.outing => 'Casual outing looks',
     StyleCollection.western => 'Western wear looks',
+    StyleCollection.traditional => 'Ethnic and traditional looks',
+    StyleCollection.casual => 'Everyday easy looks',
+    StyleCollection.festival => 'Festival and celebration looks',
+    StyleCollection.travel => 'Trip-ready outfits',
   };
 
-  String get coverAsset => switch (this) {
-    StyleCollection.officeWear => 'assets/walkthrough/style.png',
-    StyleCollection.nightDress => 'assets/walkthrough/week.png',
-    StyleCollection.partyWear => 'assets/girl1.jpg',
-    StyleCollection.marriageFunctions => 'assets/walkthrough/today.png',
-    StyleCollection.outing => 'assets/walkthrough/closet.png',
-    StyleCollection.western => 'assets/gender_female.png',
-  };
+  String get coverAsset => coverAssetFor(Wearer.woman);
+
+  String coverAssetFor(Wearer wearer) {
+    if (wearer == Wearer.man) {
+      return switch (this) {
+        StyleCollection.officeWear => 'assets/gender_male.png',
+        StyleCollection.nightDress => 'assets/men1.webp',
+        StyleCollection.partyWear => 'assets/men1.webp',
+        StyleCollection.marriageFunctions => 'assets/gender_male.png',
+        StyleCollection.outing => 'assets/men1.webp',
+        StyleCollection.western => 'assets/gender_male.png',
+        StyleCollection.traditional => 'assets/gender_male.png',
+        StyleCollection.casual => 'assets/men1.webp',
+        StyleCollection.festival => 'assets/gender_male.png',
+        StyleCollection.travel => 'assets/men1.webp',
+      };
+    }
+    return switch (this) {
+      StyleCollection.officeWear => 'assets/gender_female.png',
+      StyleCollection.nightDress => 'assets/walkthrough/week.png',
+      StyleCollection.partyWear => 'assets/girl1.jpg',
+      StyleCollection.marriageFunctions => 'assets/walkthrough/today.png',
+      StyleCollection.outing => 'assets/walkthrough/closet.png',
+      StyleCollection.western => 'assets/girl1.jpg',
+      StyleCollection.traditional => 'assets/gender_female.png',
+      StyleCollection.casual => 'assets/walkthrough/closet.png',
+      StyleCollection.festival => 'assets/girl1.jpg',
+      StyleCollection.travel => 'assets/walkthrough/today.png',
+    };
+  }
 
   List<Color> get coverGradient => switch (this) {
     StyleCollection.officeWear => const [Color(0xFF3F5E51), Color(0xFF1C1612)],
@@ -664,6 +698,10 @@ extension StyleCollectionX on StyleCollection {
     ],
     StyleCollection.outing => const [Color(0xFF3D6EA8), Color(0xFF1C1612)],
     StyleCollection.western => const [Color(0xFFC45C26), Color(0xFF1C1612)],
+    StyleCollection.traditional => const [Color(0xFF8B3A3A), Color(0xFF1C1612)],
+    StyleCollection.casual => const [Color(0xFF5A6B4F), Color(0xFF1C1612)],
+    StyleCollection.festival => const [Color(0xFF9B4D1B), Color(0xFF1C1612)],
+    StyleCollection.travel => const [Color(0xFF2F5D7C), Color(0xFF1C1612)],
   };
 
   IconData get icon => switch (this) {
@@ -673,6 +711,10 @@ extension StyleCollectionX on StyleCollection {
     StyleCollection.marriageFunctions => Icons.favorite_border_rounded,
     StyleCollection.outing => Icons.park_outlined,
     StyleCollection.western => Icons.dry_cleaning_outlined,
+    StyleCollection.traditional => Icons.spa_outlined,
+    StyleCollection.casual => Icons.weekend_outlined,
+    StyleCollection.festival => Icons.auto_awesome_outlined,
+    StyleCollection.travel => Icons.flight_takeoff_rounded,
   };
 }
 

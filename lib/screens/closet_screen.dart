@@ -91,40 +91,59 @@ class ClosetScreen extends StatelessWidget {
     return PageBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          leading: const AppBackIcon(),
-          title: const Text('My Wardrobe'),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _HeaderActionChip(
-                      label: 'My outfit',
-                      background: AppColors.terracottaSoft,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AddClothesScreen(),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(96),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const AppBackIcon(),
+                      Expanded(
+                        child: Text(
+                          'My Wardrobe',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _HeaderActionChip(
-                      label: 'My Bucketlist',
-                      background: AppColors.sageSoft,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const BucketListScreen(),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _HeaderActionChip(
+                        label: 'My outfit',
+                        background: AppColors.terracottaSoft,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AddClothesScreen(),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 8),
+                      _HeaderActionChip(
+                        label: 'My Bucketlist',
+                        background: AppColors.sageSoft,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BucketListScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _openAddForm(context),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +11,7 @@ import '../models/bucket_list.dart';
 import '../state/drape_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
+import '../widgets/garment_photo.dart';
 import '../widgets/page_background.dart';
 
 class BucketListScreen extends StatefulWidget {
@@ -87,6 +89,7 @@ class _BucketListScreenState extends State<BucketListScreen>
         title: result.title,
         note: result.note,
         vibe: result.vibe,
+        imageBytes: result.imageBytes,
       );
       HapticFeedback.lightImpact();
     } else {
@@ -95,6 +98,8 @@ class _BucketListScreenState extends State<BucketListScreen>
         title: result.title,
         note: result.note,
         vibe: result.vibe,
+        imageBytes: result.imageBytes,
+        clearImage: result.clearImage,
       );
     }
   }
@@ -628,13 +633,16 @@ class _BucketCard extends StatelessWidget {
         ? 'Celebrated ${DateFormat('d MMM').format(date)}'
         : 'Pinned ${DateFormat('d MMM').format(date)}';
 
+    final photo = garmentImageProvider(item.imagePath);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
+        borderRadius: BorderRadius.circular(24),
         child: InkWell(
           onTap: onEdit,
-          borderRadius: BorderRadius.circular(24),
           child: Ink(
             decoration: BoxDecoration(
               color: const Color(0xF7FFFFFF),
@@ -645,25 +653,33 @@ class _BucketCard extends StatelessWidget {
                     : AppColors.line,
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (photo != null)
+                  AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: Image(image: photo, fit: BoxFit.cover),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: item.vibe.soft,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(item.vibe.icon, color: item.vibe.accent),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: item.vibe.soft,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(item.vibe.icon, color: item.vibe.accent),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -792,10 +808,12 @@ class _BucketCard extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -804,11 +822,15 @@ class _BucketDraft {
     required this.title,
     required this.note,
     required this.vibe,
+    this.imageBytes,
+    this.clearImage = false,
   });
 
   final String title;
   final String note;
   final BucketVibe vibe;
+  final Uint8List? imageBytes;
+  final bool clearImage;
 }
 
 class _BucketEditorSheet extends StatefulWidget {
@@ -824,6 +846,10 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
   late final TextEditingController _title;
   late final TextEditingController _note;
   late BucketVibe _vibe;
+  Uint8List? _imageBytes;
+  late String? _existingImagePath;
+  bool _clearImage = false;
+  bool _processing = false;
 
   @override
   void initState() {
@@ -832,6 +858,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
     _title = TextEditingController(text: existing?.title ?? '');
     _note = TextEditingController(text: existing?.note ?? '');
     _vibe = existing?.vibe ?? BucketVibe.styleChallenge;
+    _existingImagePath = existing?.imagePath;
   }
 
   @override
@@ -841,12 +868,54 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
     super.dispose();
   }
 
+  ImageProvider? get _preview {
+    if (_imageBytes != null) return MemoryImage(_imageBytes!);
+    if (_clearImage) return null;
+    return garmentImageProvider(_existingImagePath);
+  }
+
+  Future<void> _pick(ImageSource source) async {
+    final shot = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 1600,
+      imageQuality: 92,
+    );
+    if (shot == null) return;
+    setState(() => _processing = true);
+    try {
+      final bytes = await shot.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _imageBytes = bytes;
+        _clearImage = false;
+        _processing = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _processing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load that photo. Try again.')),
+      );
+    }
+  }
+
   void _save() {
     final title = _title.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a bucket name.')),
+      );
+      return;
+    }
     Navigator.pop(
       context,
-      _BucketDraft(title: title, note: _note.text.trim(), vibe: _vibe),
+      _BucketDraft(
+        title: title,
+        note: _note.text.trim(),
+        vibe: _vibe,
+        imageBytes: _imageBytes,
+        clearImage: _clearImage && _imageBytes == null,
+      ),
     );
   }
 
@@ -854,6 +923,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final isEdit = widget.existing != null && widget.existing!.id != 'draft';
+    final preview = _preview;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottom),
@@ -863,7 +933,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isEdit ? 'Edit style dream' : 'New style dream',
+              isEdit ? 'Edit bucket' : 'New bucket',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
@@ -871,7 +941,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Pick a vibe, write the look you want to chase, then go make it real.',
+              'Name the look, add a photo from camera or gallery, then chase it.',
             ),
             const SizedBox(height: 16),
             TextField(
@@ -879,10 +949,91 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
               textCapitalization: TextCapitalization.sentences,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Dream title',
+                labelText: 'Bucket name',
                 hintText: 'e.g. Monochrome coffee-date fit',
               ),
               onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: 14),
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Material(
+                color: const Color(0xFFEFE7DE),
+                borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
+                child: _processing
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.terracotta,
+                        ),
+                      )
+                    : preview == null
+                        ? const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo_outlined,
+                                size: 36,
+                                color: AppColors.terracotta,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Add a look photo',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Take a picture or upload from gallery',
+                                style: TextStyle(
+                                  color: AppColors.muted,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image(image: preview, fit: BoxFit.cover),
+                              Align(
+                                alignment: Alignment.topRight,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: IconButton.filledTonal(
+                                    tooltip: 'Remove photo',
+                                    onPressed: () => setState(() {
+                                      _imageBytes = null;
+                                      _clearImage = true;
+                                    }),
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _processing ? null : () => _pick(ImageSource.camera),
+                    icon: const Icon(Icons.photo_camera_outlined),
+                    label: const Text('Take image'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed:
+                        _processing ? null : () => _pick(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Upload image'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             TextField(
@@ -934,8 +1085,8 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: _save,
-              child: Text(isEdit ? 'Save dream' : 'Add to bucketlist'),
+              onPressed: _processing ? null : _save,
+              child: Text(isEdit ? 'Save bucket' : 'Add to bucketlist'),
             ),
             const SizedBox(height: 8),
           ],

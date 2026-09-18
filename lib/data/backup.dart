@@ -112,6 +112,16 @@ class DrapeBackup {
       'media/profile/office-alarm.${fileExt(profile.officeAlarmMusicPath, fallback: 'mp3')}',
     );
 
+    final bucketMaps = <Map<String, dynamic>>[];
+    for (final item in bucketList) {
+      final map = item.toJson();
+      map['imagePath'] = await pack(
+        item.imagePath,
+        'media/bucket/${item.id}.${fileExt(item.imagePath)}',
+      );
+      bucketMaps.add(map);
+    }
+
     final json = <String, dynamic>{
       'version': version,
       'createdAt': DateTime.now().toIso8601String(),
@@ -122,7 +132,7 @@ class DrapeBackup {
       'partyLooks': lookMaps,
       'completedDays': completedDays.toList(),
       'clothSets': clothSets.map((s) => s.toJson()).toList(),
-      'bucketList': bucketList.map((b) => b.toJson()).toList(),
+      'bucketList': bucketMaps,
     };
 
     return zipOf(json, files);

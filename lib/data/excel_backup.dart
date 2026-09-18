@@ -70,13 +70,23 @@ Map<String, List<List<String>>> excelSheetsOf({
       ),
     ],
     'Bucket': [
-      const ['id', 'title', 'note', 'vibe', 'createdAt', 'completedAt', 'starred'],
+      const [
+        'id',
+        'title',
+        'note',
+        'vibe',
+        'imagePath',
+        'createdAt',
+        'completedAt',
+        'starred',
+      ],
       ...bucketList.map(
         (item) => [
           item.id,
           item.title,
           item.note,
           item.vibe.name,
+          item.imagePath ?? '',
           item.createdAt.toIso8601String(),
           item.completedAt?.toIso8601String() ?? '',
           item.starred ? 'true' : 'false',
@@ -432,6 +442,7 @@ Map<String, dynamic> _bucketFromRow(Map<String, String> row) {
     'note': row['note'] ?? '',
     'vibe': _enumName(BucketVibe.values, row['vibe'] ?? '') ??
         BucketVibe.styleChallenge.name,
+    'imagePath': _blankToNull(row['imagepath']),
     'createdAt': _date(row['createdat']) ?? DateTime.now().toIso8601String(),
     'completedAt': _date(row['completedat']),
     'starred': _truthy(row['starred'] ?? ''),

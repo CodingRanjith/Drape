@@ -789,16 +789,84 @@ class DrapeState extends ChangeNotifier {
     return singlesFor(collection).length + setPieceIds.length;
   }
 
-  Future<ClothSet> addClothSet(StyleCollection collection) async {
+  Future<ClothSet> addClothSet(
+    StyleCollection collection, {
+    String? name,
+    List<String> garmentIds = const [],
+  }) async {
     final set = ClothSet(
       id: _uuid.v4(),
-      name: 'Set ${setsFor(collection).length + 1}',
+      name: (name == null || name.trim().isEmpty)
+          ? 'Set ${setsFor(collection).length + 1}'
+          : name.trim(),
       collection: collection,
     );
+    for (final id in garmentIds) {
+      final garment = garmentById(id);
+      if (garment == null) continue;
+      _putGarmentOnOutfit(set.outfit, garment);
+    }
     clothSets.add(set);
+    _suggestWeekFromSets(reshuffle: false);
     notifyListeners();
     await _persist();
     return set;
+  }
+
+  Future<void> replaceClothSetPieces(
+    String setId, {
+    String? name,
+    required List<String> garmentIds,
+  }) async {
+    final set = clothSetById(setId);
+    if (set == null) return;
+    if (name != null) {
+      final next = name.trim();
+      if (next.isNotEmpty) set.name = next;
+    }
+    set.outfit = Outfit(id: set.id);
+    for (final id in garmentIds) {
+      final garment = garmentById(id);
+      if (garment == null) continue;
+      _putGarmentOnOutfit(set.outfit, garment);
+    }
+    _suggestWeekFromSets(reshuffle: false);
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Wardrobe shelves that currently have at least one item.
+  List<({String label, List<Garment> items})> populatedShelves() {
+    final byShelf = <String, List<Garment>>{};
+    for (final garment in garments) {
+      byShelf.putIfAbsent(garment.shelfLabel, () => []).add(garment);
+    }
+    final rows = <({String label, List<Garment> items})>[];
+    for (final category in profile.wearer.wardrobeCategories) {
+      final items = byShelf.remove(category.label);
+      if (items == null || items.isEmpty) continue;
+      rows.add((label: category.label, items: items));
+    }
+    for (final custom in profile.customShelves) {
+      final items = byShelf.remove(custom);
+      if (items == null || items.isEmpty) continue;
+      rows.add((label: custom, items: items));
+    }
+    for (final entry in byShelf.entries) {
+      if (entry.value.isEmpty) continue;
+      rows.add((label: entry.key, items: entry.value));
+    }
+    return rows;
+  }
+
+  void _putGarmentOnOutfit(Outfit outfit, Garment garment) {
+    if (garment.category == GarmentCategory.top &&
+        garment.topKind == TopKind.tshirt) {
+      outfit.tshirtId = garment.id;
+      outfit.dressId = null;
+      return;
+    }
+    _putOnOutfit(outfit, garment.category, garment.id);
   }
 
   Future<void> renameClothSet(String id, String name) async {
@@ -850,12 +918,19 @@ class DrapeState extends ChangeNotifier {
     required String title,
     String note = '',
     BucketVibe vibe = BucketVibe.styleChallenge,
+    Uint8List? imageBytes,
   }) async {
+    final id = _uuid.v4();
+    String? imagePath;
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      imagePath = await _store.saveImage(imageBytes, id);
+    }
     final item = StyleBucketItem(
-      id: _uuid.v4(),
+      id: id,
       title: title.trim().isEmpty ? 'New style dream' : title.trim(),
       note: note.trim(),
       vibe: vibe,
+      imagePath: imagePath,
     );
     bucketList = [item, ...bucketList];
     _note(
@@ -873,6 +948,8 @@ class DrapeState extends ChangeNotifier {
     String? title,
     String? note,
     BucketVibe? vibe,
+    Uint8List? imageBytes,
+    bool clearImage = false,
   }) async {
     final item = bucketById(id);
     if (item == null) return;
@@ -882,6 +959,11 @@ class DrapeState extends ChangeNotifier {
     }
     if (note != null) item.note = note.trim();
     if (vibe != null) item.vibe = vibe;
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      item.imagePath = await _store.saveImage(imageBytes, item.id);
+    } else if (clearImage) {
+      item.imagePath = null;
+    }
     notifyListeners();
     await _persist();
   }
@@ -924,7 +1006,28 @@ class DrapeState extends ChangeNotifier {
   ) async {
     final set = clothSetById(setId);
     if (set == null) return;
-    _putOnOutfit(set.outfit, category, garmentId);
+    if (garmentId == null) {
+      _putOnOutfit(set.outfit, category, null);
+    } else {
+      final garment = garmentById(garmentId);
+      if (garment == null) return;
+      _putGarmentOnOutfit(set.outfit, garment);
+    }
+    _suggestWeekFromSets(reshuffle: false);
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> removeFromClothSet(String setId, Garment garment) async {
+    final set = clothSetById(setId);
+    if (set == null) return;
+    if (set.outfit.tshirtId == garment.id) {
+      set.outfit.tshirtId = null;
+    } else if (set.outfit.idFor(garment.category) == garment.id) {
+      _putOnOutfit(set.outfit, garment.category, null);
+    } else {
+      return;
+    }
     _suggestWeekFromSets(reshuffle: false);
     notifyListeners();
     await _persist();
@@ -1329,11 +1432,16 @@ class DrapeState extends ChangeNotifier {
         ((json['clothSets'] as List?) ?? const [])
             .map((e) => ClothSet.fromJson(e as Map<String, dynamic>)),
       );
-      _upsertBucket(
-        ((json['bucketList'] as List?) ?? const []).map(
-          (e) => StyleBucketItem.fromJson(e as Map<String, dynamic>),
-        ),
-      );
+      for (final raw in ((json['bucketList'] as List?) ?? const [])) {
+        final item = StyleBucketItem.fromJson(raw as Map<String, dynamic>);
+        final photo = await storePhoto(item.imagePath, item.id);
+        if (photo != null) {
+          item.imagePath = photo;
+        } else {
+          item.imagePath = bucketById(item.id)?.imagePath;
+        }
+        _upsertItem(bucketList, item, (e) => e.id);
+      }
     }
 
     for (final raw in importedClothes) {
@@ -1354,7 +1462,8 @@ class DrapeState extends ChangeNotifier {
       final lower = key.toLowerCase();
       if (lower.contains('/party/') ||
           lower.contains('/music/') ||
-          lower.contains('/profile/')) {
+          lower.contains('/profile/') ||
+          lower.contains('/bucket/')) {
         continue;
       }
       final id = _uuid.v4();
@@ -1449,12 +1558,6 @@ class DrapeState extends ChangeNotifier {
   void _upsertSets(Iterable<ClothSet> incoming) {
     for (final set in incoming) {
       _upsertItem(clothSets, set, (e) => e.id);
-    }
-  }
-
-  void _upsertBucket(Iterable<StyleBucketItem> incoming) {
-    for (final item in incoming) {
-      _upsertItem(bucketList, item, (e) => e.id);
     }
   }
 

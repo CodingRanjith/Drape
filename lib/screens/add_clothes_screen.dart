@@ -45,7 +45,7 @@ class AddClothesScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           children: [
             Text(
-              '${state.garments.length} items',
+              '${state.garments.length} items · 10 collections',
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 color: AppColors.muted,
@@ -55,7 +55,7 @@ class AddClothesScreen extends StatelessWidget {
             Text('Collections', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             const Text(
-              'Open a card for singles or sets. Empty cards show Coming soon until you add something.',
+              'Open a card to upload sets. Empty cards show Coming soon until you add a set.',
             ),
             const SizedBox(height: 18),
             GridView.count(
@@ -69,6 +69,7 @@ class AddClothesScreen extends StatelessWidget {
                 for (final collection in StyleCollection.values)
                   _CollectionCard(
                     collection: collection,
+                    wearer: state.profile.wearer,
                     setCount: state.setsFor(collection).length,
                     singleCount: state.singlesFor(collection).length,
                     isEmpty: !state.collectionHasContent(collection),
@@ -85,12 +86,14 @@ class AddClothesScreen extends StatelessWidget {
 class _CollectionCard extends StatelessWidget {
   const _CollectionCard({
     required this.collection,
+    required this.wearer,
     required this.setCount,
     required this.singleCount,
     required this.isEmpty,
   });
 
   final StyleCollection collection;
+  final Wearer wearer;
   final int setCount;
   final int singleCount;
   final bool isEmpty;
@@ -100,9 +103,10 @@ class _CollectionCard extends StatelessWidget {
     final status = isEmpty
         ? 'Coming soon'
         : [
-            if (singleCount > 0) '$singleCount items',
             if (setCount > 0) '$setCount sets',
+            if (singleCount > 0) '$singleCount items',
           ].join(' · ');
+    final cover = collection.coverAssetFor(wearer);
 
     return Material(
       color: Colors.transparent,
@@ -119,8 +123,9 @@ class _CollectionCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Image.asset(
-                collection.coverAsset,
+                cover,
                 fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
               ),
               DecoratedBox(
                 decoration: BoxDecoration(

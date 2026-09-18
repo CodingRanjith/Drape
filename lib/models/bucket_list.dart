@@ -64,6 +64,7 @@ class StyleBucketItem {
     required this.title,
     this.note = '',
     this.vibe = BucketVibe.styleChallenge,
+    this.imagePath,
     DateTime? createdAt,
     this.completedAt,
     this.starred = false,
@@ -73,6 +74,7 @@ class StyleBucketItem {
   String title;
   String note;
   BucketVibe vibe;
+  String? imagePath;
   DateTime createdAt;
   DateTime? completedAt;
   bool starred;
@@ -84,6 +86,7 @@ class StyleBucketItem {
     'title': title,
     'note': note,
     'vibe': vibe.name,
+    'imagePath': imagePath,
     'createdAt': createdAt.toIso8601String(),
     'completedAt': completedAt?.toIso8601String(),
     'starred': starred,
@@ -97,6 +100,7 @@ class StyleBucketItem {
         vibe: BucketVibe.values.byName(
           json['vibe'] as String? ?? BucketVibe.styleChallenge.name,
         ),
+        imagePath: json['imagePath'] as String?,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.now(),
         completedAt: json['completedAt'] == null
@@ -109,6 +113,8 @@ class StyleBucketItem {
     String? title,
     String? note,
     BucketVibe? vibe,
+    String? imagePath,
+    bool clearImage = false,
     DateTime? createdAt,
     DateTime? completedAt,
     bool clearCompleted = false,
@@ -119,6 +125,7 @@ class StyleBucketItem {
       title: title ?? this.title,
       note: note ?? this.note,
       vibe: vibe ?? this.vibe,
+      imagePath: clearImage ? null : (imagePath ?? this.imagePath),
       createdAt: createdAt ?? this.createdAt,
       completedAt: clearCompleted ? null : (completedAt ?? this.completedAt),
       starred: starred ?? this.starred,
