@@ -500,16 +500,17 @@ class DrapeState extends ChangeNotifier {
   }
 
   List<Outfit> get _suggestableLooks {
-    final looks = <Outfit>[
+    final sets = [
       for (final set in readyClothSets) set.outfit.copy(id: _uuid.v4()),
     ];
-    if (looks.length >= 7) return looks;
-    // Fall back to uploaded dresses so week can still auto-fill.
-    looks.addAll(readyDressLooks);
-    return looks;
+    // Prefer collection sets when there are enough for a full week.
+    if (sets.length >= 7) return sets;
+    return [...sets, ...readyDressLooks];
   }
 
   int get suggestableLookCount => _suggestableLooks.length;
+
+  int get readySetCount => readyClothSets.length;
 
   /// Randomly fills Mon–Sun from uploaded sets.
   /// - Need **7+** looks to auto-suggest.
@@ -540,10 +541,53 @@ class DrapeState extends ChangeNotifier {
 
   Future<void> suggestWeekSets({bool reshuffle = false}) async {
     _ensureCurrentWeek();
-    final force = reshuffle || suggestableLookCount >= 14;
+    final force = reshuffle || readySetCount >= 14 || suggestableLookCount >= 14;
     _suggestWeekFromSets(reshuffle: force);
     notifyListeners();
     await _persist();
+  }
+
+  Future<bool> assignSetToDay(DayPlan day, ClothSet set) async {
+    if (day.locked || day.worn) return false;
+    final ids = set.outfit.pieceIds;
+    for (final id in ids) {
+      if (isUsedElsewhereThisWeek(id, except: day)) return false;
+    }
+    day.outfit = set.outfit.copy(id: _uuid.v4());
+    notifyListeners();
+    await _persist();
+    return true;
+  }
+
+  Future<bool> assignDressToDay(DayPlan day, Garment dress) async {
+    if (day.locked || day.worn) return false;
+    if (dress.category != GarmentCategory.dress) return false;
+    if (isUsedElsewhereThisWeek(dress.id, except: day)) return false;
+    day.outfit = Outfit(id: _uuid.v4(), dressId: dress.id);
+    notifyListeners();
+    await _persist();
+    return true;
+  }
+
+  List<ClothSet> availableSetsForDay(DayPlan day) {
+    final used = _usedIds(except: day);
+    return readyClothSets.where((set) {
+      return set.outfit.pieceIds.every((id) => !used.contains(id));
+    }).toList();
+  }
+
+  List<Garment> availableDressesForDay(DayPlan day) {
+    final used = _usedIds(except: day);
+    return garments
+        .where(
+          (g) =>
+              g.category == GarmentCategory.dress &&
+              !g.inLaundry &&
+              g.imagePath != null &&
+              g.imagePath!.trim().isNotEmpty &&
+              !used.contains(g.id),
+        )
+        .toList();
   }
 
   List<Garment> optionsFor(ClothesType type) {
