@@ -6,11 +6,13 @@ import 'package:uuid/uuid.dart';
 
 import '../data/app_store.dart';
 import '../data/backup.dart';
+import '../data/excel_backup.dart';
 import '../data/media_bytes.dart';
 import '../data/persist_image.dart';
 import '../logic/stylist.dart';
 import '../models/bucket_list.dart';
 import '../models/life.dart';
+import '../models/notice.dart';
 import '../models/wardrobe.dart';
 import '../services/alarm_tone.dart';
 import '../services/notify.dart';
@@ -37,6 +39,7 @@ class DrapeState extends ChangeNotifier {
   Set<String> completedDays = {};
   List<ClothSet> clothSets = [];
   List<StyleBucketItem> bucketList = [];
+  List<AppNotice> notices = [];
   LifeEvent? ringingEvent;
   void Function(String eventId)? onShowAlarm;
 
@@ -51,6 +54,7 @@ class DrapeState extends ChangeNotifier {
       completedDays = {...data.completedDays};
       clothSets = data.clothSets;
       bucketList = data.bucketList;
+      notices = data.notices;
       _ensureCurrentWeek();
       _syncCompletedFromWeek();
     } catch (e, st) {
@@ -119,6 +123,7 @@ class DrapeState extends ChangeNotifier {
     completedDays: completedDays,
     clothSets: clothSets,
     bucketList: bucketList,
+    notices: notices,
   );
 
   Future<void> completeWalkthrough() async {
@@ -191,6 +196,7 @@ class DrapeState extends ChangeNotifier {
     completedDays = {};
     clothSets = [];
     bucketList = [];
+    notices = [];
     todayChoices = [];
     todayIndex = 0;
     ringingEvent = null;
@@ -297,53 +303,70 @@ class DrapeState extends ChangeNotifier {
   }
 
   int get homeNoticeCount {
-    final now = DateTime.now();
-    final upcoming = events
-        .where((e) => e.alarmOn && !e.alarmFired && e.at.isAfter(now.subtract(const Duration(hours: 1))))
-        .length;
-    final officeToday =
-        profile.officeAlarmOn &&
-        profile.workdays.contains(now.weekday) &&
-        profile.officeAlarmFiredOn != dateKey(now);
-    return upcoming + (officeToday ? 1 : 0);
+    final unread = notices.where((n) => !n.read).length;
+    final live = notificationFeed.where((n) => n.id.startsWith('live-')).length;
+    return unread + live;
   }
 
-  Future<void> saveOfficeAlarm({
-    required Set<int> workdays,
-    required bool alarmOn,
-    required int hour,
-    required int minute,
-    Uint8List? musicBytes,
-    String? musicExt,
-    String? musicMime,
-    String? musicName,
-  }) async {
-    final nextDays = workdays.isEmpty ? profile.workdays : {...workdays};
-    final daysChanged =
-        nextDays.length != profile.workdays.length ||
-        !nextDays.containsAll(profile.workdays);
-    profile
-      ..workdays = nextDays
-      ..officeAlarmOn = alarmOn
-      ..officeAlarmHour = hour
-      ..officeAlarmMinute = minute
-      ..officeAlarmFiredOn = null;
-    if (musicName != null) profile.officeAlarmMusicName = musicName;
-    if (musicBytes != null) {
-      profile.officeAlarmMusicPath = await _store.saveAudio(
-        musicBytes,
-        officeAlarmId,
-        ext: musicExt ?? 'mp3',
-        mime: musicMime ?? 'audio/mpeg',
+  List<AppNotice> get notificationFeed {
+    final live = <AppNotice>[];
+    for (final event in upcomingEvents) {
+      live.add(
+        AppNotice(
+          id: 'live-event-${event.id}',
+          title: event.title,
+          body: event.kind.label,
+          kind: 'event',
+          at: event.at,
+        ),
       );
     }
-    if (daysChanged) {
-      regenerateWeek();
-      _rebuildTodayChoices();
+    final today = todayPlan;
+    if (today?.outfit != null &&
+        !today!.outfit!.isEmpty &&
+        today.worn != true) {
+      live.add(
+        AppNotice(
+          id: 'live-today',
+          title: "Today's outfit is ready",
+          body: 'Open Home to confirm what you will wear.',
+          kind: 'outfit',
+        ),
+      );
     }
+    final seen = <String>{};
+    return [
+      for (final notice in [...live, ...notices])
+        if (notice.kind != 'alarm' && seen.add(notice.id)) notice,
+    ];
+  }
+
+  void _note(String title, {String body = '', String kind = 'update'}) {
+    notices.insert(
+      0,
+      AppNotice(
+        id: _uuid.v4(),
+        title: title,
+        body: body,
+        kind: kind,
+      ),
+    );
+    if (notices.length > 80) {
+      notices = notices.take(80).toList();
+    }
+  }
+
+  Future<void> markNoticesRead() async {
+    var changed = false;
+    for (final notice in notices) {
+      if (!notice.read) {
+        notice.read = true;
+        changed = true;
+      }
+    }
+    if (!changed) return;
     notifyListeners();
     await _persist();
-    await _scheduleOfficeAlarms();
   }
 
   Future<void> saveGarment(Garment garment, {Uint8List? imageBytes}) async {
@@ -351,6 +374,7 @@ class DrapeState extends ChangeNotifier {
       garment.imagePath = await _store.saveImage(imageBytes, garment.id);
     }
     final index = garments.indexWhere((g) => g.id == garment.id);
+    final isNew = index < 0;
     if (index >= 0) {
       garments[index] = garment;
     } else {
@@ -365,6 +389,13 @@ class DrapeState extends ChangeNotifier {
       regenerateWeek();
     }
     _rebuildTodayChoices();
+    if (isNew) {
+      _note(
+        'Added ${garment.name.trim().isEmpty ? garment.typeLabel : garment.name}',
+        body: garment.wardrobeCategory.label,
+        kind: 'clothes',
+      );
+    }
     notifyListeners();
     await _persist();
   }
@@ -587,6 +618,11 @@ class DrapeState extends ChangeNotifier {
     final day = todayPlan;
     if (day == null || day.outfit == null) return;
     day.locked = true;
+    _note(
+      "Today's look saved",
+      body: 'This outfit is locked for today.',
+      kind: 'outfit',
+    );
     await markWorn(day);
   }
 
@@ -822,6 +858,11 @@ class DrapeState extends ChangeNotifier {
       vibe: vibe,
     );
     bucketList = [item, ...bucketList];
+    _note(
+      'Added to bucket list',
+      body: item.title,
+      kind: 'bucket',
+    );
     notifyListeners();
     await _persist();
     return item;
@@ -857,6 +898,7 @@ class DrapeState extends ChangeNotifier {
     final item = bucketById(id);
     if (item == null || item.isCompleted) return;
     item.completedAt = DateTime.now();
+    _note('Bucket item done', body: item.title, kind: 'bucket');
     notifyListeners();
     await _persist();
   }
@@ -1001,6 +1043,7 @@ class DrapeState extends ChangeNotifier {
       partyLooks[index] = look;
     } else {
       partyLooks.add(look);
+      _note('Party look added', body: look.name, kind: 'look');
     }
     notifyListeners();
     await _persist();
@@ -1033,8 +1076,10 @@ class DrapeState extends ChangeNotifier {
     final index = events.indexWhere((e) => e.id == event.id);
     if (index >= 0) {
       events[index] = event;
+      _note('Reminder updated', body: event.title, kind: 'event');
     } else {
       events.add(event);
+      _note('Reminder added', body: event.title, kind: 'event');
     }
     await _scheduleOne(event);
     notifyListeners();
@@ -1141,21 +1186,6 @@ class DrapeState extends ChangeNotifier {
   Future<void> _checkDueAlarms() async {
     if (ringingEvent != null) return;
     final now = DateTime.now();
-    if (profile.officeAlarmOn &&
-        profile.workdays.contains(now.weekday) &&
-        profile.officeAlarmFiredOn != dateKey(now)) {
-      final at = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        profile.officeAlarmHour,
-        profile.officeAlarmMinute,
-      );
-      if (!at.isAfter(now)) {
-        await startRinging(officeAlarmEvent);
-        return;
-      }
-    }
     final due = events.where((e) {
       if (!e.alarmOn || e.alarmFired) return false;
       return !e.at.isAfter(now);
@@ -1176,30 +1206,14 @@ class DrapeState extends ChangeNotifier {
     );
   }
 
-  DateTime _nextWeekdayAt(int weekday, int hour, int minute) {
-    final now = DateTime.now();
-    var date = DateTime(now.year, now.month, now.day, hour, minute);
-    while (date.weekday != weekday || !date.isAfter(now)) {
-      date = date.add(const Duration(days: 1));
-      date = DateTime(date.year, date.month, date.day, hour, minute);
-    }
-    return date;
-  }
-
   Future<void> _scheduleOfficeAlarms() async {
     for (var day = DateTime.monday; day <= DateTime.sunday; day++) {
       await cancelEventAlarm(officeNotifId(day));
     }
     await cancelEventAlarm(_officeSnoozeNotifId);
-    if (!profile.officeAlarmOn) return;
-    for (final day in profile.workdays) {
-      await scheduleEventAlarm(
-        id: officeNotifId(day),
-        at: _nextWeekdayAt(day, profile.officeAlarmHour, profile.officeAlarmMinute),
-        title: 'Office day',
-        body: 'Time to get ready',
-        eventId: officeAlarmId,
-      );
+    if (profile.officeAlarmOn) {
+      profile.officeAlarmOn = false;
+      await _persist();
     }
   }
 
@@ -1251,35 +1265,29 @@ class DrapeState extends ChangeNotifier {
     );
   }
 
+  Future<Uint8List> buildExcelBackup() async {
+    return encodeExcelBackup(
+      profile: profile,
+      garments: garments,
+      week: week,
+      events: events,
+      partyLooks: partyLooks,
+      completedDays: completedDays,
+      clothSets: clothSets,
+      bucketList: bucketList,
+    );
+  }
+
   Future<({int clothes, int looks, int events})> restoreBackup(
     Uint8List bytes,
   ) async {
     final packed = DrapeBackup.decode(bytes);
     final json = packed.json;
-    final filesOnly = json['filesOnly'] == true || !packed.hasProfile;
-    if (!packed.hasProfile && packed.imageFiles().isEmpty) {
-      throw const FormatException('This is not a Drape backup zip.');
-    }
-
-    if (!filesOnly) {
-      for (final event in events) {
-        await cancelEventAlarm(event.alarmId);
-      }
-      await stopRinging();
-
-      profile = UserProfile.fromJson(json['profile'] as Map<String, dynamic>);
-      week = json['week'] == null
-          ? null
-          : WeekPlan.fromJson(json['week'] as Map<String, dynamic>);
-      completedDays = ((json['completedDays'] as List?) ?? const [])
-          .map((e) => e as String)
-          .toSet();
-      clothSets = ((json['clothSets'] as List?) ?? const [])
-          .map((e) => ClothSet.fromJson(e as Map<String, dynamic>))
-          .toList();
-      bucketList = ((json['bucketList'] as List?) ?? const [])
-          .map((e) => StyleBucketItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+    final importedClothes = json['garments'] as List? ?? const [];
+    if (!packed.hasProfile &&
+        packed.imageFiles().isEmpty &&
+        importedClothes.isEmpty) {
+      throw const FormatException('This is not a Drape backup file.');
     }
 
     final usedKeys = <String>{};
@@ -1290,28 +1298,54 @@ class DrapeState extends ChangeNotifier {
       return _store.saveImage(match.value, id);
     }
 
-    if (!filesOnly) {
-      profile.photoPath = await storePhoto(profile.photoPath, 'profile');
+    if (packed.hasProfile) {
+      final incoming = UserProfile.fromJson(
+        json['profile'] as Map<String, dynamic>,
+      );
+      _mergeProfile(incoming);
+      final photo = await storePhoto(incoming.photoPath, 'profile');
+      if (photo != null) profile.photoPath = photo;
       final officeMusic = packed.fileFor(
-        profile.officeAlarmMusicPath,
+        incoming.officeAlarmMusicPath,
         id: officeAlarmId,
       );
       if (officeMusic != null && officeMusic.isNotEmpty) {
-        final ext = fileExt(profile.officeAlarmMusicPath, fallback: 'mp3');
+        final ext = fileExt(incoming.officeAlarmMusicPath, fallback: 'mp3');
         profile.officeAlarmMusicPath = await _store.saveAudio(
           officeMusic,
           officeAlarmId,
           ext: ext,
           mime: audioMime(ext),
         );
+        profile.officeAlarmMusicName = incoming.officeAlarmMusicName;
       }
+      if (json['week'] != null) {
+        week = WeekPlan.fromJson(json['week'] as Map<String, dynamic>);
+      }
+      completedDays.addAll(
+        ((json['completedDays'] as List?) ?? const []).map((e) => e as String),
+      );
+      _upsertSets(
+        ((json['clothSets'] as List?) ?? const [])
+            .map((e) => ClothSet.fromJson(e as Map<String, dynamic>)),
+      );
+      _upsertBucket(
+        ((json['bucketList'] as List?) ?? const []).map(
+          (e) => StyleBucketItem.fromJson(e as Map<String, dynamic>),
+        ),
+      );
     }
 
-    final nextGarments = filesOnly ? [...garments] : <Garment>[];
-    for (final raw in (json['garments'] as List? ?? const [])) {
+    for (final raw in importedClothes) {
       final garment = Garment.fromJson(raw as Map<String, dynamic>);
-      garment.imagePath = await storePhoto(garment.imagePath, garment.id);
-      nextGarments.add(garment);
+      final photo = await storePhoto(garment.imagePath, garment.id);
+      if (photo != null) {
+        garment.imagePath = photo;
+      } else {
+        final existing = garmentById(garment.id);
+        garment.imagePath = existing?.imagePath;
+      }
+      _upsertItem(garments, garment, (g) => g.id);
     }
 
     for (final entry in packed.imageFiles()) {
@@ -1326,7 +1360,7 @@ class DrapeState extends ChangeNotifier {
       final id = _uuid.v4();
       final name = zipBaseName(entry.key).replaceFirst(RegExp(r'\.[^.]+$'), '');
       usedKeys.add(key);
-      nextGarments.add(
+      garments.add(
         Garment(
           id: id,
           name: name.isEmpty ? 'Imported photo' : name,
@@ -1336,36 +1370,41 @@ class DrapeState extends ChangeNotifier {
         ),
       );
     }
-    garments = nextGarments;
 
-    if (!filesOnly) {
-      final nextLooks = <PartyLook>[];
-      for (final raw in (json['partyLooks'] as List? ?? const [])) {
-        final look = PartyLook.fromJson(raw as Map<String, dynamic>);
-        look.imagePath = await storePhoto(look.imagePath, look.id);
-        nextLooks.add(look);
+    for (final raw in (json['partyLooks'] as List? ?? const [])) {
+      final look = PartyLook.fromJson(raw as Map<String, dynamic>);
+      final photo = await storePhoto(look.imagePath, look.id);
+      if (photo != null) {
+        look.imagePath = photo;
+      } else {
+        look.imagePath = partyLookById(look.id)?.imagePath;
       }
-      partyLooks = nextLooks;
-
-      final nextEvents = <LifeEvent>[];
-      for (final raw in (json['events'] as List? ?? const [])) {
-        final event = LifeEvent.fromJson(raw as Map<String, dynamic>);
-        final music = packed.fileFor(event.musicPath, id: event.id);
-        if (music != null && music.isNotEmpty) {
-          final ext = fileExt(event.musicPath, fallback: 'mp3');
-          event.musicPath = await _store.saveAudio(
-            music,
-            event.id,
-            ext: ext,
-            mime: audioMime(ext),
-          );
-        } else {
-          event.musicPath = null;
-        }
-        nextEvents.add(event);
-      }
-      events = nextEvents;
+      _upsertItem(partyLooks, look, (e) => e.id);
     }
+
+    for (final raw in (json['events'] as List? ?? const [])) {
+      final event = LifeEvent.fromJson(raw as Map<String, dynamic>);
+      final music = packed.fileFor(event.musicPath, id: event.id);
+      if (music != null && music.isNotEmpty) {
+        final ext = fileExt(event.musicPath, fallback: 'mp3');
+        event.musicPath = await _store.saveAudio(
+          music,
+          event.id,
+          ext: ext,
+          mime: audioMime(ext),
+        );
+      } else {
+        event.musicPath = eventById(event.id)?.musicPath;
+      }
+      _upsertItem(events, event, (e) => e.id);
+    }
+
+    _note(
+      'Backup imported',
+      body:
+          'Added or updated ${importedClothes.length} clothes without replacing what you already have.',
+      kind: 'import',
+    );
 
     todayIndex = 0;
     _ensureCurrentWeek();
@@ -1379,5 +1418,57 @@ class DrapeState extends ChangeNotifier {
       looks: partyLooks.length,
       events: events.length,
     );
+  }
+
+  void _mergeProfile(UserProfile incoming) {
+    if (incoming.name.trim().isNotEmpty) profile.name = incoming.name;
+    profile.wearer = incoming.wearer;
+    if (incoming.dateOfBirth != null) profile.dateOfBirth = incoming.dateOfBirth;
+    if (incoming.heightCm != null) profile.heightCm = incoming.heightCm;
+    if (incoming.weightKg != null) profile.weightKg = incoming.weightKg;
+    if (incoming.description.trim().isNotEmpty) {
+      profile.description = incoming.description;
+    }
+    if (incoming.workdays.isNotEmpty) profile.workdays = incoming.workdays;
+    profile.workStyle = incoming.workStyle;
+    profile.minRepeatDays = incoming.minRepeatDays;
+    profile.officeAlarmOn = false;
+    if (incoming.customShelves.isNotEmpty) {
+      final seen = {
+        for (final shelf in profile.customShelves) shelf.toLowerCase(),
+      };
+      for (final shelf in incoming.customShelves) {
+        if (seen.add(shelf.toLowerCase())) {
+          profile.customShelves = [...profile.customShelves, shelf];
+        }
+      }
+    }
+    profile.onboarded = true;
+  }
+
+  void _upsertSets(Iterable<ClothSet> incoming) {
+    for (final set in incoming) {
+      _upsertItem(clothSets, set, (e) => e.id);
+    }
+  }
+
+  void _upsertBucket(Iterable<StyleBucketItem> incoming) {
+    for (final item in incoming) {
+      _upsertItem(bucketList, item, (e) => e.id);
+    }
+  }
+
+  void _upsertItem<T>(
+    List<T> list,
+    T item,
+    String Function(T value) idOf,
+  ) {
+    final id = idOf(item);
+    final index = list.indexWhere((e) => idOf(e) == id);
+    if (index >= 0) {
+      list[index] = item;
+    } else {
+      list.add(item);
+    }
   }
 }

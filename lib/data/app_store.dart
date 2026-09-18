@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/bucket_list.dart';
 import '../models/life.dart';
+import '../models/notice.dart';
 import '../models/wardrobe.dart';
 import 'persist_image.dart';
 
@@ -30,6 +31,7 @@ class AppStore {
       Set<String> completedDays,
       List<ClothSet> clothSets,
       List<StyleBucketItem> bucketList,
+      List<AppNotice> notices,
     })
   >
   load() async {
@@ -45,6 +47,7 @@ class AppStore {
         completedDays: <String>{},
         clothSets: <ClothSet>[],
         bucketList: <StyleBucketItem>[],
+        notices: <AppNotice>[],
       );
     }
     final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -71,6 +74,9 @@ class AppStore {
       bucketList: ((json['bucketList'] as List?) ?? const [])
           .map((e) => StyleBucketItem.fromJson(e as Map<String, dynamic>))
           .toList(),
+      notices: ((json['notices'] as List?) ?? const [])
+          .map((e) => AppNotice.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -83,6 +89,7 @@ class AppStore {
     required Set<String> completedDays,
     required List<ClothSet> clothSets,
     required List<StyleBucketItem> bucketList,
+    List<AppNotice> notices = const [],
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -96,6 +103,7 @@ class AppStore {
         'completedDays': completedDays.toList(),
         'clothSets': clothSets.map((s) => s.toJson()).toList(),
         'bucketList': bucketList.map((b) => b.toJson()).toList(),
+        'notices': notices.map((n) => n.toJson()).toList(),
       }),
     );
   }

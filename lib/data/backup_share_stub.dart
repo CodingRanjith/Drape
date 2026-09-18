@@ -1,3 +1,7 @@
 import 'dart:typed_data';
 
-Future<void> shareBackupBytesImpl(Uint8List zip, String fileName) async {}
+Future<void> shareBackupBytesImpl(
+  Uint8List zip,
+  String fileName, {
+  String mimeType = 'application/zip',
+}) async {}

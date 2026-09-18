@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:drape/data/backup.dart';
+import 'package:drape/data/excel_backup.dart';
+import 'package:drape/data/excel_sheet.dart';
 import 'package:drape/models/wardrobe.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,6 +32,30 @@ void main() {
     expect(packed.json['garments'], isNotEmpty);
     expect(packed.fileFor('media/garments/g1.jpg'), photo);
     expect(packed.fileFor('g1.jpg', id: 'g1'), photo);
+    expect(packed.json['completedDays'], ['2026-08-21']);
+  });
+
+  test('excel sheet round-trip keeps clothes names', () {
+    final garment = Garment(
+      id: 'g9',
+      name: 'Linen shirt',
+      category: GarmentCategory.top,
+      colors: const [0xFFFFFFFF],
+    );
+    final bytes = encodeExcelBackup(
+      profile: UserProfile(name: 'Asha', onboarded: true, heightCm: 162),
+      garments: [garment],
+      events: const [],
+      partyLooks: const [],
+      completedDays: const {'2026-08-21'},
+    );
+    expect(SimpleXlsx.isXlsx(bytes), isTrue);
+
+    final packed = DrapeBackup.decode(bytes);
+    final clothes = packed.json['garments'] as List;
+    expect(clothes, isNotEmpty);
+    expect(clothes.first['name'], 'Linen shirt');
+    expect(packed.json['profile']['name'], 'Asha');
     expect(packed.json['completedDays'], ['2026-08-21']);
   });
 

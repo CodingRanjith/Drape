@@ -6,6 +6,8 @@ import 'package:archive/archive.dart';
 import '../models/bucket_list.dart';
 import '../models/life.dart';
 import '../models/wardrobe.dart';
+import 'excel_backup.dart';
+import 'excel_sheet.dart';
 import 'media_bytes.dart';
 import 'stored_bytes.dart';
 
@@ -143,6 +145,9 @@ class DrapeBackup {
   }
 
   static PackedBackup decode(Uint8List bytes) {
+    if (SimpleXlsx.isXlsx(bytes)) {
+      return PackedBackup(json: jsonFromExcel(bytes), files: {});
+    }
     if (isZipBytes(bytes)) {
       return _fromZip(bytes);
     }

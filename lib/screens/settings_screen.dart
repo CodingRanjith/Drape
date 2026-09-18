@@ -91,13 +91,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                     children: [
                       _MenuRow(
-                        icon: Icons.person_outline_rounded,
                         title: 'My Profile',
+                        value: _nameValue(profile),
                         onTap: _editIdentity,
                       ),
                       _MenuRow(
-                        icon: Icons.notifications_none_rounded,
                         title: 'Notifications',
+                        value: _noticeValue(context),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const NotificationsScreen(),
@@ -105,18 +105,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       _MenuRow(
-                        icon: Icons.wc_outlined,
                         title: 'Gender',
+                        value: profile.wearer.genderLabel,
                         onTap: _pickGender,
                       ),
                       _MenuRow(
-                        icon: Icons.cake_outlined,
                         title: 'Date of birth',
+                        value: profile.dateOfBirth == null
+                            ? null
+                            : DateFormat('d MMM yyyy').format(profile.dateOfBirth!),
                         onTap: _pickDob,
                       ),
                       _MenuRow(
-                        icon: Icons.height_rounded,
                         title: 'Height',
+                        value: profile.heightCm == null
+                            ? null
+                            : '${_pretty(profile.heightCm!)} cm',
                         onTap: () => _pickNumber(
                           title: 'Height',
                           suffix: 'cm',
@@ -125,9 +129,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       _MenuRow(
-                        icon: Icons.monitor_weight_outlined,
                         title: 'Weight',
-                        groupEnd: true,
+                        value: profile.weightKg == null
+                            ? null
+                            : '${_pretty(profile.weightKg!)} kg',
                         onTap: () => _pickNumber(
                           title: 'Weight',
                           suffix: 'kg',
@@ -136,25 +141,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       _MenuRow(
-                        icon: Icons.monitor_heart_outlined,
                         title: 'BMI',
-                        value: profile.bmiLabel,
+                        value: profile.bmi == null ? null : profile.bmiLabel,
                         valueColor: _bmiColor(profile),
-                        showChevron: false,
+                        groupEnd: true,
                       ),
                       _MenuRow(
-                        icon: Icons.ios_share_rounded,
                         title: 'Export',
                         onTap: _busy ? null : _backup,
                       ),
                       _MenuRow(
-                        icon: Icons.download_outlined,
                         title: 'Import',
                         groupEnd: true,
                         onTap: _busy ? null : _import,
                       ),
                       _MenuRow(
-                        icon: Icons.delete_forever_outlined,
                         title: 'Clear data',
                         danger: true,
                         onTap: _busy ? null : _openClearData,
@@ -178,6 +179,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _pretty(double value) =>
       value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(1);
+
+  String? _nameValue(UserProfile profile) {
+    final name = profile.name.trim();
+    if (name.isEmpty || name == 'there') return null;
+    return name;
+  }
+
+  String? _noticeValue(BuildContext context) {
+    final count = context.read<DrapeState>().homeNoticeCount;
+    if (count <= 0) return null;
+    return '$count new';
+  }
 
   Color? _bmiColor(UserProfile profile) {
     switch (profile.bmiCategory) {
@@ -359,16 +372,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _backup() async {
+    final kind = await showModalBottomSheet<BackupFileKind>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.table_chart_outlined),
+                  title: const Text('Excel sheet'),
+                  subtitle: const Text('Clothes and profile in a spreadsheet'),
+                  onTap: () => Navigator.pop(context, BackupFileKind.excel),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_zip_outlined),
+                  title: const Text('Zip backup'),
+                  subtitle: const Text('Photos, music and all app data'),
+                  onTap: () => Navigator.pop(context, BackupFileKind.zip),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (kind == null || !mounted) return;
+
     setState(() => _busy = true);
     try {
-      final zip = await context.read<DrapeState>().buildBackup();
-      final name =
-          'drape-backup-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.zip';
-      await saveBackupFile(zip, name);
+      final stamp = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      if (kind == BackupFileKind.excel) {
+        final excel = await context.read<DrapeState>().buildExcelBackup();
+        await saveBackupFile(
+          excel,
+          'drape-clothes-$stamp.xlsx',
+          kind: BackupFileKind.excel,
+        );
+      } else {
+        final zip = await context.read<DrapeState>().buildBackup();
+        await saveBackupFile(
+          zip,
+          'drape-backup-$stamp.zip',
+          kind: BackupFileKind.zip,
+        );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export ready. The zip is your backup of photos and files.'),
+        SnackBar(
+          content: Text(
+            kind == BackupFileKind.excel
+                ? 'Excel sheet is ready to save or share.'
+                : 'Zip backup is ready. Photos and files are inside.',
+          ),
         ),
       );
     } catch (_) {
@@ -382,30 +442,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _import() async {
-    final ok = await showDialog<bool>(
+    final kind = await showModalBottomSheet<BackupFileKind>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import backup?'),
-        content: const Text(
-          'Pick the export zip. Photos, music, clothes and events in that zip will come back.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    'Import adds the file to what is already on this phone. Existing clothes stay.',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.table_chart_outlined),
+                  title: const Text('Excel'),
+                  subtitle: const Text('Upload an .xlsx sheet'),
+                  onTap: () => Navigator.pop(context, BackupFileKind.excel),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.data_object_outlined),
+                  title: const Text('JSON'),
+                  subtitle: const Text('Upload backup.json, or a zip that contains it'),
+                  onTap: () => Navigator.pop(context, BackupFileKind.json),
+                ),
+              ],
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Import'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-    if (ok != true || !mounted) return;
+    if (kind == null || !mounted) return;
 
     setState(() => _busy = true);
     try {
-      final bytes = await pickBackupFile();
+      final bytes = await pickBackupFile(kind: kind);
       if (bytes == null || !mounted) return;
       final result = await context.read<DrapeState>().restoreBackup(bytes);
       if (!mounted) return;
@@ -414,7 +490,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Imported ${result.clothes} clothes, ${result.looks} party looks, ${result.events} events.',
+            'Imported without replacing your current clothes. Now ${result.clothes} clothes, ${result.looks} party looks, ${result.events} events.',
           ),
         ),
       );
@@ -426,7 +502,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not read that zip file.')),
+        const SnackBar(content: Text('Could not read that backup file.')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -488,28 +564,25 @@ class _WhiteCard extends StatelessWidget {
 
 class _MenuRow extends StatelessWidget {
   const _MenuRow({
-    required this.icon,
     required this.title,
     this.value,
     this.valueColor,
     this.onTap,
-    this.showChevron = true,
     this.groupEnd = false,
     this.danger = false,
   });
 
-  final IconData icon;
   final String title;
   final String? value;
   final Color? valueColor;
   final VoidCallback? onTap;
-  final bool showChevron;
   final bool groupEnd;
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
     final color = danger ? const Color(0xFFE24B4B) : AppColors.ink;
+    final shown = value?.trim();
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Column(
@@ -517,37 +590,33 @@ class _MenuRow extends StatelessWidget {
         InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: color),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: color,
                   ),
                 ),
-                if (value != null) ...[
-                  Text(
-                    value!,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: valueColor ?? AppColors.muted,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                if (showChevron)
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Color(0xFFB7AFA7),
-                  ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: shown == null || shown.isEmpty
+                      ? const SizedBox.shrink()
+                      : Text(
+                          shown,
+                          textAlign: TextAlign.right,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: valueColor ?? AppColors.muted,
+                          ),
+                        ),
+                ),
               ],
             ),
           ),
