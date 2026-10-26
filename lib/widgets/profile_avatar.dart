@@ -36,7 +36,7 @@ Future<Uint8List?> pickProfileImage(BuildContext context) async {
       );
     },
   );
-  if (source == null) return null;
+  if (source == null || !context.mounted) return null;
   return pickAppImage(
     context,
     source: source,
