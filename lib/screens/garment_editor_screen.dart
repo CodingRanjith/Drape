@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../logic/detect_image_color.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -81,7 +82,15 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
       guideLabel: _garment.wardrobeCategory.label,
     );
     if (bytes == null || !mounted) return;
-    setState(() => _pickedBytes = bytes);
+    final colors = detectClothesColors(bytes);
+    setState(() {
+      _pickedBytes = bytes;
+      if (colors.isNotEmpty) {
+        _garment.colors
+          ..clear()
+          ..addAll(colors);
+      }
+    });
   }
 
   Future<bool> _save() async {
@@ -93,6 +102,10 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
       return false;
     }
     _garment.name = name;
+    final photo = _pickedBytes;
+    if (photo != null && _garment.colors.isEmpty) {
+      _garment.colors.addAll(detectClothesColors(photo));
+    }
     final state = context.read<MineState>();
     await state.saveGarment(
       _garment,
@@ -344,9 +357,8 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.document_scanner_outlined),
-                title: const Text('In-app scanner'),
-                subtitle: const Text('Opens inside Mine — not the camera app'),
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
                   _pick(ImageSource.camera);

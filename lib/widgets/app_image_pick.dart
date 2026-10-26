@@ -9,8 +9,8 @@ import '../models/wardrobe.dart';
 import '../screens/in_app_camera_screen.dart';
 import 'scanner_shape_guide.dart';
 
-/// Opens the GPay-style in-app scanner (never the system camera app).
-Future<Uint8List?> openAppScanner(
+/// Opens the in-app camera screen (never the system camera app).
+Future<Uint8List?> openInAppCamera(
   BuildContext context, {
   int maxWidth = 1600,
   int imageQuality = 92,
@@ -52,7 +52,7 @@ Future<Uint8List?> openAppScanner(
 }
 
 /// Picks an image as bytes.
-/// Camera → in-app scanner only. Gallery → system photo picker.
+/// Camera → in-app camera only. Gallery → system photo picker.
 /// Clothes photos get on-device background removal by default.
 Future<Uint8List?> pickAppImage(
   BuildContext context, {
@@ -66,7 +66,7 @@ Future<Uint8List?> pickAppImage(
   bool removeBackground = true,
 }) async {
   if (source == ImageSource.camera) {
-    return openAppScanner(
+    return openInAppCamera(
       context,
       maxWidth: maxWidth,
       imageQuality: imageQuality,

@@ -6,9 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 import '../theme/app_theme.dart';
 import '../widgets/scanner_shape_guide.dart';
 
-/// GPay-style in-app scanner — live preview stays inside the app.
+/// Simple in-app photo capture — preview stays inside Mine.
 /// Never launches the system camera app.
-/// Pops with JPEG [Uint8List] bytes, or `null` if cancelled.
+/// Pops with image bytes, or `null` if cancelled.
 class InAppCameraScreen extends StatefulWidget {
   const InAppCameraScreen({
     super.key,
@@ -67,7 +67,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
         _initializing = false;
         _error = status.isPermanentlyDenied
             ? 'Camera permission is blocked. Enable it in Settings.'
-            : 'Camera permission is needed to scan.';
+            : 'Camera permission is needed to take a photo.';
       });
       return;
     }
@@ -90,7 +90,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
       if (!mounted) return;
       setState(() {
         _initializing = false;
-        _error = 'Could not open the scanner. Try again on a phone.';
+        _error = 'Could not open the camera. Try again on a phone.';
       });
     }
   }
@@ -129,7 +129,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
       if (!mounted) return;
       setState(() {
         _initializing = false;
-        _error = 'Could not start the scanner preview.';
+        _error = 'Could not start the camera preview.';
       });
     }
   }
@@ -178,9 +178,8 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
           if (ready)
             Positioned.fill(
               child: ScannerShapeOverlay(
-                shape: widget.shape,
-                label: widget.guideLabel,
-              ),
+                  shape: widget.shape,
+                ),
             ),
           SafeArea(
             child: Padding(
@@ -197,24 +196,26 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
                     icon: const Icon(Icons.close_rounded),
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Scanner',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                  if (widget.guideLabel != null &&
+                      widget.guideLabel!.trim().isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        widget.guideLabel!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                  ),
                   const Spacer(),
                   if (_cameras.length > 1)
                     IconButton(
@@ -241,50 +242,32 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.guideLabel == null
-                            ? 'Hold steady inside the frame'
-                            : 'Fit ${widget.guideLabel} in the frame',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          shadows: [
-                            Shadow(blurRadius: 8, color: Colors.black54),
-                          ],
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: _capturing ? null : _capture,
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          color: Colors.white.withValues(alpha: 0.12),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      GestureDetector(
-                        onTap: _capturing ? null : _capture,
-                        child: Container(
-                          width: 78,
-                          height: 78,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 4),
-                            color: Colors.white.withValues(alpha: 0.12),
-                          ),
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 120),
-                              width: _capturing ? 30 : 62,
-                              height: _capturing ? 30 : 62,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _capturing
-                                    ? AppColors.terracotta
-                                    : Colors.white,
-                              ),
+                        child: Center(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 120),
+                            width: _capturing ? 28 : 56,
+                            height: _capturing ? 28 : 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _capturing
+                                  ? AppColors.terracotta
+                                  : Colors.white,
                             ),
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -316,7 +299,6 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
       );
     }
 
-    // Full-bleed preview like GPay / UPI scanners.
     final size = MediaQuery.sizeOf(context);
     final previewSize = controller.value.previewSize;
     if (previewSize == null) {
@@ -361,7 +343,7 @@ class _MessagePane extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
-              Icons.document_scanner_outlined,
+              Icons.photo_camera_outlined,
               color: Colors.white70,
               size: 42,
             ),

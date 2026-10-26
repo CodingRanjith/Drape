@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../logic/detect_image_color.dart';
 import '../logic/wardrobe_category_search.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
@@ -46,6 +47,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   WardrobeCategory? _category;
   String? _customShelf;
   Uint8List? _imageBytes;
+  List<int> _detectedColors = const [];
   bool _processing = false;
   bool _saving = false;
   String? _error;
@@ -284,8 +286,11 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
         setState(() => _processing = false);
         return;
       }
+      final colors = detectClothesColors(bytes);
+      if (!mounted) return;
       setState(() {
         _imageBytes = bytes;
+        _detectedColors = colors;
         _processing = false;
       });
     } catch (_) {
@@ -303,7 +308,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       setState(() => _error = 'Select or create a category first.');
       return;
     }
-    // Open GPay-style in-app scanner directly (never the system camera app).
+    // Open in-app camera (never the system camera app).
     await _pick(ImageSource.camera);
   }
 
@@ -349,11 +354,15 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     final shelfName = custom ?? builtin!.label;
     final mapped = builtin ?? WardrobeCategory.accessories;
 
+    final colors = _detectedColors.isNotEmpty
+        ? _detectedColors
+        : detectClothesColors(bytes);
+
     final garment = Garment(
       id: const Uuid().v4(),
       name: shelfName,
       category: mapped.garmentCategory,
-      colors: const [],
+      colors: colors,
       topKind: mapped.topKind,
       wardrobeCategory: mapped,
       customShelf: custom,
@@ -739,20 +748,20 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           const Icon(
-                                            Icons.document_scanner_outlined,
+                                            Icons.photo_camera_outlined,
                                             size: 42,
                                             color: AppColors.terracotta,
                                           ),
                                           const SizedBox(height: 10),
                                           const Text(
-                                            'Tap to open scanner',
+                                            'Tap to take a photo',
                                             style: TextStyle(fontWeight: FontWeight.w800),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             _selectedLabel == null
                                                 ? 'Pick a category first'
-                                                : 'In-app scan · ${_selectedLabel!}',
+                                                : 'Camera · ${_selectedLabel!}',
                                             style: const TextStyle(
                                               color: AppColors.muted,
                                               fontWeight: FontWeight.w600,
@@ -783,7 +792,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                                   Expanded(
                                                     child: FilledButton.tonal(
                                                       onPressed: busy ? null : _chooseSource,
-                                                      child: const Text('Scan again'),
+                                                      child: const Text('Retake'),
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
@@ -802,6 +811,35 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                           ),
                         ),
                       ),
+                      if (_imageBytes != null && _detectedColors.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            for (final argb in _detectedColors.take(2)) ...[
+                              Container(
+                                width: 22,
+                                height: 22,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: colorFromArgb(argb),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.line),
+                                ),
+                              ),
+                            ],
+                            Expanded(
+                              child: Text(
+                                'Color: ${_detectedColors.map((c) => colorNameOf(colorFromArgb(c))).join(' · ')}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       if (_error != null) ...[
                         const SizedBox(height: 12),
                         Text(

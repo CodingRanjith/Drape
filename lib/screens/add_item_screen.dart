@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../logic/detect_image_color.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -78,9 +79,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.document_scanner_outlined),
-              title: const Text('In-app scanner'),
-              subtitle: const Text('Opens inside Mine — not the camera app'),
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Camera'),
               onTap: () {
                 Navigator.pop(context);
                 _pick(ImageSource.camera);
@@ -132,7 +132,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       id: const Uuid().v4(),
       name: name,
       category: widget.category.garmentCategory,
-      colors: const [],
+      colors: detectClothesColors(bytes),
       topKind: widget.category.topKind,
       wardrobeCategory: widget.category,
       cost: cost,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/wardrobe.dart';
 import '../theme/app_theme.dart';
 
-/// Clothing guide shape drawn in the center of the in-app camera scanner.
+/// Clothing guide shape drawn in the center of the in-app camera.
 enum ScannerShape {
   top,
   bottom,
@@ -62,7 +62,7 @@ ScannerShape scannerShapeForGarment(GarmentCategory category) {
   };
 }
 
-/// Dimmed scanner mask with a category silhouette cutout in the center.
+/// Dimmed camera mask with a category silhouette cutout in the center.
 class ScannerShapeOverlay extends StatelessWidget {
   const ScannerShapeOverlay({
     super.key,
@@ -93,7 +93,7 @@ class ScannerShapeOverlay extends StatelessWidget {
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Text(
-                  'Align $label in the outline',
+                  label,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
