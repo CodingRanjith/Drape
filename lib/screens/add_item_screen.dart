@@ -48,6 +48,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         source: source,
         maxWidth: 1600,
         imageQuality: 92,
+        wardrobeCategory: widget.category,
       );
       if (!mounted) return;
       if (bytes == null) {
@@ -77,8 +78,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Camera'),
+              leading: const Icon(Icons.document_scanner_outlined),
+              title: const Text('In-app scanner'),
+              subtitle: const Text('Opens inside Mine — not the camera app'),
               onTap: () {
                 Navigator.pop(context);
                 _pick(ImageSource.camera);
@@ -130,7 +132,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       id: const Uuid().v4(),
       name: name,
       category: widget.category.garmentCategory,
-      colors: [colorArgb(fashionPalette.first.value)],
+      colors: const [],
       topKind: widget.category.topKind,
       wardrobeCategory: widget.category,
       cost: cost,
@@ -181,7 +183,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                               CircularProgressIndicator(color: AppColors.terracotta),
                               SizedBox(height: 14),
                               Text(
-                                'Loading photo…',
+                                'Removing background…',
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ],

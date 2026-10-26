@@ -608,6 +608,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  native_cutout:
+    dependency: "direct main"
+    description:
+      name: native_cutout
+      sha256: c501be34b81ab03e619068d8a1bd8699305d166b464d8eb4e232328161f8f2dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   nested:
     dependency: transitive
     description:

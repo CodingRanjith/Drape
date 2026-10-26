@@ -4,26 +4,78 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
+import '../logic/remove_clothes_background.dart';
+import '../models/wardrobe.dart';
 import '../screens/in_app_camera_screen.dart';
+import 'scanner_shape_guide.dart';
+
+/// Opens the GPay-style in-app scanner (never the system camera app).
+Future<Uint8List?> openAppScanner(
+  BuildContext context, {
+  int maxWidth = 1600,
+  int imageQuality = 92,
+  WardrobeCategory? wardrobeCategory,
+  GarmentCategory? garmentCategory,
+  String? guideLabel,
+  ScannerShape? shape,
+  bool removeBackground = true,
+}) async {
+  final resolvedShape = shape ??
+      (wardrobeCategory != null
+          ? scannerShapeForCategory(wardrobeCategory)
+          : garmentCategory != null
+              ? scannerShapeForGarment(garmentCategory)
+              : ScannerShape.generic);
+  final label =
+      guideLabel ?? wardrobeCategory?.label ?? garmentCategory?.label;
+
+  final bytes = await Navigator.of(context, rootNavigator: true).push<Uint8List>(
+    PageRouteBuilder<Uint8List>(
+      opaque: true,
+      fullscreenDialog: true,
+      pageBuilder: (_, _, _) => InAppCameraScreen(
+        shape: resolvedShape,
+        guideLabel: label,
+      ),
+      transitionsBuilder: (_, animation, _, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    ),
+  );
+  if (bytes == null) return null;
+  return _finish(
+    bytes,
+    maxWidth: maxWidth,
+    imageQuality: imageQuality,
+    removeBackground: removeBackground,
+  );
+}
 
 /// Picks an image as bytes.
-/// Camera opens an in-app preview (does not launch the system camera app).
-/// Gallery still uses the system photo picker.
+/// Camera → in-app scanner only. Gallery → system photo picker.
+/// Clothes photos get on-device background removal by default.
 Future<Uint8List?> pickAppImage(
   BuildContext context, {
   required ImageSource source,
   int maxWidth = 1600,
   int imageQuality = 92,
+  WardrobeCategory? wardrobeCategory,
+  GarmentCategory? garmentCategory,
+  String? guideLabel,
+  ScannerShape? shape,
+  bool removeBackground = true,
 }) async {
   if (source == ImageSource.camera) {
-    final bytes = await Navigator.of(context).push<Uint8List>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const InAppCameraScreen(),
-      ),
+    return openAppScanner(
+      context,
+      maxWidth: maxWidth,
+      imageQuality: imageQuality,
+      wardrobeCategory: wardrobeCategory,
+      garmentCategory: garmentCategory,
+      guideLabel: guideLabel,
+      shape: shape,
+      removeBackground: removeBackground,
     );
-    if (bytes == null) return null;
-    return _shrink(bytes, maxWidth: maxWidth, quality: imageQuality);
   }
 
   final shot = await ImagePicker().pickImage(
@@ -32,7 +84,24 @@ Future<Uint8List?> pickAppImage(
     imageQuality: imageQuality,
   );
   if (shot == null) return null;
-  return shot.readAsBytes();
+  final bytes = await shot.readAsBytes();
+  return _finish(
+    bytes,
+    maxWidth: maxWidth,
+    imageQuality: imageQuality,
+    removeBackground: removeBackground,
+  );
+}
+
+Future<Uint8List> _finish(
+  Uint8List bytes, {
+  required int maxWidth,
+  required int imageQuality,
+  required bool removeBackground,
+}) async {
+  final shrunk = _shrink(bytes, maxWidth: maxWidth, quality: imageQuality);
+  if (!removeBackground) return shrunk;
+  return removeClothesBackground(shrunk);
 }
 
 Uint8List _shrink(
@@ -50,6 +119,10 @@ Uint8List _shrink(
             interpolation: img.Interpolation.linear,
           )
         : decoded;
+    // Keep PNG when input already has alpha; otherwise JPEG for the cutout step.
+    if (decoded.numChannels >= 4) {
+      return Uint8List.fromList(img.encodePng(resized));
+    }
     return Uint8List.fromList(img.encodeJpg(resized, quality: quality));
   } catch (_) {
     return bytes;

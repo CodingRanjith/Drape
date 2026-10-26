@@ -10,7 +10,6 @@ import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image_pick.dart';
 import '../widgets/back_icon.dart';
-import '../widgets/color_pick.dart';
 import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
 
@@ -51,7 +50,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
           id: const Uuid().v4(),
           name: '',
           category: widget.initialCategory ?? GarmentCategory.top,
-          colors: [colorArgb(fashionPalette.first.value)],
+          colors: const [],
           topKind: widget.initialTopKind ?? TopKind.top,
           styleCollection: widget.assignToCollection,
         );
@@ -77,6 +76,9 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
       source: source,
       maxWidth: 1600,
       imageQuality: 88,
+      wardrobeCategory: _garment.wardrobeCategory,
+      garmentCategory: _garment.category,
+      guideLabel: _garment.wardrobeCategory.label,
     );
     if (bytes == null || !mounted) return;
     setState(() => _pickedBytes = bytes);
@@ -276,35 +278,6 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
               }),
             ],
           ),
-          const SizedBox(height: 18),
-          Text('Item color', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 6),
-          const Text('Pick the real color of this piece. You will see it below.'),
-          const SizedBox(height: 12),
-          ColorChoiceRow(
-            color: _garment.colors.isEmpty ? null : _garment.primaryColor,
-            onPick: (color) {
-              setState(() {
-                _garment.colors
-                  ..clear()
-                  ..add(colorArgb(color));
-              });
-            },
-            onClear: () {
-              setState(() => _garment.colors.clear());
-            },
-          ),
-          const SizedBox(height: 14),
-          ColorPaletteGrid(
-            selected: _garment.primaryColor,
-            onPick: (color) {
-              setState(() {
-                _garment.colors
-                  ..clear()
-                  ..add(colorArgb(color));
-              });
-            },
-          ),
           if (pairOptions.isNotEmpty) ...[
             const SizedBox(height: 18),
             Text(
@@ -371,8 +344,9 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take a photo'),
+                leading: const Icon(Icons.document_scanner_outlined),
+                title: const Text('In-app scanner'),
+                subtitle: const Text('Opens inside Mine — not the camera app'),
                 onTap: () {
                   Navigator.pop(context);
                   _pick(ImageSource.camera);

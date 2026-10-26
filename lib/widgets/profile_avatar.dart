@@ -27,8 +27,8 @@ Future<Uint8List?> pickProfileImage(BuildContext context) async {
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              leading: const Icon(Icons.document_scanner_outlined),
+              title: const Text('In-app scanner'),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
@@ -42,6 +42,7 @@ Future<Uint8List?> pickProfileImage(BuildContext context) async {
     source: source,
     maxWidth: 1200,
     imageQuality: 88,
+    removeBackground: false,
   );
 }
 

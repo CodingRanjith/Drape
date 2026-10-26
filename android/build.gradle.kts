@@ -11,7 +11,7 @@ val flutterBuildDir: Directory =
     rootProject.layout.projectDirectory
         .dir("../build")
 val localPluginBuildRoot =
-    file("${System.getenv("LOCALAPPDATA")}/DrapeGradleBuild")
+    file("${System.getenv("LOCALAPPDATA")}/DrapeGradleBuild2")
 
 rootProject.layout.buildDirectory.value(flutterBuildDir)
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'app_nav.dart';
+import 'logic/remove_clothes_background.dart';
 import 'screens/alarm_ring_screen.dart';
 import 'screens/logo_prepage_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -23,6 +24,8 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+  // Prefetch Android cutout model in the background (no-op on other platforms).
+  unawaited(warmUpClothesBackgroundModel());
   runApp(const MineRoot());
 }
 

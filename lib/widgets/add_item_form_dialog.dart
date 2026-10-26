@@ -9,7 +9,6 @@ import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import 'app_image_pick.dart';
-import 'color_pick.dart';
 
 /// Centered add-item form: searchable category + item photo (pick / retake).
 Future<bool> showAddItemFormDialog(
@@ -46,7 +45,6 @@ class AddItemFormDialog extends StatefulWidget {
 class _AddItemFormDialogState extends State<AddItemFormDialog> {
   WardrobeCategory? _category;
   String? _customShelf;
-  Color? _color = fashionPalette.first.value;
   Uint8List? _imageBytes;
   bool _processing = false;
   bool _saving = false;
@@ -278,6 +276,8 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
         source: source,
         maxWidth: 1600,
         imageQuality: 92,
+        wardrobeCategory: _category,
+        guideLabel: _selectedLabel,
       );
       if (!mounted) return;
       if (bytes == null) {
@@ -298,42 +298,22 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   }
 
   Future<void> _chooseSource() async {
-    final source = await showDialog<ImageSource>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.paper,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text(
-          'Item photo',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.photo_camera_outlined, color: AppColors.terracotta),
-              title: const Text('Camera', style: TextStyle(fontWeight: FontWeight.w700)),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.photo_library_outlined, color: AppColors.terracotta),
-              title: const Text('Gallery', style: TextStyle(fontWeight: FontWeight.w700)),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-    if (source != null) await _pick(source);
+    if (_category == null &&
+        (_customShelf == null || _customShelf!.trim().isEmpty)) {
+      setState(() => _error = 'Select or create a category first.');
+      return;
+    }
+    // Open GPay-style in-app scanner directly (never the system camera app).
+    await _pick(ImageSource.camera);
+  }
+
+  Future<void> _chooseGallery() async {
+    if (_category == null &&
+        (_customShelf == null || _customShelf!.trim().isEmpty)) {
+      setState(() => _error = 'Select or create a category first.');
+      return;
+    }
+    await _pick(ImageSource.gallery);
   }
 
   Future<void> _save() async {
@@ -373,7 +353,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       id: const Uuid().v4(),
       name: shelfName,
       category: mapped.garmentCategory,
-      colors: _color != null ? [colorArgb(_color!)] : const [],
+      colors: const [],
       topKind: mapped.topKind,
       wardrobeCategory: mapped,
       customShelf: custom,
@@ -696,20 +676,6 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                       ],
                       const SizedBox(height: 18),
                       const Text(
-                        'Color',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                      ),
-                      const SizedBox(height: 8),
-                      IgnorePointer(
-                        ignoring: busy,
-                        child: ColorChoiceRow(
-                          color: _color,
-                          onPick: (color) => setState(() => _color = color),
-                          onClear: () => setState(() => _color = null),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
                         'Item price',
                         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                       ),
@@ -762,34 +728,42 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                         CircularProgressIndicator(color: AppColors.terracotta),
                                         SizedBox(height: 12),
                                         Text(
-                                          'Loading photo…',
+                                          'Removing background…',
                                           style: TextStyle(fontWeight: FontWeight.w700),
                                         ),
                                       ],
                                     ),
                                   )
                                 : _imageBytes == null
-                                    ? const Column(
+                                    ? Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(
-                                            Icons.add_a_photo_outlined,
+                                          const Icon(
+                                            Icons.document_scanner_outlined,
                                             size: 42,
                                             color: AppColors.terracotta,
                                           ),
-                                          SizedBox(height: 10),
-                                          Text(
-                                            'Tap to upload item image',
+                                          const SizedBox(height: 10),
+                                          const Text(
+                                            'Tap to open scanner',
                                             style: TextStyle(fontWeight: FontWeight.w800),
                                           ),
-                                          SizedBox(height: 4),
+                                          const SizedBox(height: 4),
                                           Text(
-                                            'Camera or gallery · retake anytime',
-                                            style: TextStyle(
+                                            _selectedLabel == null
+                                                ? 'Pick a category first'
+                                                : 'In-app scan · ${_selectedLabel!}',
+                                            style: const TextStyle(
                                               color: AppColors.muted,
                                               fontWeight: FontWeight.w600,
                                               fontSize: 12,
                                             ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          TextButton.icon(
+                                            onPressed: busy ? null : _chooseGallery,
+                                            icon: const Icon(Icons.photo_library_outlined, size: 18),
+                                            label: const Text('Gallery instead'),
                                           ),
                                         ],
                                       )
@@ -809,7 +783,14 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                                   Expanded(
                                                     child: FilledButton.tonal(
                                                       onPressed: busy ? null : _chooseSource,
-                                                      child: const Text('Retake'),
+                                                      child: const Text('Scan again'),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: OutlinedButton(
+                                                      onPressed: busy ? null : _chooseGallery,
+                                                      child: const Text('Gallery'),
                                                     ),
                                                   ),
                                                 ],

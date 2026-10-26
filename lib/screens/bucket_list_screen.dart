@@ -1024,8 +1024,8 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _processing ? null : () => _pick(ImageSource.camera),
-                    icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text('Take image'),
+                    icon: const Icon(Icons.document_scanner_outlined),
+                    label: const Text('Scan'),
                   ),
                 ),
                 const SizedBox(width: 8),
