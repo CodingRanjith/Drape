@@ -45,7 +45,7 @@ class AddItemFormDialog extends StatefulWidget {
 class _AddItemFormDialogState extends State<AddItemFormDialog> {
   WardrobeCategory? _category;
   String? _customShelf;
-  Color _color = fashionPalette.first.value;
+  Color? _color = fashionPalette.first.value;
   Uint8List? _imageBytes;
   bool _processing = false;
   bool _saving = false;
@@ -370,7 +370,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       id: const Uuid().v4(),
       name: shelfName,
       category: mapped.garmentCategory,
-      colors: [colorArgb(_color)],
+      colors: _color != null ? [colorArgb(_color!)] : const [],
       topKind: mapped.topKind,
       wardrobeCategory: mapped,
       customShelf: custom,
@@ -702,6 +702,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                         child: ColorChoiceRow(
                           color: _color,
                           onPick: (color) => setState(() => _color = color),
+                          onClear: () => setState(() => _color = null),
                         ),
                       ),
                       const SizedBox(height: 18),

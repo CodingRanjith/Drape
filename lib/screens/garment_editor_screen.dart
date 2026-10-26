@@ -281,13 +281,16 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
           const Text('Pick the real color of this piece. You will see it below.'),
           const SizedBox(height: 12),
           ColorChoiceRow(
-            color: _garment.primaryColor,
+            color: _garment.colors.isEmpty ? null : _garment.primaryColor,
             onPick: (color) {
               setState(() {
                 _garment.colors
                   ..clear()
                   ..add(colorArgb(color));
               });
+            },
+            onClear: () {
+              setState(() => _garment.colors.clear());
             },
           ),
           const SizedBox(height: 14),

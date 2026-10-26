@@ -15,10 +15,43 @@ class AppColors {
   static const gold = Color(0xFFB0894F);
 }
 
+/// App type system — Manrope for headlines and UI.
+class AppFonts {
+  static TextStyle display({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+    double? letterSpacing,
+  }) =>
+      body(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+
+  static TextStyle body({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+    double? letterSpacing,
+  }) =>
+      GoogleFonts.manrope(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+}
+
 class AppTheme {
   static ThemeData light() {
-    final display = GoogleFonts.playfairDisplayTextTheme();
-    final body = GoogleFonts.plusJakartaSansTextTheme();
+    final display = GoogleFonts.manropeTextTheme();
+    final body = GoogleFonts.manropeTextTheme();
 
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.terracotta,
@@ -84,7 +117,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.playfairDisplay(
+        titleTextStyle: AppFonts.display(
           color: AppColors.ink,
           fontSize: 28,
           fontWeight: FontWeight.w600,
@@ -102,11 +135,11 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.paper,
         selectedColor: AppColors.ink,
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: AppFonts.body(
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
-        secondaryLabelStyle: GoogleFonts.plusJakartaSans(
+        secondaryLabelStyle: AppFonts.body(
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
@@ -121,7 +154,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: AppFonts.body(
             fontWeight: FontWeight.w700,
             fontSize: 15,
           ),
@@ -159,7 +192,7 @@ class AppTheme {
         elevation: 0,
         height: 72,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return GoogleFonts.plusJakartaSans(
+          return AppFonts.body(
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700

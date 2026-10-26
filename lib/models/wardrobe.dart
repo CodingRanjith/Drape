@@ -646,7 +646,7 @@ extension StyleCollectionX on StyleCollection {
 
   String get subtitle => switch (this) {
     StyleCollection.officeWear => 'Add office singles or full sets',
-    StyleCollection.nightDress => 'Soft night looks — add when ready',
+    StyleCollection.nightDress => 'Soft night looks',
     StyleCollection.partyWear => 'Looks for parties',
     StyleCollection.marriageFunctions => 'Wedding and function looks',
     StyleCollection.outing => 'Casual outing looks',
@@ -660,32 +660,20 @@ extension StyleCollectionX on StyleCollection {
   String get coverAsset => coverAssetFor(Wearer.woman);
 
   String coverAssetFor(Wearer wearer) {
-    if (wearer == Wearer.man) {
-      return switch (this) {
-        StyleCollection.officeWear => 'assets/gender_male.png',
-        StyleCollection.nightDress => 'assets/men1.webp',
-        StyleCollection.partyWear => 'assets/men1.webp',
-        StyleCollection.marriageFunctions => 'assets/gender_male.png',
-        StyleCollection.outing => 'assets/men1.webp',
-        StyleCollection.western => 'assets/gender_male.png',
-        StyleCollection.traditional => 'assets/gender_male.png',
-        StyleCollection.casual => 'assets/men1.webp',
-        StyleCollection.festival => 'assets/gender_male.png',
-        StyleCollection.travel => 'assets/men1.webp',
-      };
-    }
-    return switch (this) {
-      StyleCollection.officeWear => 'assets/gender_female.png',
-      StyleCollection.nightDress => 'assets/walkthrough/week.png',
-      StyleCollection.partyWear => 'assets/girl1.jpg',
-      StyleCollection.marriageFunctions => 'assets/walkthrough/today.png',
-      StyleCollection.outing => 'assets/walkthrough/closet.png',
-      StyleCollection.western => 'assets/girl1.jpg',
-      StyleCollection.traditional => 'assets/gender_female.png',
-      StyleCollection.casual => 'assets/walkthrough/closet.png',
-      StyleCollection.festival => 'assets/girl1.jpg',
-      StyleCollection.travel => 'assets/walkthrough/today.png',
+    final folder = wearer == Wearer.man ? 'men' : 'women';
+    final file = switch (this) {
+      StyleCollection.officeWear => 'office.jpg',
+      StyleCollection.nightDress => 'night.jpg',
+      StyleCollection.partyWear => 'party.jpg',
+      StyleCollection.marriageFunctions => 'marriage.jpg',
+      StyleCollection.outing => 'outing.jpg',
+      StyleCollection.western => 'western.jpg',
+      StyleCollection.traditional => 'traditional.jpg',
+      StyleCollection.casual => 'casual.jpg',
+      StyleCollection.festival => 'festival.jpg',
+      StyleCollection.travel => 'travel.jpg',
     };
+    return 'assets/collections/$folder/$file';
   }
 
   List<Color> get coverGradient => switch (this) {

@@ -58,7 +58,7 @@ class CollectionSetsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${sets.length} ${sets.length == 1 ? 'set' : 'sets'}',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w800,
                       color: AppColors.ink,
                     ),
@@ -187,7 +187,7 @@ class _SetCard extends StatelessWidget {
                           set.name.trim().isEmpty ? 'Set $number' : set.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
                             color: AppColors.ink,
@@ -415,7 +415,7 @@ class _SetDetailsPopup extends StatelessWidget {
                   Expanded(
                     child: Text(
                       set.name.trim().isEmpty ? 'Set details' : set.name,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: AppColors.ink,
@@ -451,7 +451,7 @@ class _SetDetailsPopup extends StatelessWidget {
                           for (final entry in byShelf.entries) ...[
                             Text(
                               entry.key,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.terracotta,
                               ),

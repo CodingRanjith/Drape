@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import 'calendar_screen.dart';
 import 'closet_screen.dart';
@@ -7,7 +8,9 @@ import 'settings_screen.dart';
 import 'today_screen.dart';
 import 'week_screen.dart';
 import '../app_nav.dart';
+import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/garment_photo.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -102,10 +105,7 @@ class _MineNavBar extends StatelessWidget {
                   selected: index == 3,
                   onTap: () => onSelect(3),
                 ),
-                _NavItem(
-                  icon: Icons.person_outline_rounded,
-                  selectedIcon: Icons.person_rounded,
-                  label: 'Profile',
+                _ProfileNavItem(
                   selected: index == 4,
                   onTap: () => onSelect(4),
                 ),
@@ -149,7 +149,7 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: color,
@@ -199,11 +199,75 @@ class _AddNavItem extends StatelessWidget {
               child: Text(
                 'My Wardrobe',
                 maxLines: 1,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.manrope(
                   fontSize: 10,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   color: selected ? AppColors.ink : AppColors.muted,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileNavItem extends StatelessWidget {
+  const _ProfileNavItem({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = garmentImageProvider(
+      context.watch<MineState>().profile.photoPath,
+    );
+    final color = selected ? AppColors.ink : AppColors.muted;
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 38,
+              child: Center(
+                child: photo == null
+                    ? Icon(
+                        selected
+                            ? Icons.person_rounded
+                            : Icons.person_outline_rounded,
+                        color: color,
+                        size: 24,
+                      )
+                    : AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected ? AppColors.ink : AppColors.line,
+                            width: selected ? 1.8 : 1,
+                          ),
+                          image: DecorationImage(
+                            image: photo,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Profile',
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: color,
               ),
             ),
           ],

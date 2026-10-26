@@ -156,7 +156,7 @@ class _BucketListScreenState extends State<BucketListScreen>
                         Expanded(
                           child: Text(
                             'Style Bucketlist',
-                            style: GoogleFonts.playfairDisplay(
+                            style: GoogleFonts.manrope(
                               fontSize: 26,
                               fontWeight: FontWeight.w600,
                               color: AppColors.ink,
@@ -203,11 +203,11 @@ class _BucketListScreenState extends State<BucketListScreen>
                         ),
                         labelColor: Colors.white,
                         unselectedLabelColor: AppColors.muted,
-                        labelStyle: GoogleFonts.plusJakartaSans(
+                        labelStyle: GoogleFonts.manrope(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
                         ),
-                        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+                        unselectedLabelStyle: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -329,7 +329,7 @@ class _QuestHero extends StatelessWidget {
                     child: Center(
                       child: Text(
                         '$pct%',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.manrope(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 18,
@@ -347,7 +347,7 @@ class _QuestHero extends StatelessWidget {
                 children: [
                   Text(
                     'Fashion quest board',
-                    style: GoogleFonts.playfairDisplay(
+                    style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 22,
                       height: 1.15,
@@ -359,7 +359,7 @@ class _QuestHero extends StatelessWidget {
                     openCount == 0 && doneCount == 0
                         ? 'Collect looks you want to live.'
                         : '$openCount chasing · $doneCount celebrated',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       color: Colors.white.withValues(alpha: 0.82),
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -433,7 +433,7 @@ class _SparkStrip extends StatelessWidget {
       children: [
         Text(
           'Spark ideas',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontWeight: FontWeight.w800,
             color: AppColors.ink,
           ),
@@ -526,7 +526,7 @@ class _BucketListPane extends StatelessWidget {
               Text(
                 emptyTitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.manrope(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                 ),
@@ -718,7 +718,7 @@ class _BucketCard extends StatelessWidget {
                             const SizedBox(height: 6),
                             Text(
                               item.title,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
                                 color: AppColors.ink,
@@ -934,7 +934,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
           children: [
             Text(
               isEdit ? 'Edit bucket' : 'New bucket',
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.manrope(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
               ),
@@ -1049,7 +1049,7 @@ class _BucketEditorSheetState extends State<_BucketEditorSheet> {
             const SizedBox(height: 16),
             Text(
               'Vibe',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             Wrap(

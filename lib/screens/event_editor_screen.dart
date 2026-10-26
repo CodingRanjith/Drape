@@ -155,7 +155,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     return InputDecoration(
       hintText: hintText,
       hintMaxLines: multiline ? 3 : 1,
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.manrope(
         fontSize: 15,
         height: 1.35,
         fontWeight: FontWeight.w500,
@@ -221,7 +221,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                       child: Text(
                         isNew ? 'Add Reminder' : 'Edit Reminder',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.playfairDisplay(
+                        style: GoogleFonts.manrope(
                           fontSize: 28,
                           height: 1.15,
                           fontWeight: FontWeight.w600,
@@ -233,7 +233,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                       onPressed: _save,
                       child: Text(
                         'Save',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                           color: AppColors.terracotta,
                         ),
@@ -267,7 +267,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                           ? 'Set a date, time and alarm'
                           : 'Update this reminder',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppColors.muted,
@@ -285,7 +285,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                               spellCheckConfiguration:
                                   const SpellCheckConfiguration.disabled(),
                               cursorColor: AppColors.terracotta,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontSize: 16,
                                 height: 1.3,
                                 fontWeight: FontWeight.w600,
@@ -334,7 +334,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                                           'Plays at ${DateFormat('h:mm a').format(_event.at)} · $_musicLabel',
                                       trailing: Text(
                                         'Choose',
-                                        style: GoogleFonts.plusJakartaSans(
+                                        style: GoogleFonts.manrope(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                           color: AppColors.terracotta,
@@ -359,7 +359,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                               spellCheckConfiguration:
                                   const SpellCheckConfiguration.disabled(),
                               cursorColor: AppColors.terracotta,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontSize: 15,
                                 height: 1.4,
                                 fontWeight: FontWeight.w500,
@@ -384,7 +384,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: const StadiumBorder(),
-                          textStyle: GoogleFonts.plusJakartaSans(
+                          textStyle: GoogleFonts.manrope(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -450,7 +450,7 @@ class _FieldBlock extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
@@ -506,7 +506,7 @@ class _ActionRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
@@ -517,7 +517,7 @@ class _ActionRow extends StatelessWidget {
                     value,
                     maxLines: valueMaxLines,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppColors.muted,
@@ -570,7 +570,7 @@ class _SwitchRow extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.ink,

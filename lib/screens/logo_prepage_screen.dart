@@ -316,7 +316,7 @@ class _LogoPrepageScreenState extends State<LogoPrepageScreen>
                                 Text(
                                   MineProduct.tagline,
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     letterSpacing: _tagTrack.value,
@@ -327,7 +327,7 @@ class _LogoPrepageScreenState extends State<LogoPrepageScreen>
                                 Text(
                                   MineProduct.productLine,
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.6,
@@ -481,7 +481,7 @@ class _Letter extends StatelessWidget {
           scale: 0.92 + (eased * 0.08),
           child: Text(
             letter,
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.manrope(
               fontSize: 50,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,

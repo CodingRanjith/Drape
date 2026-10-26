@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/back_icon.dart';
 import '../widgets/clothes_photo_row.dart';
 import '../widgets/page_background.dart';
 import 'full_look_screen.dart';
@@ -28,9 +27,9 @@ class TodayScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-        leading: const AppBackIcon(),
-        title: const Text('Home'),
-      ),
+          automaticallyImplyLeading: false,
+          title: const Text('Home'),
+        ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
         children: [

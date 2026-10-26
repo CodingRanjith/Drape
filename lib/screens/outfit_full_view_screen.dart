@@ -83,7 +83,7 @@ class _OutfitFullViewScreenState extends State<OutfitFullViewScreen> {
                         child: selected == null
                             ? Text(
                                 'No pieces in this look',
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.manrope(
                                   color: AppColors.muted,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -150,7 +150,7 @@ class _OutfitFullViewScreenState extends State<OutfitFullViewScreen> {
                     children: [
                       Text(
                         selected.typeLabel.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.manrope(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.4,
@@ -161,7 +161,7 @@ class _OutfitFullViewScreenState extends State<OutfitFullViewScreen> {
                       Text(
                         selected.name,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.playfairDisplay(
+                        style: GoogleFonts.manrope(
                           fontSize: 22,
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,

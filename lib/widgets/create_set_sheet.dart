@@ -131,7 +131,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
           children: [
             Text(
               _editing ? 'Edit set' : 'New set',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
@@ -157,7 +157,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
             const SizedBox(height: 16),
             Text(
               'Pieces in this set',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
               ),
@@ -229,7 +229,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
             const SizedBox(height: 16),
             Text(
               'Wardrobe category',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
               ),

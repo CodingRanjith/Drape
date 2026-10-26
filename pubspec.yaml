@@ -66,3 +66,5 @@ flutter:
     - assets/back-arrow.png
     - assets/brand/
     - assets/walkthrough/
+    - assets/collections/men/
+    - assets/collections/women/

@@ -9,7 +9,6 @@ import '../models/wardrobe.dart';
 import '../product.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/back_icon.dart';
 import '../widgets/logout_button.dart';
 import '../widgets/page_background.dart';
 import '../widgets/profile_avatar.dart';
@@ -60,20 +59,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
           child: Column(
             children: [
               Row(
                 children: [
-                  const AppBackIcon(),
                   Expanded(
                     child: Text(
                       'My Profile',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         fontSize: 28,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                       ),
                     ),
@@ -199,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   MineProduct.appName,
-                  style: GoogleFonts.playfairDisplay(
+                  style: GoogleFonts.manrope(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -208,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 6),
                 Text(
                   MineProduct.productLine,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.terracotta,
@@ -217,7 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 14),
                 Text(
                   MineProduct.shortDescription,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 14,
                     height: 1.45,
                     fontWeight: FontWeight.w500,
@@ -227,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 18),
                 Text(
                   MineProduct.developedBy,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -659,7 +657,7 @@ class _MenuRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: color,
@@ -674,7 +672,7 @@ class _MenuRow extends StatelessWidget {
                           textAlign: TextAlign.right,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.manrope(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: valueColor ?? AppColors.muted,

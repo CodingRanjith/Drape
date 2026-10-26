@@ -199,7 +199,7 @@ class _WalkthroughPage extends StatelessWidget {
                       const SizedBox(width: 8),
                     Text(
                       MineProduct.appName,
-                      style: GoogleFonts.playfairDisplay(
+                      style: GoogleFonts.manrope(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -210,7 +210,7 @@ class _WalkthroughPage extends StatelessWidget {
                 const Spacer(),
                 Text(
                   slide.title,
-                  style: GoogleFonts.playfairDisplay(
+                  style: GoogleFonts.manrope(
                     fontSize: 34,
                     height: 1.12,
                     fontWeight: FontWeight.w600,
@@ -221,7 +221,7 @@ class _WalkthroughPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   slide.body,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 15,
                     height: 1.5,
                     fontWeight: FontWeight.w500,
@@ -243,7 +243,7 @@ class _WalkthroughPage extends StatelessWidget {
                         ),
                         child: Text(
                           'Skip',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.manrope(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -265,7 +265,7 @@ class _WalkthroughPage extends StatelessWidget {
                           ),
                           child: Text(
                             last ? 'Start' : 'Next',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.manrope(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppColors.ink,

@@ -118,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       filled: true,
       fillColor: Colors.white.withValues(alpha: 0.92),
       suffixIcon: suffix,
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.manrope(
         color: AppColors.muted,
         fontWeight: FontWeight.w500,
       ),
@@ -169,7 +169,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Text(
                     MineProduct.appName,
-                    style: GoogleFonts.playfairDisplay(
+                    style: GoogleFonts.manrope(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -202,7 +202,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                             false)
                                     ? 'Change photo'
                                     : 'Add profile photo',
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.muted,
@@ -218,7 +218,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           controller: _name,
                           textCapitalization: TextCapitalization.words,
                           textInputAction: TextInputAction.next,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.manrope(
                             color: AppColors.ink,
                             fontWeight: FontWeight.w600,
                           ),
@@ -271,7 +271,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               _dob == null
                                   ? ''
                                   : DateFormat('d MMMM y').format(_dob!),
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.ink,
@@ -291,7 +291,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: const StadiumBorder(),
-                        textStyle: GoogleFonts.plusJakartaSans(
+                        textStyle: GoogleFonts.manrope(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -311,7 +311,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _label(String text) {
     return Text(
       text,
-      style: GoogleFonts.plusJakartaSans(
+      style: GoogleFonts.manrope(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         color: AppColors.ink,
@@ -385,7 +385,7 @@ class _GenderCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               title,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                                 color: Colors.white,

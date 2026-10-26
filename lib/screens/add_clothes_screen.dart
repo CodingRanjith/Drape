@@ -5,10 +5,8 @@ import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/back_icon.dart';
-import '../widgets/closet_add.dart';
 import '../widgets/page_background.dart';
 import 'collection_sets_screen.dart';
-import 'garment_editor_screen.dart';
 
 class AddClothesScreen extends StatelessWidget {
   const AddClothesScreen({super.key});
@@ -24,25 +22,8 @@ class AddClothesScreen extends StatelessWidget {
           leading: const AppBackIcon(),
           title: const Text('My outfit'),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => pickClothesType(
-            context,
-            title: 'Add clothes',
-            onPick: (type) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => GarmentEditorScreen(
-                    initialCategory: type.category,
-                    initialTopKind: type.topKind,
-                  ),
-                ),
-              );
-            },
-          ),
-          child: const Icon(Icons.add_rounded),
-        ),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             Text(
               '${state.garments.length} items · 10 collections',
@@ -55,7 +36,7 @@ class AddClothesScreen extends StatelessWidget {
             Text('Collections', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             const Text(
-              'Open a card to upload sets. Empty cards show Coming soon until you add a set.',
+              'Open a collection to add outfits and sets for that style.',
             ),
             const SizedBox(height: 18),
             GridView.count(
@@ -72,7 +53,6 @@ class AddClothesScreen extends StatelessWidget {
                     wearer: state.profile.wearer,
                     setCount: state.setsFor(collection).length,
                     singleCount: state.singlesFor(collection).length,
-                    isEmpty: !state.collectionHasContent(collection),
                   ),
               ],
             ),
@@ -89,23 +69,21 @@ class _CollectionCard extends StatelessWidget {
     required this.wearer,
     required this.setCount,
     required this.singleCount,
-    required this.isEmpty,
   });
 
   final StyleCollection collection;
   final Wearer wearer;
   final int setCount;
   final int singleCount;
-  final bool isEmpty;
 
   @override
   Widget build(BuildContext context) {
-    final status = isEmpty
-        ? 'Coming soon'
-        : [
-            if (setCount > 0) '$setCount sets',
-            if (singleCount > 0) '$singleCount items',
-          ].join(' · ');
+    final parts = <String>[
+      if (setCount > 0) '$setCount ${setCount == 1 ? 'set' : 'sets'}',
+      if (singleCount > 0)
+        '$singleCount ${singleCount == 1 ? 'item' : 'items'}',
+    ];
+    final status = parts.isEmpty ? 'Tap to add looks' : parts.join(' · ');
     final cover = collection.coverAssetFor(wearer);
 
     return Material(
@@ -168,9 +146,7 @@ class _CollectionCard extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
-                        color: isEmpty
-                            ? const Color(0xFFFFD8C2)
-                            : Colors.white.withValues(alpha: 0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                       ),
                     ),
                   ],

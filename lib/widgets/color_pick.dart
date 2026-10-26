@@ -5,44 +5,61 @@ import '../theme/app_theme.dart';
 
 Future<Color?> pickAppColor(
   BuildContext context, {
-  required Color current,
+  Color? current,
 }) {
   return showDialog<Color>(
     context: context,
-    builder: (context) => _ColorPickerDialog(current: current),
+    builder: (context) => _ColorPickerDialog(
+      current: current ?? fashionPalette.first.value,
+    ),
   );
 }
 
 class ColorChoiceRow extends StatelessWidget {
   const ColorChoiceRow({
     super.key,
-    required this.color,
+    this.color,
     required this.onPick,
+    this.onClear,
   });
 
-  final Color color;
+  final Color? color;
   final ValueChanged<Color> onPick;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
-    final name = colorNameOf(color);
+    final picked = color;
+    final name = picked != null ? colorNameOf(picked) : 'No color';
     return Row(
       children: [
         Container(
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: color,
+            color: picked ?? AppColors.paper,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.ink, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.35),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(
+              color: picked != null ? AppColors.ink : AppColors.line,
+              width: picked != null ? 2 : 1.5,
+            ),
+            boxShadow: picked == null
+                ? null
+                : [
+                    BoxShadow(
+                      color: picked.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
+          child: picked == null
+              ? const Icon(
+                  Icons.format_color_reset_outlined,
+                  color: AppColors.muted,
+                  size: 26,
+                )
+              : null,
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -51,15 +68,17 @@ class ColorChoiceRow extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: AppColors.ink,
+                  color: picked != null ? AppColors.ink : AppColors.muted,
                 ),
               ),
-              const Text(
-                'This is the color you picked',
-                style: TextStyle(
+              Text(
+                picked != null
+                    ? 'This is the color you picked'
+                    : 'Optional — skip if you prefer',
+                style: const TextStyle(
                   color: AppColors.muted,
                   fontWeight: FontWeight.w600,
                 ),
@@ -67,12 +86,25 @@ class ColorChoiceRow extends StatelessWidget {
             ],
           ),
         ),
+        if (picked != null && onClear != null) ...[
+          IconButton(
+            tooltip: 'Remove color',
+            onPressed: onClear,
+            icon: const Icon(Icons.close_rounded),
+            color: AppColors.muted,
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.paper,
+              side: const BorderSide(color: AppColors.line),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         OutlinedButton(
           onPressed: () async {
-            final next = await pickAppColor(context, current: color);
+            final next = await pickAppColor(context, current: picked);
             if (next != null) onPick(next);
           },
-          child: const Text('Pick color'),
+          child: Text(picked != null ? 'Pick color' : 'Add color'),
         ),
       ],
     );

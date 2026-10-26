@@ -71,7 +71,7 @@ class _EmptyNotices extends StatelessWidget {
             Text(
               'No notifications yet',
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
@@ -81,7 +81,7 @@ class _EmptyNotices extends StatelessWidget {
             Text(
               'When you add clothes, save a look, or set a reminder, it will show up here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.manrope(
                 fontSize: 14,
                 height: 1.45,
                 color: AppColors.muted,

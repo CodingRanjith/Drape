@@ -92,7 +92,7 @@ class ClosetScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(96),
+          preferredSize: const Size.fromHeight(108),
           child: SafeArea(
             bottom: false,
             child: Padding(
@@ -117,24 +117,31 @@ class ClosetScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      _HeaderActionChip(
-                        label: 'My outfit',
-                        background: AppColors.terracottaSoft,
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const AddClothesScreen(),
+                      Expanded(
+                        child: _HeaderActionChip(
+                          label: 'My outfit',
+                          icon: Icons.checkroom_rounded,
+                          background: AppColors.terracottaSoft,
+                          accent: AppColors.terracotta,
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AddClothesScreen(),
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _HeaderActionChip(
-                        label: 'My Bucketlist',
-                        background: AppColors.sageSoft,
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const BucketListScreen(),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _HeaderActionChip(
+                          label: 'My Bucketlist',
+                          icon: Icons.bookmark_border_rounded,
+                          background: AppColors.sageSoft,
+                          accent: AppColors.sage,
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const BucketListScreen(),
+                            ),
                           ),
                         ),
                       ),
@@ -213,31 +220,52 @@ class _ShelfRowData {
 class _HeaderActionChip extends StatelessWidget {
   const _HeaderActionChip({
     required this.label,
+    required this.icon,
     required this.background,
+    required this.accent,
     required this.onPressed,
   });
 
   final String label;
+  final IconData icon;
   final Color background;
+  final Color accent;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.ink,
-        backgroundColor: background,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: accent.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: accent),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
       ),
     );
   }

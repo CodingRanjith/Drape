@@ -69,7 +69,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
                 'Your Outfit Calendar',
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.manrope(
                   fontSize: 26,
                   height: 1.15,
                   fontWeight: FontWeight.w600,
@@ -191,7 +191,7 @@ class _EventsTab extends StatelessWidget {
                 children: [
                   Text(
                     'Outfit that day',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w800,
                       color: AppColors.ink,
                     ),

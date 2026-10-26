@@ -126,7 +126,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                         'Clear data',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.manrope(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                           color: AppColors.ink,
@@ -154,7 +154,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                               children: [
                                 Text(
                                   'Clear all data?',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.ink,
@@ -163,7 +163,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                                 const SizedBox(height: 10),
                                 Text(
                                   'Clothes, looks, events and profile details will be deleted from this phone. This cannot be undone.',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.manrope(
                                     color: AppColors.muted,
                                     height: 1.45,
                                   ),
@@ -171,7 +171,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                                 const SizedBox(height: 22),
                                 Text(
                                   'Type your username to confirm',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.manrope(
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.ink,
                                   ),
@@ -196,7 +196,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                                           Expanded(
                                             child: Text(
                                               expected,
-                                              style: GoogleFonts.plusJakartaSans(
+                                              style: GoogleFonts.manrope(
                                                 fontWeight: FontWeight.w800,
                                                 color: AppColors.terracotta,
                                                 fontSize: 16,
@@ -248,7 +248,7 @@ class _ClearDataScreenState extends State<ClearDataScreen> {
                                           : () => Navigator.pop(context),
                                       child: Text(
                                         'Cancel',
-                                        style: GoogleFonts.plusJakartaSans(
+                                        style: GoogleFonts.manrope(
                                           fontWeight: FontWeight.w700,
                                           color: AppColors.terracotta,
                                         ),
@@ -439,7 +439,7 @@ class _ClearedSuccessPopupState extends State<_ClearedSuccessPopup>
                     child: Text(
                       'Successfully cleared',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: AppColors.ink,
@@ -452,7 +452,7 @@ class _ClearedSuccessPopupState extends State<_ClearedSuccessPopup>
                     child: Text(
                       'Your wardrobe data has been removed.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         color: AppColors.muted,
                         fontWeight: FontWeight.w600,
                       ),

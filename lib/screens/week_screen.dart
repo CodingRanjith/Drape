@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
 import '../widgets/page_background.dart';
 import 'outfit_full_view_screen.dart';
@@ -224,25 +223,36 @@ class _WeekScreenState extends State<WeekScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 12, 12, 0),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Text(
+                  'This week',
+                  style: GoogleFonts.manrope(
+                    fontSize: 26,
+                    height: 1.15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
                 child: Row(
                   children: [
-                    const AppBackIcon(),
-                    Expanded(
-                      child: Text(
-                        'This week',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 26,
-                          height: 1.15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
                     IconButton(
                       tooltip: 'Previous week',
                       onPressed: () => _shiftWeek(-1),
                       icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                    Expanded(
+                      child: Text(
+                        range,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
                     IconButton(
                       tooltip: 'Next week',
@@ -253,12 +263,13 @@ class _WeekScreenState extends State<WeekScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
                 child: Text(
                   setCount >= 7
-                      ? '$range · $setCount sets ready · auto-suggested'
-                      : '$range · Add a set or dress on each day'
+                      ? '$setCount sets ready · auto-suggested'
+                      : 'Add a set or dress on each day'
                           '${setCount > 0 ? ' · $setCount sets so far' : ''}',
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppColors.muted,
                     fontWeight: FontWeight.w600,
@@ -421,7 +432,7 @@ class _DayCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               dayName,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
                                 color: AppColors.ink,
