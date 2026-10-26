@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image_pick.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/page_background.dart';
 
@@ -40,17 +41,19 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    final shot = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1600,
-      imageQuality: 92,
-    );
-    if (shot == null) return;
-
     setState(() => _processing = true);
     try {
-      final bytes = await shot.readAsBytes();
+      final bytes = await pickAppImage(
+        context,
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 92,
+      );
       if (!mounted) return;
+      if (bytes == null) {
+        setState(() => _processing = false);
+        return;
+      }
       setState(() {
         _imageBytes = bytes;
         _processing = false;

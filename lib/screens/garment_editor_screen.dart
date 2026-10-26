@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_image_pick.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/color_pick.dart';
 import '../widgets/common.dart';
@@ -71,13 +72,13 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    final shot = await ImagePicker().pickImage(
+    final bytes = await pickAppImage(
+      context,
       source: source,
       maxWidth: 1600,
       imageQuality: 88,
     );
-    if (shot == null) return;
-    final bytes = await shot.readAsBytes();
+    if (bytes == null || !mounted) return;
     setState(() => _pickedBytes = bytes);
   }
 

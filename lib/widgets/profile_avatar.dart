@@ -8,6 +8,7 @@ import '../app_nav.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import 'app_image_pick.dart';
 import 'garment_photo.dart';
 
 Future<Uint8List?> pickProfileImage(BuildContext context) async {
@@ -36,13 +37,12 @@ Future<Uint8List?> pickProfileImage(BuildContext context) async {
     },
   );
   if (source == null) return null;
-  final shot = await ImagePicker().pickImage(
+  return pickAppImage(
+    context,
     source: source,
     maxWidth: 1200,
     imageQuality: 88,
   );
-  if (shot == null) return null;
-  return shot.readAsBytes();
 }
 
 class ProfileAvatar extends StatelessWidget {

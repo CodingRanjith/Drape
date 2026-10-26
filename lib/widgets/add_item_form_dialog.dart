@@ -8,6 +8,7 @@ import '../logic/wardrobe_category_search.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import 'app_image_pick.dart';
 import 'color_pick.dart';
 
 /// Centered add-item form: searchable category + item photo (pick / retake).
@@ -267,20 +268,22 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    final shot = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1600,
-      imageQuality: 92,
-    );
-    if (shot == null) return;
-
     setState(() {
       _processing = true;
       _error = null;
     });
     try {
-      final bytes = await shot.readAsBytes();
+      final bytes = await pickAppImage(
+        context,
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 92,
+      );
       if (!mounted) return;
+      if (bytes == null) {
+        setState(() => _processing = false);
+        return;
+      }
       setState(() {
         _imageBytes = bytes;
         _processing = false;
