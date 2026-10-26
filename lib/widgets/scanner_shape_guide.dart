@@ -75,6 +75,7 @@ class ScannerShapeOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final caption = label?.trim();
     return IgnorePointer(
       child: Stack(
         fit: StackFit.expand,
@@ -82,7 +83,7 @@ class ScannerShapeOverlay extends StatelessWidget {
           CustomPaint(
             painter: _ScannerMaskPainter(shape: shape),
           ),
-          if (label != null && label!.trim().isNotEmpty)
+          if (caption != null && caption.isNotEmpty)
             Align(
               alignment: const Alignment(0, -0.72),
               child: Container(
@@ -93,7 +94,7 @@ class ScannerShapeOverlay extends StatelessWidget {
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Text(
-                  label,
+                  caption,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
