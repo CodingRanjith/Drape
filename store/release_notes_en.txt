@@ -1,0 +1,7 @@
+What's new in 1.0.2 (5)
+
+• Stability and performance improvements
+• Bug fixes for camera, wardrobe, and daily outfit flow
+• Ready for closed testing feedback
+
+Please install from the opt-in link, try the main flows, and send feedback to the address on the tester page.

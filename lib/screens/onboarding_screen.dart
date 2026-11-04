@@ -941,21 +941,21 @@ class _GenderToggle extends StatelessWidget {
       children: [
         Expanded(
           child: _GenderPick(
-            title: 'Female',
-            caption: 'Soft · fluid · bold',
-            image: Wearer.woman.portraitAsset,
-            selected: selected == Wearer.woman,
-            onTap: () => onSelect(Wearer.woman),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _GenderPick(
             title: 'Male',
             caption: 'Sharp · easy · clean',
             image: Wearer.man.portraitAsset,
             selected: selected == Wearer.man,
             onTap: () => onSelect(Wearer.man),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _GenderPick(
+            title: 'Female',
+            caption: 'Soft · fluid · bold',
+            image: Wearer.woman.portraitAsset,
+            selected: selected == Wearer.woman,
+            onTap: () => onSelect(Wearer.woman),
           ),
         ),
       ],

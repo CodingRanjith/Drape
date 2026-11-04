@@ -815,8 +815,12 @@ class UserProfile {
     this.officeAlarmMusicName,
     this.officeAlarmFiredOn,
     List<String>? customShelves,
+    List<String>? shelfOrder,
+    List<String>? hiddenShelves,
   }) : workdays = workdays ?? {1, 2, 3, 4, 5},
-       customShelves = customShelves ?? [];
+       customShelves = customShelves ?? [],
+       shelfOrder = shelfOrder ?? [],
+       hiddenShelves = hiddenShelves ?? [];
 
   String name;
   Set<int> workdays;
@@ -838,6 +842,10 @@ class UserProfile {
   String? officeAlarmFiredOn;
   /// User-created cupboard categories (dynamic), shared for this profile.
   List<String> customShelves;
+  /// Display order for built-in + custom shelf labels (wardrobe + pickers).
+  List<String> shelfOrder;
+  /// Built-in shelf labels the user removed from wardrobe (can restore).
+  List<String> hiddenShelves;
 
   double? get bmi {
     final w = weightKg;
@@ -885,6 +893,8 @@ class UserProfile {
     'officeAlarmMusicName': officeAlarmMusicName,
     'officeAlarmFiredOn': officeAlarmFiredOn,
     'customShelves': customShelves,
+    'shelfOrder': shelfOrder,
+    'hiddenShelves': hiddenShelves,
   };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -913,6 +923,14 @@ class UserProfile {
     officeAlarmMusicName: json['officeAlarmMusicName'] as String?,
     officeAlarmFiredOn: json['officeAlarmFiredOn'] as String?,
     customShelves: ((json['customShelves'] as List?) ?? const [])
+        .map((e) => e as String)
+        .where((e) => e.trim().isNotEmpty)
+        .toList(),
+    shelfOrder: ((json['shelfOrder'] as List?) ?? const [])
+        .map((e) => e as String)
+        .where((e) => e.trim().isNotEmpty)
+        .toList(),
+    hiddenShelves: ((json['hiddenShelves'] as List?) ?? const [])
         .map((e) => e as String)
         .where((e) => e.trim().isNotEmpty)
         .toList(),

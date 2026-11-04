@@ -19,34 +19,35 @@ class _SplashWalkthroughScreenState extends State<SplashWalkthroughScreen> {
   final _pages = PageController();
   var _index = 0;
 
+  /// Gender order: women → men → women → men.
   static const _slides = [
     _Slide(
-      image: 'assets/walkthrough/style.png',
+      image: 'assets/walkthrough/style.png', // women
       title: 'Find Your Unique Style',
       body:
           'Discover your authentic fashion identity with personalized recommendations and exclusive collections.',
       wash: Color(0xFF7A1848),
     ),
     _Slide(
-      image: 'assets/walkthrough/closet.png',
+      image: 'assets/gender_male.png', // men
       title: 'Your Closet, Elevated',
       body:
           'Photograph every piece once. Mine keeps your wardrobe organized, ready, and easy to mix into beautiful looks.',
-      wash: Color(0xFF1F6F6A),
+      wash: Color(0xFF3A2E26),
     ),
     _Slide(
-      image: 'assets/walkthrough/today.png',
+      image: 'assets/walkthrough/today.png', // women
       title: 'What To Wear Today',
       body:
           'Wake up to a complete look assembled from your own closet — no more morning guesswork.',
       wash: Color(0xFFC45C26),
     ),
     _Slide(
-      image: 'assets/walkthrough/week.png',
+      image: 'assets/collections/men/western.jpg', // men
       title: 'Styled For Every Day',
       body:
           'Plan outfits across the week and your calendar, so every moment feels intentional and nothing repeats too soon.',
-      wash: Color(0xFF5C3D24),
+      wash: Color(0xFF1E2A38),
     ),
   ];
 

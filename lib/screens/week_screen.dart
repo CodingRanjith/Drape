@@ -8,6 +8,7 @@ import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/mine_logo_mark.dart';
 import '../widgets/page_background.dart';
 import 'outfit_full_view_screen.dart';
 
@@ -224,14 +225,22 @@ class _WeekScreenState extends State<WeekScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Text(
-                  'This week',
-                  style: GoogleFonts.manrope(
-                    fontSize: 26,
-                    height: 1.15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                  ),
+                child: Row(
+                  children: [
+                    const MineLogoMark(size: 44, radius: 14),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'This week',
+                        style: GoogleFonts.manrope(
+                          fontSize: 26,
+                          height: 1.15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Padding(

@@ -10,7 +10,7 @@ import '../product.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/logout_button.dart';
-import '../widgets/page_background.dart';
+import '../widgets/mine_logo_mark.dart';
 import '../widgets/profile_avatar.dart';
 import 'clear_data_screen.dart';
 import 'notifications_screen.dart';
@@ -54,201 +54,164 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final profile = context.watch<MineState>().profile;
     final displayName = _nameValue(profile) ?? 'Your profile';
+    final dob = profile.dateOfBirth == null
+        ? 'Add DOB'
+        : DateFormat('d MMM yyyy').format(profile.dateOfBirth!);
 
-    return PageBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Profile',
-                        style: GoogleFonts.manrope(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+    // Distinct studio look — no portrait wash, cool sage atmosphere.
+    return Scaffold(
+      backgroundColor: const Color(0xFFEEF3F0),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const CustomPaint(painter: _StudioBackdropPainter()),
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 14, 0),
+                    child: Row(
+                      children: [
+                        const MineLogoMark(size: 44, radius: 14),
+                        const SizedBox(width: 12),
+                        Text(
+                          'You',
+                          style: GoogleFonts.manrope(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.2,
+                            color: const Color(0xFF1F2A26),
+                          ),
                         ),
+                        const Spacer(),
+                        _LogoutMark(onTap: () => confirmLogout(context)),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+                    child: _IdentityBand(
+                      displayName: displayName,
+                      gender: profile.wearer.genderLabel,
+                      onPhoto: _changePhoto,
+                      onEdit: _editIdentity,
+                      heightLabel: profile.heightCm == null
+                          ? '—'
+                          : _pretty(profile.heightCm!),
+                      weightLabel: profile.weightKg == null
+                          ? '—'
+                          : _pretty(profile.weightKg!),
+                      bmiLabel: profile.bmi == null
+                          ? '—'
+                          : profile.bmi!.toStringAsFixed(1),
+                      bmiHint: profile.bmiCategory,
+                      onHeight: () => _pickNumber(
+                        title: 'Height',
+                        suffix: 'cm',
+                        value: profile.heightCm,
+                        onSave: (v) => _persist((p) => p.heightCm = v),
+                      ),
+                      onWeight: () => _pickNumber(
+                        title: 'Weight',
+                        suffix: 'kg',
+                        value: profile.weightKg,
+                        onSave: (v) => _persist((p) => p.weightKg = v),
                       ),
                     ),
-                    _LogoutMark(onTap: () => confirmLogout(context)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                  children: [
-                    Center(
-                      child: Column(
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+                  sliver: SliverList.list(
+                    children: [
+                      _StudioPanel(
+                        title: 'Personal',
                         children: [
-                          ProfileAvatar(
-                            radius: 52,
-                            showEditBadge: true,
-                            borderColor: AppColors.terracottaSoft,
-                            onTap: _changePhoto,
+                          _MenuRow(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Name',
+                            value: _nameValue(profile),
+                            onTap: _editIdentity,
                           ),
-                          const SizedBox(height: 14),
-                          Text(
-                            displayName,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.manrope(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                            ),
+                          _MenuRow(
+                            icon: Icons.wc_rounded,
+                            title: 'Gender',
+                            value: profile.wearer.genderLabel,
+                            onTap: _pickGender,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            profile.wearer.genderLabel,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          TextButton(
-                            onPressed: _editIdentity,
-                            child: const Text('Edit profile'),
+                          _MenuRow(
+                            icon: Icons.cake_outlined,
+                            title: 'Date of birth',
+                            value: dob,
+                            onTap: _pickDob,
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    _SectionCard(
-                      title: 'Personal',
-                      children: [
-                        _MenuRow(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Name',
-                          value: _nameValue(profile),
-                          onTap: _editIdentity,
-                        ),
-                        _MenuRow(
-                          icon: Icons.wc_rounded,
-                          title: 'Gender',
-                          value: profile.wearer.genderLabel,
-                          onTap: _pickGender,
-                        ),
-                        _MenuRow(
-                          icon: Icons.cake_outlined,
-                          title: 'Date of birth',
-                          value: profile.dateOfBirth == null
-                              ? null
-                              : DateFormat('d MMM yyyy')
-                                  .format(profile.dateOfBirth!),
-                          onTap: _pickDob,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _SectionCard(
-                      title: 'Body',
-                      children: [
-                        _MenuRow(
-                          icon: Icons.height_rounded,
-                          title: 'Height',
-                          value: profile.heightCm == null
-                              ? null
-                              : '${_pretty(profile.heightCm!)} cm',
-                          onTap: () => _pickNumber(
-                            title: 'Height',
-                            suffix: 'cm',
-                            value: profile.heightCm,
-                            onSave: (v) => _persist((p) => p.heightCm = v),
-                          ),
-                        ),
-                        _MenuRow(
-                          icon: Icons.monitor_weight_outlined,
-                          title: 'Weight',
-                          value: profile.weightKg == null
-                              ? null
-                              : '${_pretty(profile.weightKg!)} kg',
-                          onTap: () => _pickNumber(
-                            title: 'Weight',
-                            suffix: 'kg',
-                            value: profile.weightKg,
-                            onSave: (v) => _persist((p) => p.weightKg = v),
-                          ),
-                        ),
-                        _MenuRow(
-                          icon: Icons.favorite_outline_rounded,
-                          title: 'BMI',
-                          value: profile.bmi == null ? null : profile.bmiLabel,
-                          valueColor: _bmiColor(profile),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _SectionCard(
-                      title: 'Preferences',
-                      children: [
-                        _MenuRow(
-                          icon: Icons.notifications_none_rounded,
-                          title: 'Notifications',
-                          value: _noticeValue(context),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationsScreen(),
+                      const SizedBox(height: 14),
+                      _StudioPanel(
+                        title: 'Preferences',
+                        children: [
+                          _MenuRow(
+                            icon: Icons.notifications_none_rounded,
+                            title: 'Notifications',
+                            value: _noticeValue(context),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsScreen(),
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _StudioPanel(
+                        title: 'Data & app',
+                        children: [
+                          _MenuRow(
+                            icon: Icons.ios_share_rounded,
+                            title: 'Export',
+                            onTap: _busy ? null : _backup,
+                          ),
+                          _MenuRow(
+                            icon: Icons.download_outlined,
+                            title: 'Import',
+                            onTap: _busy ? null : _import,
+                          ),
+                          _MenuRow(
+                            icon: Icons.info_outline_rounded,
+                            title: 'About',
+                            value: MineProduct.company,
+                            onTap: _showAbout,
+                          ),
+                          _MenuRow(
+                            icon: Icons.delete_outline_rounded,
+                            title: 'Clear data',
+                            danger: true,
+                            onTap: _busy ? null : _openClearData,
+                          ),
+                        ],
+                      ),
+                      if (_busy) ...[
+                        const SizedBox(height: 24),
+                        const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.sage,
+                          ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-                    _SectionCard(
-                      title: 'Data',
-                      children: [
-                        _MenuRow(
-                          icon: Icons.ios_share_rounded,
-                          title: 'Export',
-                          onTap: _busy ? null : _backup,
-                        ),
-                        _MenuRow(
-                          icon: Icons.download_outlined,
-                          title: 'Import',
-                          onTap: _busy ? null : _import,
-                        ),
-                        _MenuRow(
-                          icon: Icons.delete_outline_rounded,
-                          title: 'Clear data',
-                          danger: true,
-                          onTap: _busy ? null : _openClearData,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _SectionCard(
-                      title: 'App',
-                      children: [
-                        _MenuRow(
-                          icon: Icons.info_outline_rounded,
-                          title: 'About',
-                          value: MineProduct.company,
-                          onTap: _showAbout,
-                        ),
-                      ],
-                    ),
-                    if (_busy) ...[
-                      const SizedBox(height: 20),
-                      const Center(child: CircularProgressIndicator()),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -323,21 +286,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final count = context.read<MineState>().homeNoticeCount;
     if (count <= 0) return null;
     return '$count new';
-  }
-
-  Color? _bmiColor(UserProfile profile) {
-    switch (profile.bmiCategory) {
-      case 'Underweight':
-        return const Color(0xFF4A7C9B);
-      case 'Normal':
-        return AppColors.sage;
-      case 'Overweight':
-        return AppColors.terracotta;
-      case 'Obese':
-        return const Color(0xFFE24B4B);
-      default:
-        return null;
-    }
   }
 
   Future<void> _changePhoto() async {
@@ -657,14 +605,14 @@ class _LogoutMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0x14C45C26),
+      color: const Color(0x22E24B4B),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: const SizedBox(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           child: Icon(
             Icons.logout_rounded,
             size: 20,
@@ -676,8 +624,322 @@ class _LogoutMark extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
+class _StudioBackdropPainter extends CustomPainter {
+  const _StudioBackdropPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFFEEF3F0),
+    );
+    final a = Paint()
+      ..shader = const RadialGradient(
+        colors: [Color(0x663F5E51), Color(0x00EEF3F0)],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(size.width * 0.15, size.height * 0.08),
+          radius: size.width * 0.7,
+        ),
+      );
+    canvas.drawCircle(
+      Offset(size.width * 0.15, size.height * 0.08),
+      size.width * 0.7,
+      a,
+    );
+    final b = Paint()
+      ..shader = const RadialGradient(
+        colors: [Color(0x447A9EAE), Color(0x00EEF3F0)],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(size.width * 0.95, size.height * 0.35),
+          radius: size.width * 0.55,
+        ),
+      );
+    canvas.drawCircle(
+      Offset(size.width * 0.95, size.height * 0.35),
+      size.width * 0.55,
+      b,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Identity + body metrics — soft studio card with Mine mark.
+class _IdentityBand extends StatelessWidget {
+  const _IdentityBand({
+    required this.displayName,
+    required this.gender,
+    required this.onPhoto,
+    required this.onEdit,
+    required this.heightLabel,
+    required this.weightLabel,
+    required this.bmiLabel,
+    required this.bmiHint,
+    required this.onHeight,
+    required this.onWeight,
+  });
+
+  final String displayName;
+  final String gender;
+  final VoidCallback onPhoto;
+  final VoidCallback onEdit;
+  final String heightLabel;
+  final String weightLabel;
+  final String bmiLabel;
+  final String bmiHint;
+  final VoidCallback onHeight;
+  final VoidCallback onWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF7FAF8),
+            Color(0xFFE4EDE8),
+          ],
+        ),
+        border: Border.all(color: const Color(0xFF3F5E51).withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1F2A26).withValues(alpha: 0.08),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: onPhoto,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1F2A26).withValues(alpha: 0.14),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ProfileAvatar(
+                        radius: 39,
+                        showEditBadge: false,
+                        borderColor: Colors.transparent,
+                        onTap: onPhoto,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3F5E51),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.photo_camera_outlined,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.manrope(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              color: const Color(0xFF1F2A26),
+                            ),
+                          ),
+                        ),
+                        const MineLogoMark(size: 28, radius: 8, shadow: false),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      gender.toUpperCase(),
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.6,
+                        color: const Color(0xFF5A7A6C),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: onEdit,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3F5E51),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'Edit profile',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2F4A3F),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _BandStat(
+                    label: 'Height',
+                    value: heightLabel,
+                    unit: 'cm',
+                    onTap: onHeight,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 34,
+                  color: Colors.white.withValues(alpha: 0.16),
+                ),
+                Expanded(
+                  child: _BandStat(
+                    label: 'Weight',
+                    value: weightLabel,
+                    unit: 'kg',
+                    onTap: onWeight,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 34,
+                  color: Colors.white.withValues(alpha: 0.16),
+                ),
+                Expanded(
+                  child: _BandStat(
+                    label: 'BMI',
+                    value: bmiLabel,
+                    unit: bmiHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BandStat extends StatelessWidget {
+  const _BandStat({
+    required this.label,
+    required this.value,
+    required this.unit,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final String unit;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.manrope(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: const Color(0xFFB7D0C4),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.manrope(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          if (unit.isNotEmpty)
+            Text(
+              unit,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StudioPanel extends StatelessWidget {
+  const _StudioPanel({
     required this.title,
     required this.children,
   });
@@ -687,42 +949,31 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFF1F2A26).withValues(alpha: 0.07),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
             title.toUpperCase(),
             style: GoogleFonts.manrope(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: AppColors.muted,
+              letterSpacing: 1.6,
+              color: AppColors.sage,
             ),
           ),
-        ),
-        Material(
-          color: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                children[i],
-                if (i < children.length - 1)
-                  const Divider(
-                    height: 1,
-                    indent: 62,
-                    endIndent: 16,
-                    color: Color(0xFFE8E4DF),
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          for (final child in children) child,
+        ],
+      ),
     );
   }
 }
@@ -732,7 +983,6 @@ class _MenuRow extends StatelessWidget {
     required this.icon,
     required this.title,
     this.value,
-    this.valueColor,
     this.onTap,
     this.danger = false,
   });
@@ -740,70 +990,76 @@ class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? value;
-  final Color? valueColor;
   final VoidCallback? onTap;
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFE24B4B) : AppColors.ink;
+    final color = danger ? const Color(0xFFE24B4B) : const Color(0xFF1F2A26);
     final shown = value?.trim();
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: danger
-                    ? const Color(0x14E24B4B)
-                    : AppColors.terracottaSoft.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: danger ? const Color(0xFFE24B4B) : AppColors.terracotta,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  color: danger
+                      ? const Color(0x18E24B4B)
+                      : AppColors.sage.withValues(alpha: 0.14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: danger ? const Color(0xFFE24B4B) : AppColors.sage,
                 ),
               ),
-            ),
-            if (shown != null && shown.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  shown,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  title,
                   style: GoogleFonts.manrope(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: valueColor ?? AppColors.muted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: color,
                   ),
                 ),
               ),
+              if (shown != null && shown.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    shown,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF6B7A74),
+                    ),
+                  ),
+                ),
+              ],
+              if (onTap != null) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: danger
+                      ? const Color(0xFFE24B4B)
+                      : const Color(0xFF1F2A26).withValues(alpha: 0.28),
+                ),
+              ],
             ],
-            if (onTap != null) ...[
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: danger ? const Color(0xFFE24B4B) : AppColors.muted,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

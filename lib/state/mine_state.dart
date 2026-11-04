@@ -222,6 +222,116 @@ class MineState extends ChangeNotifier {
     );
     if (exists) return;
     profile.customShelves = [...profile.customShelves, label];
+    final order = List<String>.from(orderedShelfLabels);
+    order.removeWhere((e) => e.toLowerCase() == label.toLowerCase());
+    order.add(label);
+    profile.shelfOrder = order;
+    notifyListeners();
+    await _persist();
+  }
+
+  bool _isHiddenLabel(String label) => profile.hiddenShelves.any(
+        (e) => e.toLowerCase() == label.toLowerCase(),
+      );
+
+  /// Built-in + custom shelf labels in the user's preferred order (not hidden).
+  List<String> get orderedShelfLabels {
+    final defaults =
+        profile.wearer.wardrobeCategories.map((c) => c.label).toList();
+    final customs = profile.customShelves;
+    final known = <String>{
+      for (final d in defaults) d,
+      for (final c in customs) c,
+    };
+    final ordered = <String>[];
+    for (final label in profile.shelfOrder) {
+      if (known.remove(label)) ordered.add(label);
+    }
+    for (final label in defaults) {
+      if (known.remove(label)) ordered.add(label);
+    }
+    for (final label in customs) {
+      if (known.remove(label)) ordered.add(label);
+    }
+    return ordered.where((e) => !_isHiddenLabel(e)).toList();
+  }
+
+  /// Built-in categories the user deleted (can restore).
+  List<String> get hiddenBuiltinShelves {
+    final builtins = {
+      for (final c in profile.wearer.wardrobeCategories) c.label,
+    };
+    return profile.hiddenShelves
+        .where((e) => builtins.contains(e))
+        .toList();
+  }
+
+  Future<void> setShelfOrder(List<String> order) async {
+    profile.shelfOrder = List<String>.from(order);
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Delete a category: removes custom, or hides a built-in.
+  Future<void> deleteShelf(String name) async {
+    final label = name.trim();
+    if (label.isEmpty) return;
+    final isCustom = profile.customShelves.any(
+      (e) => e.toLowerCase() == label.toLowerCase(),
+    );
+    if (isCustom) {
+      await removeCustomShelf(label);
+      return;
+    }
+    final isBuiltin = profile.wearer.wardrobeCategories.any(
+      (c) => c.label.toLowerCase() == label.toLowerCase(),
+    );
+    if (!isBuiltin) return;
+    if (!_isHiddenLabel(label)) {
+      profile.hiddenShelves = [...profile.hiddenShelves, label];
+    }
+    profile.shelfOrder = profile.shelfOrder
+        .where((e) => e.toLowerCase() != label.toLowerCase())
+        .toList();
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> restoreShelf(String name) async {
+    final label = name.trim();
+    if (label.isEmpty) return;
+    profile.hiddenShelves = profile.hiddenShelves
+        .where((e) => e.toLowerCase() != label.toLowerCase())
+        .toList();
+    final order = List<String>.from(orderedShelfLabels);
+    if (!order.any((e) => e.toLowerCase() == label.toLowerCase())) {
+      order.add(label);
+    }
+    profile.shelfOrder = order;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> removeCustomShelf(String name) async {
+    final label = name.trim();
+    if (label.isEmpty) return;
+    final before = profile.customShelves.length;
+    profile.customShelves = profile.customShelves
+        .where((e) => e.toLowerCase() != label.toLowerCase())
+        .toList();
+    if (profile.customShelves.length == before) return;
+    profile.shelfOrder = profile.shelfOrder
+        .where((e) => e.toLowerCase() != label.toLowerCase())
+        .toList();
+    // Keep garments; clear custom shelf so they fall under Accessories.
+    for (final g in garments) {
+      final custom = g.customShelf?.trim();
+      if (custom != null && custom.toLowerCase() == label.toLowerCase()) {
+        g.customShelf = null;
+        g.wardrobeCategory = WardrobeCategory.accessories;
+        g.category = GarmentCategory.accessory;
+      }
+    }
     notifyListeners();
     await _persist();
   }

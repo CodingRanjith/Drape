@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'calendar_screen.dart';
-import 'closet_screen.dart';
 import 'settings_screen.dart';
 import 'today_screen.dart';
+import 'wardrobe_chamber_screen.dart';
 import 'week_screen.dart';
 import '../app_nav.dart';
 import '../state/mine_state.dart';
@@ -20,13 +20,35 @@ class ShellScreen extends StatefulWidget {
 
 class _ShellScreenState extends State<ShellScreen> {
   int _index = 0;
+  /// Bumped when opening wardrobe tab so doors always start closed.
+  var _wardrobeSession = 0;
+
+  void _selectTab(int i) {
+    setState(() {
+      // Fresh wardrobe visit starts closed; stay put if already on this tab.
+      if (i == 2 && _index != 2) _wardrobeSession++;
+      _index = i.clamp(0, 4);
+    });
+  }
+
+  void _onWardrobeDoubleTap() {
+    if (_index != 2) {
+      _selectTab(2);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // New session is closed — open on double-tap arrive.
+        toggleWardrobeDoors?.call();
+      });
+      return;
+    }
+    toggleWardrobeDoors?.call();
+  }
 
   @override
   void initState() {
     super.initState();
     goToShellTab = (tab) {
       if (!mounted) return;
-      setState(() => _index = tab.clamp(0, 4));
+      _selectTab(tab);
     };
   }
 
@@ -38,16 +60,15 @@ class _ShellScreenState extends State<ShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const pages = [
-      TodayScreen(),
-      WeekScreen(),
-      ClosetScreen(),
-      CalendarScreen(),
-      SettingsScreen(),
+    final pages = [
+      const TodayScreen(),
+      const WeekScreen(),
+      WardrobeChamberScreen(key: ValueKey(_wardrobeSession)),
+      const CalendarScreen(),
+      const SettingsScreen(),
     ];
 
     final media = MediaQuery.of(context);
-    // Smile dock height + float gap; system inset lives under the dock.
     const dockClearance = 118.0;
 
     return Scaffold(
@@ -62,7 +83,8 @@ class _ShellScreenState extends State<ShellScreen> {
       ),
       bottomNavigationBar: _SmileDock(
         index: _index,
-        onSelect: (i) => setState(() => _index = i),
+        onSelect: _selectTab,
+        onWardrobeDoubleTap: _onWardrobeDoubleTap,
       ),
     );
   }
@@ -70,10 +92,15 @@ class _ShellScreenState extends State<ShellScreen> {
 
 /// Smile / U floating dock — active orb travels the curve with bounce.
 class _SmileDock extends StatefulWidget {
-  const _SmileDock({required this.index, required this.onSelect});
+  const _SmileDock({
+    required this.index,
+    required this.onSelect,
+    required this.onWardrobeDoubleTap,
+  });
 
   final int index;
   final ValueChanged<int> onSelect;
+  final VoidCallback onWardrobeDoubleTap;
 
   @override
   State<_SmileDock> createState() => _SmileDockState();
@@ -211,6 +238,8 @@ class _SmileDockState extends State<_SmileDock>
                           pop: widget.index == i ? _popCurve.value : 0,
                           photo: photo,
                           onTap: () => _tap(i),
+                          onDoubleTap:
+                              i == 2 ? widget.onWardrobeDoubleTap : null,
                         ),
                       ),
                   ],
@@ -231,6 +260,7 @@ class _SmileNavItem extends StatelessWidget {
     required this.pop,
     required this.photo,
     required this.onTap,
+    this.onDoubleTap,
   });
 
   final int index;
@@ -238,6 +268,7 @@ class _SmileNavItem extends StatelessWidget {
   final double pop;
   final ImageProvider? photo;
   final VoidCallback onTap;
+  final VoidCallback? onDoubleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -245,19 +276,20 @@ class _SmileNavItem extends StatelessWidget {
       final scale = selected ? 0.92 + 0.16 * pop : 1.0;
       return GestureDetector(
         onTap: onTap,
+        onDoubleTap: onDoubleTap,
         child: Transform.scale(
           scale: scale,
           child: SizedBox(
-            width: 58,
-            height: 58,
+            width: 56,
+            height: 56,
             child: Image.asset(
-              'assets/nav/wardrobe.jpg',
+              'assets/nav/wardrobe_icon.png',
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
               errorBuilder: (_, _, _) => const Icon(
                 Icons.checkroom_rounded,
                 color: AppColors.terracotta,
-                size: 36,
+                size: 28,
               ),
             ),
           ),

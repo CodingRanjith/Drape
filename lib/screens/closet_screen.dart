@@ -27,38 +27,35 @@ class ClosetScreen extends StatelessWidget {
     );
   }
 
-  List<_ShelfRowData> _populatedRows(
-    List<Garment> garments,
-    Wearer wearer,
-    List<String> customShelves,
-  ) {
+  List<_ShelfRowData> _populatedRows(MineState state) {
     final byShelf = <String, List<Garment>>{};
-    for (final garment in garments) {
+    for (final garment in state.garments) {
       byShelf.putIfAbsent(garment.shelfLabel, () => []).add(garment);
     }
 
     final rows = <_ShelfRowData>[];
-    for (final category in wearer.wardrobeCategories) {
-      final items = byShelf.remove(category.label);
-      if (items != null && items.isNotEmpty) {
+    final builtinByLabel = {
+      for (final c in state.profile.wearer.wardrobeCategories) c.label: c,
+    };
+    for (final label in state.orderedShelfLabels) {
+      final items = byShelf.remove(label);
+      if (items == null || items.isEmpty) continue;
+      final builtin = builtinByLabel[label];
+      if (builtin != null) {
         rows.add(
           _ShelfRowData(
-            label: category.label,
-            icon: category.icon,
-            category: category,
+            label: label,
+            icon: builtin.icon,
+            category: builtin,
             garments: items,
           ),
         );
-      }
-    }
-    for (final custom in customShelves) {
-      final items = byShelf.remove(custom);
-      if (items != null && items.isNotEmpty) {
+      } else {
         rows.add(
           _ShelfRowData(
-            label: custom,
+            label: label,
             icon: Icons.category_outlined,
-            customShelf: custom,
+            customShelf: label,
             garments: items,
           ),
         );
@@ -81,11 +78,7 @@ class ClosetScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
-    final rows = _populatedRows(
-      state.garments,
-      state.profile.wearer,
-      state.profile.customShelves,
-    );
+    final rows = _populatedRows(state);
     final total = state.garments.length;
 
     return PageBackground(
