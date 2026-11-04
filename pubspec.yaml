@@ -67,6 +67,7 @@ flutter:
     - assets/men1.webp
     - assets/back-arrow.png
     - assets/brand/
+    - assets/nav/
     - assets/walkthrough/
     - assets/collections/men/
     - assets/collections/women/

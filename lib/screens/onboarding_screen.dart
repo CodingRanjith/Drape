@@ -417,79 +417,11 @@ class _IdentityBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Full name',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'How should we greet you?',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.muted,
-                ),
-              ),
-              const SizedBox(height: 12),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: nameFocused
-                      ? Colors.white
-                      : AppColors.ink.withValues(alpha: 0.04),
-                  border: Border.all(
-                    color: nameFocused
-                        ? AppColors.terracotta
-                        : Colors.transparent,
-                    width: 1.3,
-                  ),
-                ),
-                child: TextField(
-                  controller: nameController,
-                  focusNode: nameFocus,
-                  textCapitalization: TextCapitalization.words,
-                  textInputAction: TextInputAction.next,
-                  style: GoogleFonts.manrope(
-                    color: AppColors.ink,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                  cursorColor: AppColors.terracotta,
-                  decoration: InputDecoration(
-                    hintText: 'Write your name here',
-                    hintStyle: GoogleFonts.manrope(
-                      color: AppColors.muted.withValues(alpha: 0.65),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14.5,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.edit_outlined,
-                      size: 18,
-                      color: AppColors.muted,
-                    ),
-                    suffixIcon: filled
-                        ? IconButton(
-                            visualDensity: VisualDensity.compact,
-                            onPressed: nameController.clear,
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: AppColors.muted,
-                            ),
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
+              _NameSignatureField(
+                controller: nameController,
+                focusNode: nameFocus,
+                focused: nameFocused,
+                filled: filled,
               ),
               const SizedBox(height: 10),
               Text(
@@ -550,6 +482,379 @@ class _IdentityBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Couture nameplate: large type, a gold signature rule, and a monogram seal.
+class _NameSignatureField extends StatelessWidget {
+  const _NameSignatureField({
+    required this.controller,
+    required this.focusNode,
+    required this.focused,
+    required this.filled,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool focused;
+  final bool filled;
+
+  String get _trimmed => controller.text.trim();
+
+  String get _firstName {
+    final parts = _trimmed.split(RegExp(r'\s+'));
+    return parts.isEmpty ? '' : parts.first;
+  }
+
+  double get _lineFraction {
+    if (_trimmed.isEmpty) return focused ? 0.4 : 0.18;
+    final t = (_trimmed.length / 16).clamp(0.0, 1.0);
+    return 0.32 + t * 0.68;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _nameInitials(_trimmed);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Transform.rotate(
+              angle: 0.785398,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: focused ? AppColors.terracotta : AppColors.gold,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.7,
+                color: focused ? AppColors.terracotta : AppColors.muted,
+                height: 1.1,
+              ),
+              child: const Text(
+                'FULL NAME',
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: Colors.white.withValues(alpha: focused ? 0.96 : 0.72),
+            border: Border.all(
+              color: focused
+                  ? AppColors.terracotta.withValues(alpha: 0.9)
+                  : AppColors.gold.withValues(alpha: 0.38),
+              width: focused ? 1.5 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (focused ? AppColors.terracotta : AppColors.ink)
+                    .withValues(alpha: focused ? 0.14 : 0.04),
+                blurRadius: focused ? 18 : 8,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(17),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: focused
+                            ? const [AppColors.gold, AppColors.terracotta]
+                            : [
+                                AppColors.gold.withValues(alpha: 0.55),
+                                AppColors.gold.withValues(alpha: 0.9),
+                              ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 6, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.next,
+                              style: GoogleFonts.manrope(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                letterSpacing: -0.35,
+                                height: 1.15,
+                              ),
+                              cursorColor: AppColors.terracotta,
+                              cursorWidth: 1.6,
+                              decoration: InputDecoration(
+                                isCollapsed: true,
+                                filled: false,
+                                hintText: 'Write your name',
+                                hintStyle: GoogleFonts.manrope(
+                                  color: AppColors.muted.withValues(
+                                    alpha: 0.42,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 18,
+                                  letterSpacing: -0.2,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                ),
+                              ),
+                            ),
+                          ),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            child: filled
+                                ? _MonogramSeal(
+                                    key: ValueKey(initials),
+                                    initials: initials,
+                                    onClear: controller.clear,
+                                  )
+                                : const SizedBox(
+                                    key: ValueKey('seal-empty'),
+                                    width: 4,
+                                  ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      _SignatureRule(
+                        focused: focused,
+                        fraction: _lineFraction,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            filled ? 'Hello, $_firstName' : 'How should we greet you?',
+            key: ValueKey(filled ? _firstName : 'greet-empty'),
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: filled ? AppColors.terracotta : AppColors.muted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _nameInitials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '';
+  String mark(String word) {
+    final chars = word.characters;
+    return chars.isEmpty ? '' : chars.first.toUpperCase();
+  }
+
+  if (parts.length == 1) return mark(parts.first);
+  return '${mark(parts.first)}${mark(parts.last)}';
+}
+
+class _MonogramSeal extends StatelessWidget {
+  const _MonogramSeal({
+    super.key,
+    required this.initials,
+    required this.onClear,
+  });
+
+  final String initials;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFF6E4), Color(0xFFE8C98A)],
+            ),
+            border: Border.all(
+              color: AppColors.gold.withValues(alpha: 0.95),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.gold.withValues(alpha: 0.32),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            initials,
+            style: GoogleFonts.manrope(
+              fontSize: initials.length > 1 ? 12 : 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+              letterSpacing: 0.3,
+              height: 1,
+            ),
+          ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          tooltip: 'Clear name',
+          onPressed: onClear,
+          icon: Icon(
+            Icons.close_rounded,
+            size: 16,
+            color: AppColors.muted.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SignatureRule extends StatelessWidget {
+  const _SignatureRule({required this.focused, required this.fraction});
+
+  final bool focused;
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth * fraction;
+        const diamond = 7.0;
+        final left = (width - diamond / 2).clamp(
+          0.0,
+          constraints.maxWidth - diamond,
+        );
+        return SizedBox(
+          height: 14,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 6,
+                child: Container(
+                  height: 1,
+                  color: AppColors.ink.withValues(alpha: 0.08),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                left: 0,
+                top: focused ? 4.8 : 5.2,
+                width: width,
+                height: focused ? 2.4 : 1.6,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    gradient: LinearGradient(
+                      colors: focused
+                          ? const [AppColors.gold, AppColors.terracotta]
+                          : [
+                              AppColors.gold.withValues(alpha: 0.4),
+                              AppColors.gold,
+                            ],
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                left: left,
+                top: 2.4,
+                child: Transform.rotate(
+                  angle: 0.785398,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: diamond,
+                    height: diamond,
+                    decoration: BoxDecoration(
+                      color: focused ? AppColors.terracotta : AppColors.gold,
+                      borderRadius: BorderRadius.circular(1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (focused ? AppColors.terracotta : AppColors.gold)
+                              .withValues(alpha: 0.35),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
