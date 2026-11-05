@@ -12,19 +12,22 @@ import 'screens/onboarding_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/splash_walkthrough_screen.dart';
 import 'services/notify.dart';
+import 'services/webview_setup_stub.dart'
+    if (dart.library.html) 'services/webview_setup_web.dart';
 import 'state/mine_state.dart';
 import 'theme/app_theme.dart';
 import 'product.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  setupWebViewPlatform();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  // Prefetch Android cutout model in the background (no-op on other platforms).
+  // Prefetch ONNX + Android cutout so the first clothes photo is faster.
   unawaited(warmUpClothesBackgroundModel());
   runApp(const MineRoot());
 }
@@ -47,7 +50,10 @@ class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
     _state = MineState();
     _state.onShowAlarm = _openAlarm;
     unawaited(
-      _state.boot().then((_) => initEventAlarms(onAlarm: _state.handleAlarm)),
+      _state.boot().then((_) async {
+        await initEventAlarms(onAlarm: _state.handleAlarm);
+        await _state.runMetalBriefing();
+      }),
     );
   }
 
@@ -63,6 +69,7 @@ class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_state.checkDueAlarms());
+      unawaited(_state.runMetalBriefing());
     }
   }
 

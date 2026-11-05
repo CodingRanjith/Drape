@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/jewelry.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -141,7 +142,9 @@ class _Slot extends StatelessWidget {
               if (!sameDay(d.date, day.date)) ...?d.outfit?.pieceIds,
           };
     final options = state.garments
-        .where((g) => g.category == category && !g.inLaundry)
+        .where(
+          (g) => g.category == category && !g.inLaundry && !Jewelry.isPiece(g),
+        )
         .toList();
     final available = options.where((g) => !used.contains(g.id)).toList();
     final taken = options.where((g) => used.contains(g.id)).toList();

@@ -9,13 +9,21 @@ import '../data/backup.dart';
 import '../data/excel_backup.dart';
 import '../data/media_bytes.dart';
 import '../data/persist_image.dart';
+import '../data/stored_bytes.dart';
+import '../logic/detect_image_color.dart';
+import '../logic/remove_clothes_background.dart';
 import '../logic/stylist.dart';
 import '../models/bucket_list.dart';
+import '../models/jewelry.dart';
 import '../models/life.dart';
 import '../models/notice.dart';
 import '../models/wardrobe.dart';
 import '../services/alarm_tone.dart';
+import '../services/metal_briefing.dart';
 import '../services/notify.dart';
+import '../services/store_browser_session.dart';
+import '../services/wardrobe_decor_store.dart';
+import '../services/wardrobe_locker.dart';
 
 class MineState extends ChangeNotifier {
   MineState({AppStore? store, Stylist? stylist})
@@ -55,6 +63,7 @@ class MineState extends ChangeNotifier {
       clothSets = data.clothSets;
       bucketList = data.bucketList;
       notices = data.notices;
+      _normalizeShelfIndices();
       _ensureCurrentWeek();
       _syncCompletedFromWeek();
     } catch (e, st) {
@@ -76,6 +85,51 @@ class MineState extends ChangeNotifier {
       unawaited(_checkDueAlarms());
     });
     unawaited(_checkDueAlarms());
+  }
+
+  /// Morning gold/silver vs yesterday. Runs once a day after 8 am, or on tap.
+  Future<void> runMetalBriefing({bool force = false}) async {
+    final now = DateTime.now();
+    final morningReached = now.hour > MetalBriefing.morningHour ||
+        (now.hour == MetalBriefing.morningHour &&
+            now.minute >= MetalBriefing.morningMinute);
+    if (!force && !morningReached) {
+      await _scheduleMetalReminder();
+      return;
+    }
+    try {
+      final result = await MetalBriefing.instance.run(force: force);
+      await _scheduleMetalReminder();
+      if (result == null) return;
+      if (result.notified || force) {
+        await showLocalNotice(
+          id: MetalBriefing.notificationId,
+          title: result.title,
+          body: result.body,
+          payload: MetalBriefing.payload,
+        );
+      }
+      if (result.notified) {
+        _note(result.title, body: result.body, kind: 'metal');
+        notifyListeners();
+        await _persist();
+      }
+    } catch (e, st) {
+      debugPrint('Metal briefing failed: $e\n$st');
+      await _scheduleMetalReminder();
+    }
+  }
+
+  Future<void> _scheduleMetalReminder() async {
+    final body = await MetalBriefing.instance.reminderBody();
+    await scheduleDailyMetalBriefing(
+      id: MetalBriefing.notificationId + 1,
+      hour: MetalBriefing.morningHour,
+      minute: MetalBriefing.morningMinute,
+      title: 'Gold & silver rates',
+      body: body,
+      payload: MetalBriefing.payload,
+    );
   }
 
   @override
@@ -479,6 +533,95 @@ class MineState extends ChangeNotifier {
     await _persist();
   }
 
+  /// Keep each shelf's pieces in a stable left→right order.
+  void _normalizeShelfIndices() {
+    final byShelf = <String, List<Garment>>{};
+    for (final g in garments) {
+      byShelf.putIfAbsent(g.shelfLabel, () => []).add(g);
+    }
+    for (final list in byShelf.values) {
+      list.sort((a, b) {
+        final byIndex = a.shelfIndex.compareTo(b.shelfIndex);
+        if (byIndex != 0) return byIndex;
+        return a.createdAt.compareTo(b.createdAt);
+      });
+      for (var i = 0; i < list.length; i++) {
+        list[i].shelfIndex = i;
+      }
+    }
+  }
+
+  List<Garment> garmentsOnShelf(String shelfLabel) {
+    final list = garments.where((g) => g.shelfLabel == shelfLabel).toList()
+      ..sort((a, b) {
+        final byIndex = a.shelfIndex.compareTo(b.shelfIndex);
+        if (byIndex != 0) return byIndex;
+        return a.createdAt.compareTo(b.createdAt);
+      });
+    return list;
+  }
+
+  Future<void> reorderShelfGarments(
+    String shelfLabel,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final list = garmentsOnShelf(shelfLabel);
+    if (oldIndex < 0 ||
+        oldIndex >= list.length ||
+        newIndex < 0 ||
+        newIndex > list.length ||
+        oldIndex == newIndex) {
+      return;
+    }
+    // onReorderItem already adjusts newIndex for the removed item.
+    final moved = list.removeAt(oldIndex);
+    final target = newIndex.clamp(0, list.length);
+    list.insert(target, moved);
+    for (var i = 0; i < list.length; i++) {
+      list[i].shelfIndex = i;
+    }
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Strip backgrounds for every photo on a shelf, left→right, one by one.
+  /// Returns how many photos were processed.
+  Future<int> stripShelfBackgrounds(
+    String shelfLabel, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    final list = garmentsOnShelf(shelfLabel)
+        .where((g) => g.imagePath != null && g.imagePath!.trim().isNotEmpty)
+        .toList();
+    final total = list.length;
+    if (total == 0) return 0;
+
+    var done = 0;
+    for (final garment in list) {
+      onProgress?.call(done, total);
+      final bytes = await readStoredBytes(garment.imagePath);
+      if (bytes == null || bytes.isEmpty) {
+        done++;
+        onProgress?.call(done, total);
+        continue;
+      }
+      final cut = await removeClothesBackground(bytes);
+      garment.imagePath = await _store.saveImage(cut, garment.id);
+      final colors = detectClothesColors(cut);
+      if (colors.isNotEmpty) {
+        garment.colors
+          ..clear()
+          ..addAll(colors);
+      }
+      done++;
+      notifyListeners();
+      onProgress?.call(done, total);
+    }
+    await _persist();
+    return done;
+  }
+
   Future<void> saveGarment(Garment garment, {Uint8List? imageBytes}) async {
     if (imageBytes != null) {
       garment.imagePath = await _store.saveImage(imageBytes, garment.id);
@@ -488,6 +631,12 @@ class MineState extends ChangeNotifier {
     if (index >= 0) {
       garments[index] = garment;
     } else {
+      final peers = garmentsOnShelf(garment.shelfLabel);
+      garment.shelfIndex =
+          peers.isEmpty ? 0 : peers.map((g) => g.shelfIndex).reduce(
+                    (a, b) => a > b ? a : b,
+                  ) +
+              1;
       garments.add(garment);
     }
     final emptyWeek =
@@ -701,7 +850,9 @@ class MineState extends ChangeNotifier {
   }
 
   List<Garment> optionsFor(ClothesType type) {
-    return garments.where((g) => !g.inLaundry && type.matches(g)).toList();
+    return garments
+        .where((g) => !g.inLaundry && !Jewelry.isPiece(g) && type.matches(g))
+        .toList();
   }
 
   Garment? todaySlotGarment(ClothesType type) {
@@ -1355,6 +1506,10 @@ class MineState extends ChangeNotifier {
   Future<void> checkDueAlarms() => _checkDueAlarms();
 
   Future<void> handleAlarm(String eventId) async {
+    if (eventId == MetalBriefing.payload) {
+      await runMetalBriefing(force: true);
+      return;
+    }
     if (eventId == officeAlarmId) {
       await startRinging(officeAlarmEvent);
       return;
@@ -1519,6 +1674,7 @@ class MineState extends ChangeNotifier {
       completedDays: completedDays,
       clothSets: clothSets,
       bucketList: bucketList,
+      notices: notices,
     );
   }
 
@@ -1532,6 +1688,11 @@ class MineState extends ChangeNotifier {
       completedDays: completedDays,
       clothSets: clothSets,
       bucketList: bucketList,
+      notices: notices,
+      wardrobeDecor: await WardrobeDecorController.exportAll(),
+      wardrobeLocker: await WardrobeLocker.instance.exportState(),
+      metalBriefing: await MetalBriefing.instance.exportState(),
+      ecommerceSessions: await StoreBrowserSession.exportAll(),
     );
   }
 
@@ -1596,7 +1757,28 @@ class MineState extends ChangeNotifier {
         }
         _upsertItem(bucketList, item, (e) => e.id);
       }
+      for (final raw in ((json['notices'] as List?) ?? const [])) {
+        final notice = AppNotice.fromJson(raw as Map<String, dynamic>);
+        _upsertItem(notices, notice, (e) => e.id);
+      }
     }
+
+    await WardrobeDecorController.importAll(
+      json['wardrobeDecor'] as List?,
+    );
+    await WardrobeLocker.instance.importState(
+      json['wardrobeLocker'] is Map
+          ? Map<String, dynamic>.from(json['wardrobeLocker'] as Map)
+          : null,
+    );
+    await MetalBriefing.instance.importState(
+      json['metalBriefing'] is Map
+          ? Map<String, dynamic>.from(json['metalBriefing'] as Map)
+          : null,
+    );
+    await StoreBrowserSession.importAll(
+      json['ecommerceSessions'] as List?,
+    );
 
     for (final raw in importedClothes) {
       final garment = Garment.fromJson(raw as Map<String, dynamic>);
@@ -1695,7 +1877,14 @@ class MineState extends ChangeNotifier {
     if (incoming.workdays.isNotEmpty) profile.workdays = incoming.workdays;
     profile.workStyle = incoming.workStyle;
     profile.minRepeatDays = incoming.minRepeatDays;
-    profile.officeAlarmOn = false;
+    profile.officeAlarmOn = incoming.officeAlarmOn;
+    profile.officeAlarmHour = incoming.officeAlarmHour;
+    profile.officeAlarmMinute = incoming.officeAlarmMinute;
+    if (incoming.officeAlarmMusicName != null) {
+      profile.officeAlarmMusicName = incoming.officeAlarmMusicName;
+    }
+    profile.walkthroughSeen =
+        profile.walkthroughSeen || incoming.walkthroughSeen;
     if (incoming.customShelves.isNotEmpty) {
       final seen = {
         for (final shelf in profile.customShelves) shelf.toLowerCase(),
@@ -1703,6 +1892,19 @@ class MineState extends ChangeNotifier {
       for (final shelf in incoming.customShelves) {
         if (seen.add(shelf.toLowerCase())) {
           profile.customShelves = [...profile.customShelves, shelf];
+        }
+      }
+    }
+    if (incoming.shelfOrder.isNotEmpty) {
+      profile.shelfOrder = List<String>.from(incoming.shelfOrder);
+    }
+    if (incoming.hiddenShelves.isNotEmpty) {
+      final seen = {
+        for (final shelf in profile.hiddenShelves) shelf.toLowerCase(),
+      };
+      for (final shelf in incoming.hiddenShelves) {
+        if (seen.add(shelf.toLowerCase())) {
+          profile.hiddenShelves = [...profile.hiddenShelves, shelf];
         }
       }
     }

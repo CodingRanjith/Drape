@@ -13,7 +13,10 @@ import '../widgets/page_background.dart';
 import 'outfit_full_view_screen.dart';
 
 class WeekScreen extends StatefulWidget {
-  const WeekScreen({super.key});
+  const WeekScreen({super.key, this.embedded = false});
+
+  /// Inside the calendar Week tab. The parent owns the title and button.
+  final bool embedded;
 
   @override
   State<WeekScreen> createState() => _WeekScreenState();
@@ -207,43 +210,31 @@ class _WeekScreenState extends State<WeekScreen> {
     final range =
         '${DateFormat('d MMM').format(_weekStart)} – ${DateFormat('d MMM').format(_weekStart.add(const Duration(days: 6)))}';
 
-    return PageBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        floatingActionButton: setCount >= 7
-            ? FloatingActionButton.extended(
-                onPressed: () => state.suggestWeekSets(reshuffle: true),
-                backgroundColor: AppColors.ink,
-                foregroundColor: Colors.white,
-                icon: const Icon(Icons.auto_awesome_rounded),
-                label: const Text('Suggest week'),
-              )
-            : null,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Row(
-                  children: [
-                    const MineLogoMark(size: 44, radius: 14),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'This week',
-                        style: GoogleFonts.manrope(
-                          fontSize: 26,
-                          height: 1.15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                        ),
-                      ),
+    final planner = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!widget.embedded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Row(
+              children: [
+                const MineLogoMark(size: 44, radius: 14),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'This week',
+                    style: GoogleFonts.manrope(
+                      fontSize: 26,
+                      height: 1.15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Padding(
+              ],
+            ),
+          ),
+        Padding(
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
                 child: Row(
                   children: [
@@ -326,9 +317,24 @@ class _WeekScreenState extends State<WeekScreen> {
                   },
                 ),
               ),
-            ],
-          ),
-        ),
+      ],
+    );
+
+    if (widget.embedded) return planner;
+
+    return PageBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        floatingActionButton: setCount >= 7
+            ? FloatingActionButton.extended(
+                onPressed: () => state.suggestWeekSets(reshuffle: true),
+                backgroundColor: AppColors.ink,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.auto_awesome_rounded),
+                label: const Text('Suggest week'),
+              )
+            : null,
+        body: SafeArea(child: planner),
       ),
     );
   }

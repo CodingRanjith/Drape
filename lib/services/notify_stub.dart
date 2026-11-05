@@ -11,3 +11,19 @@ Future<void> scheduleEventAlarmImpl({
 }) async {}
 
 Future<void> cancelEventAlarmImpl(int id) async {}
+
+Future<void> showLocalNoticeImpl({
+  required int id,
+  required String title,
+  required String body,
+  String? payload,
+}) async {}
+
+Future<void> scheduleDailyMetalBriefingImpl({
+  required int id,
+  required int hour,
+  required int minute,
+  required String title,
+  required String body,
+  required String payload,
+}) async {}

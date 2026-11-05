@@ -5,7 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/stored_bytes.dart';
 import '../logic/detect_image_color.dart';
+import '../logic/rotate_image.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -42,6 +44,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
   late Garment _garment;
   late TextEditingController _name;
   Uint8List? _pickedBytes;
+  bool _processing = false;
 
   @override
   void initState() {
@@ -72,25 +75,67 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    final bytes = await pickAppImage(
-      context,
-      source: source,
-      maxWidth: 1600,
-      imageQuality: 88,
-      wardrobeCategory: _garment.wardrobeCategory,
-      garmentCategory: _garment.category,
-      guideLabel: _garment.wardrobeCategory.label,
-    );
-    if (bytes == null || !mounted) return;
-    final colors = detectClothesColors(bytes);
-    setState(() {
-      _pickedBytes = bytes;
-      if (colors.isNotEmpty) {
-        _garment.colors
-          ..clear()
-          ..addAll(colors);
+    setState(() => _processing = true);
+    try {
+      final bytes = await pickAppImage(
+        context,
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 88,
+        wardrobeCategory: _garment.wardrobeCategory,
+        garmentCategory: _garment.category,
+        guideLabel: _garment.wardrobeCategory.label,
+      );
+      if (!mounted) return;
+      if (bytes == null) {
+        setState(() => _processing = false);
+        return;
       }
-    });
+      final colors = detectClothesColors(bytes);
+      setState(() {
+        _pickedBytes = bytes;
+        _processing = false;
+        if (colors.isNotEmpty) {
+          _garment.colors
+            ..clear()
+            ..addAll(colors);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _processing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not process that photo. Try again.')),
+      );
+    }
+  }
+
+  Future<void> _rotate(int degrees) async {
+    if (_processing) return;
+    setState(() => _processing = true);
+    try {
+      var bytes = _pickedBytes;
+      bytes ??= await readStoredBytes(_garment.imagePath);
+      if (bytes == null || bytes.isEmpty) {
+        if (mounted) setState(() => _processing = false);
+        return;
+      }
+      final turned = rotateImageBytes(bytes, degrees: degrees);
+      final colors = detectClothesColors(turned);
+      if (!mounted) return;
+      setState(() {
+        _pickedBytes = turned;
+        _processing = false;
+        if (colors.isNotEmpty) {
+          _garment.colors
+            ..clear()
+            ..addAll(colors);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _processing = false);
+    }
   }
 
   Future<bool> _save() async {
@@ -185,8 +230,24 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
               borderRadius: BorderRadius.circular(24),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: _showPickSheet,
-                child: preview == null
+                onTap: _processing ? null : _showPickSheet,
+                child: _processing
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(
+                              color: AppColors.terracotta,
+                            ),
+                            SizedBox(height: 14),
+                            Text(
+                              'Removing background…',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      )
+                    : preview == null
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -208,6 +269,26 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
                         fit: StackFit.expand,
                         children: [
                           Image(image: preview, fit: BoxFit.cover),
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _RotateChip(
+                                    icon: Icons.rotate_left_rounded,
+                                    onTap: () => _rotate(-90),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _RotateChip(
+                                    icon: Icons.rotate_right_rounded,
+                                    onTap: () => _rotate(90),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           const Align(
                             alignment: Alignment.bottomCenter,
                             child: Padding(
@@ -368,6 +449,30 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _RotateChip extends StatelessWidget {
+  const _RotateChip({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.55),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
     );
   }
 }

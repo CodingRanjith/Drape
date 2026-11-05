@@ -402,6 +402,7 @@ class Garment {
     WardrobeCategory? wardrobeCategory,
     this.customShelf,
     this.cost,
+    this.shelfIndex = 0,
   }) : createdAt = createdAt ?? DateTime.now(),
        pairsWithIds = pairsWithIds ?? [],
        wardrobeCategory =
@@ -429,6 +430,8 @@ class Garment {
   String? customShelf;
   /// Optional purchase / item cost.
   double? cost;
+  /// Order inside a shelf row (0 = first). Drag-drop updates this.
+  int shelfIndex;
 
   String get shelfLabel {
     final custom = customShelf?.trim();
@@ -475,6 +478,7 @@ class Garment {
     'wardrobeCategory': wardrobeCategory.name,
     'customShelf': customShelf,
     'cost': cost,
+    'shelfIndex': shelfIndex,
   };
 
   factory Garment.fromJson(Map<String, dynamic> json) {
@@ -507,6 +511,7 @@ class Garment {
           : WardrobeCategory.values.byName(json['wardrobeCategory'] as String),
       customShelf: json['customShelf'] as String?,
       cost: (json['cost'] as num?)?.toDouble(),
+      shelfIndex: json['shelfIndex'] as int? ?? 0,
     );
   }
 }

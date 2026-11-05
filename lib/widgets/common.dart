@@ -29,7 +29,12 @@ class PhotoTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ColoredBox(color: backgroundColor ?? garment.primaryColor),
+          ColoredBox(
+            color: backgroundColor ??
+                (photo != null
+                    ? const Color(0xFFF3EDE6)
+                    : garment.primaryColor),
+          ),
           if (photo != null)
             Image(image: photo, fit: fit)
           else

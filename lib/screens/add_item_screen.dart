@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../logic/detect_image_color.dart';
+import '../logic/rotate_image.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -98,6 +99,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
         ),
       ),
     );
+  }
+
+  void _rotate(int degrees) {
+    final bytes = _imageBytes;
+    if (bytes == null || _processing) return;
+    setState(() => _imageBytes = rotateImageBytes(bytes, degrees: degrees));
   }
 
   Future<void> _save() async {
@@ -221,6 +228,26 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                   fit: BoxFit.cover,
                                 ),
                                 Align(
+                                  alignment: Alignment.topRight,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _RotateChip(
+                                          icon: Icons.rotate_left_rounded,
+                                          onTap: () => _rotate(-90),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        _RotateChip(
+                                          icon: Icons.rotate_right_rounded,
+                                          onTap: () => _rotate(90),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Align(
                                   alignment: Alignment.bottomCenter,
                                   child: Padding(
                                     padding: const EdgeInsets.all(14),
@@ -266,6 +293,30 @@ class _AddItemScreenState extends State<AddItemScreen> {
               label: const Text('Save to wardrobe'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RotateChip extends StatelessWidget {
+  const _RotateChip({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.55),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );

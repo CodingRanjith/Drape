@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../logic/detect_image_color.dart';
+import '../logic/rotate_image.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -195,6 +196,17 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       return;
     }
     await _pick(ImageSource.gallery);
+  }
+
+  void _rotate(int degrees) {
+    final bytes = _imageBytes;
+    if (bytes == null || _processing || _saving) return;
+    final turned = rotateImageBytes(bytes, degrees: degrees);
+    final colors = detectClothesColors(turned);
+    setState(() {
+      _imageBytes = turned;
+      _detectedColors = colors;
+    });
   }
 
   Future<void> _save() async {
@@ -500,6 +512,30 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                         fit: BoxFit.cover,
                                       ),
                                       Align(
+                                        alignment: Alignment.topRight,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _RotateChip(
+                                                icon: Icons.rotate_left_rounded,
+                                                onTap: busy
+                                                    ? null
+                                                    : () => _rotate(-90),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              _RotateChip(
+                                                icon: Icons.rotate_right_rounded,
+                                                onTap: busy
+                                                    ? null
+                                                    : () => _rotate(90),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Align(
                                         alignment: Alignment.bottomCenter,
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
@@ -699,6 +735,30 @@ class _CategoryPickSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RotateChip extends StatelessWidget {
+  const _RotateChip({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.55),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
       ),
     );
   }

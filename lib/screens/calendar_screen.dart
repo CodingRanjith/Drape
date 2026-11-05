@@ -12,6 +12,7 @@ import '../widgets/clothes_photo_row.dart';
 import '../widgets/mine_logo_mark.dart';
 import 'event_editor_screen.dart';
 import 'outfit_full_view_screen.dart';
+import 'week_screen.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -20,9 +21,11 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class _CalendarScreenState extends State<CalendarScreen>
+    with SingleTickerProviderStateMixin {
   late DateTime _month;
   DateTime _selected = DateTime.now();
+  late final TabController _tabs;
 
   @override
   void initState() {
@@ -30,6 +33,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final now = DateTime.now();
     _month = DateTime(now.year, now.month);
     _selected = DateTime(now.year, now.month, now.day);
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(() {
+      if (_tabs.indexIsChanging || !mounted) return;
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
   }
 
   void _selectDay(DateTime date) {
@@ -50,20 +64,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final onWeek = _tabs.index == 0;
+    final setCount = context.watch<MineState>().readySetCount;
     return Scaffold(
       backgroundColor: const Color(0xFFF6F3EF),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.terracotta,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => EventEditorScreen(initialDate: _selected),
-          ),
-        ),
-        child: const Icon(Icons.add_rounded),
-      ),
+      floatingActionButton: onWeek
+          ? (setCount >= 7
+              ? FloatingActionButton.extended(
+                  onPressed: () => context
+                      .read<MineState>()
+                      .suggestWeekSets(reshuffle: true),
+                  backgroundColor: AppColors.ink,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  label: const Text('Suggest week'),
+                )
+              : null)
+          : FloatingActionButton(
+              backgroundColor: AppColors.terracotta,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => EventEditorScreen(initialDate: _selected),
+                ),
+              ),
+              child: const Icon(Icons.add_rounded),
+            ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -107,9 +137,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                TabBar(
+                  controller: _tabs,
+                  indicatorColor: AppColors.terracotta,
+                  indicatorWeight: 3,
+                  labelColor: AppColors.ink,
+                  unselectedLabelColor: AppColors.muted,
+                  labelStyle: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Week'),
+                    Tab(text: 'Month'),
+                  ],
+                ),
                 Expanded(
-                  child: _EventsTab(
+                  child: TabBarView(
+                    controller: _tabs,
+                    children: [
+                      const WeekScreen(embedded: true),
+                      _EventsTab(
                     month: _month,
                     selected: _selected,
                     onPrevMonth: () => setState(
@@ -119,6 +172,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       () => _month = DateTime(_month.year, _month.month + 1),
                     ),
                     onSelect: _selectDay,
+                  ),
+                    ],
                   ),
                 ),
               ],

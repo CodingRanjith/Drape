@@ -467,13 +467,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.table_chart_outlined),
                   title: const Text('Excel sheet'),
-                  subtitle: const Text('Clothes and profile in a spreadsheet'),
+                  subtitle: const Text(
+                    'Full live status: clothes, week, events, decor, rates…',
+                  ),
                   onTap: () => Navigator.pop(context, BackupFileKind.excel),
                 ),
                 ListTile(
                   leading: const Icon(Icons.folder_zip_outlined),
                   title: const Text('Zip backup'),
-                  subtitle: const Text('Photos, music and all app data'),
+                  subtitle: const Text(
+                    'A–Z live data + photos, music, locker, ecommerce',
+                  ),
                   onTap: () => Navigator.pop(context, BackupFileKind.zip),
                 ),
               ],
@@ -507,8 +511,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text(
             kind == BackupFileKind.excel
-                ? 'Excel sheet is ready to save or share.'
-                : 'Zip backup is ready. Photos and files are inside.',
+                ? 'Full live-status Excel is ready to save or share.'
+                : 'Full zip backup is ready — clothes, photos, week, events, decor, locker & more.',
           ),
         ),
       );
@@ -537,19 +541,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Text(
-                    'Import adds the file to what is already on this phone. Existing clothes stay.',
+                    'Import merges A–Z live status into this phone. Existing clothes stay; matching IDs update.',
                   ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.table_chart_outlined),
                   title: const Text('Excel'),
-                  subtitle: const Text('Upload an .xlsx sheet'),
+                  subtitle: const Text('Upload a full Mine .xlsx sheet'),
                   onTap: () => Navigator.pop(context, BackupFileKind.excel),
                 ),
                 ListTile(
                   leading: const Icon(Icons.data_object_outlined),
-                  title: const Text('JSON'),
-                  subtitle: const Text('Upload backup.json, or a zip that contains it'),
+                  title: const Text('Zip / JSON'),
+                  subtitle: const Text(
+                    'Full backup with photos, music and live status',
+                  ),
                   onTap: () => Navigator.pop(context, BackupFileKind.json),
                 ),
               ],
@@ -571,7 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Imported without replacing your current clothes. Now ${result.clothes} clothes, ${result.looks} party looks, ${result.events} events.',
+            'Full live status imported. Now ${result.clothes} clothes, ${result.looks} party looks, ${result.events} events — plus week, notices, decor, rates & sessions.',
           ),
         ),
       );

@@ -103,3 +103,84 @@ Future<void> cancelEventAlarmImpl(int id) async {
     debugPrint('Could not cancel alarm: $e');
   }
 }
+
+Future<void> showLocalNoticeImpl({
+  required int id,
+  required String title,
+  required String body,
+  String? payload,
+}) async {
+  if (!_ready) return;
+  try {
+    await _plugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'mine_metal_rates',
+          'Gold & silver rates',
+          channelDescription: 'Daily morning gold and silver price changes',
+          importance: Importance.high,
+          priority: Priority.high,
+          styleInformation: BigTextStyleInformation(body),
+          playSound: true,
+          enableVibration: true,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      ),
+      payload: payload,
+    );
+  } catch (e, st) {
+    debugPrint('Could not show notice: $e\n$st');
+  }
+}
+
+Future<void> scheduleDailyMetalBriefingImpl({
+  required int id,
+  required int hour,
+  required int minute,
+  required String title,
+  required String body,
+  required String payload,
+}) async {
+  if (!_ready) return;
+  try {
+    final now = DateTime.now();
+    var next = DateTime(now.year, now.month, now.day, hour, minute);
+    if (!next.isAfter(now)) {
+      next = next.add(const Duration(days: 1));
+    }
+    await _plugin.cancel(id);
+    await _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(next.toUtc(), tz.UTC),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'mine_metal_rates',
+          'Gold & silver rates',
+          channelDescription: 'Daily morning gold and silver price changes',
+          importance: Importance.high,
+          priority: Priority.high,
+          styleInformation: BigTextStyleInformation(body),
+          playSound: true,
+          enableVibration: true,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: payload,
+    );
+  } catch (e, st) {
+    debugPrint('Could not schedule metal briefing: $e\n$st');
+  }
+}

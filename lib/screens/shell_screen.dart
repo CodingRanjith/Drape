@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'calendar_screen.dart';
+import 'ecommerce_screen.dart';
 import 'settings_screen.dart';
 import 'today_screen.dart';
 import 'wardrobe_chamber_screen.dart';
-import 'week_screen.dart';
 import '../app_nav.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -62,7 +62,7 @@ class _ShellScreenState extends State<ShellScreen> {
   Widget build(BuildContext context) {
     final pages = [
       const TodayScreen(),
-      const WeekScreen(),
+      const EcommerceScreen(),
       WardrobeChamberScreen(key: ValueKey(_wardrobeSession)),
       const CalendarScreen(),
       const SettingsScreen(),
@@ -314,8 +314,6 @@ class _SmileNavItem extends StatelessWidget {
           image: DecorationImage(image: photo!, fit: BoxFit.cover),
         ),
       );
-    } else if (index == 1) {
-      glyph = _WeekBars(color: color, selected: selected);
     } else {
       glyph = Icon(icon, size: 20, color: color);
     }
@@ -364,42 +362,9 @@ class _SmileNavItem extends StatelessWidget {
   }
 }
 
-class _WeekBars extends StatelessWidget {
-  const _WeekBars({required this.color, required this.selected});
-
-  final Color color;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final heights = selected
-        ? const [10.0, 14.0, 18.0, 12.0]
-        : const [9.0, 13.0, 16.0, 11.0];
-    return SizedBox(
-      width: 18,
-      height: 18,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final h in heights)
-            Container(
-              width: 3,
-              height: h,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 const _smileIcons = [
   Icons.cottage_outlined,
-  Icons.view_week_outlined,
+  Icons.shopping_bag_outlined,
   Icons.checkroom_rounded,
   Icons.event_note_outlined,
   Icons.person_outline_rounded,
@@ -407,7 +372,7 @@ const _smileIcons = [
 
 const _smileSelectedIcons = [
   Icons.cottage_rounded,
-  Icons.view_week_rounded,
+  Icons.shopping_bag_rounded,
   Icons.checkroom_rounded,
   Icons.event_note_rounded,
   Icons.person_rounded,

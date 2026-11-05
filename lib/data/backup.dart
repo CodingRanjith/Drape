@@ -5,7 +5,12 @@ import 'package:archive/archive.dart';
 
 import '../models/bucket_list.dart';
 import '../models/life.dart';
+import '../models/notice.dart';
 import '../models/wardrobe.dart';
+import '../services/metal_briefing.dart';
+import '../services/store_browser_session.dart';
+import '../services/wardrobe_decor_store.dart';
+import '../services/wardrobe_locker.dart';
 import 'excel_backup.dart';
 import 'excel_sheet.dart';
 import 'media_bytes.dart';
@@ -52,7 +57,8 @@ class PackedBackup {
 }
 
 class MineBackup {
-  static const version = 1;
+  /// v2 = full live status (notices, decor, locker, metal, ecommerce, …).
+  static const version = 2;
   static const jsonName = 'backup.json';
 
   static Future<Uint8List> encode({
@@ -64,6 +70,7 @@ class MineBackup {
     required Set<String> completedDays,
     List<ClothSet> clothSets = const [],
     List<StyleBucketItem> bucketList = const [],
+    List<AppNotice> notices = const [],
   }) async {
     final files = <String, Uint8List>{};
 
@@ -133,6 +140,11 @@ class MineBackup {
       'completedDays': completedDays.toList(),
       'clothSets': clothSets.map((s) => s.toJson()).toList(),
       'bucketList': bucketMaps,
+      'notices': notices.map((n) => n.toJson()).toList(),
+      'wardrobeDecor': await WardrobeDecorController.exportAll(),
+      'wardrobeLocker': await WardrobeLocker.instance.exportState(),
+      'metalBriefing': await MetalBriefing.instance.exportState(),
+      'ecommerceSessions': await StoreBrowserSession.exportAll(),
     };
 
     return zipOf(json, files);
@@ -202,6 +214,9 @@ class MineBackup {
       'completedDays': const [],
       'clothSets': const [],
       'bucketList': const [],
+      'notices': const [],
+      'wardrobeDecor': const [],
+      'ecommerceSessions': const [],
     };
     return PackedBackup(json: json, files: files);
   }

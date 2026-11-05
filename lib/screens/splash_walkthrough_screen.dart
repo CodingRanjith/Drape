@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../product.dart';
 import '../theme/app_theme.dart';
+import '../widgets/mine_logo_mark.dart';
 
 class SplashWalkthroughScreen extends StatefulWidget {
   const SplashWalkthroughScreen({super.key, required this.onFinished});
@@ -102,12 +103,6 @@ class _SplashWalkthroughScreenState extends State<SplashWalkthroughScreen> {
             count: _slides.length,
             onSkip: widget.onFinished,
             onNext: _goNext,
-            onBack: i == 0
-                ? null
-                : () => _pages.previousPage(
-                    duration: const Duration(milliseconds: 420),
-                    curve: Curves.easeOutCubic,
-                  ),
           );
         },
       ),
@@ -136,7 +131,6 @@ class _WalkthroughPage extends StatelessWidget {
     required this.count,
     required this.onSkip,
     required this.onNext,
-    this.onBack,
   });
 
   final _Slide slide;
@@ -144,7 +138,6 @@ class _WalkthroughPage extends StatelessWidget {
   final int count;
   final VoidCallback onSkip;
   final VoidCallback onNext;
-  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -186,18 +179,8 @@ class _WalkthroughPage extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    if (onBack != null)
-                      IconButton(
-                        tooltip: 'Back',
-                        onPressed: onBack,
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      )
-                    else
-                      const SizedBox(width: 8),
+                    const MineLogoMark(size: 36, radius: 11, shadow: false),
+                    const SizedBox(width: 10),
                     Text(
                       MineProduct.appName,
                       style: GoogleFonts.manrope(

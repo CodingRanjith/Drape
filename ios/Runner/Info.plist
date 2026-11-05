@@ -49,6 +49,8 @@
 		</dict>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Mine uses your location to show live weather above your wardrobe.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>The app uses the camera so you can take photos of your clothes.</string>
 		<key>NSPhotoLibraryUsageDescription</key>

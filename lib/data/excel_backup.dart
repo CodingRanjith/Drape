@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../models/bucket_list.dart';
 import '../models/life.dart';
+import '../models/notice.dart';
 import '../models/wardrobe.dart';
 import 'excel_sheet.dart';
 
@@ -19,6 +20,11 @@ Map<String, List<List<String>>> excelSheetsOf({
   required Set<String> completedDays,
   List<ClothSet> clothSets = const [],
   List<StyleBucketItem> bucketList = const [],
+  List<AppNotice> notices = const [],
+  List<Map<String, dynamic>> wardrobeDecor = const [],
+  Map<String, dynamic> wardrobeLocker = const {},
+  Map<String, dynamic> metalBriefing = const {},
+  List<Map<String, dynamic>> ecommerceSessions = const [],
 }) {
   return {
     'Profile': _profileSheet(profile),
@@ -93,6 +99,48 @@ Map<String, List<List<String>>> excelSheetsOf({
         ],
       ),
     ],
+    'Notices': [
+      const ['id', 'title', 'body', 'at', 'kind', 'read'],
+      ...notices.map(
+        (n) => [
+          n.id,
+          n.title,
+          n.body,
+          n.at.toIso8601String(),
+          n.kind,
+          n.read ? 'true' : 'false',
+        ],
+      ),
+    ],
+    'Decor': [
+      const ['id', 'decorId', 'shelfLabel'],
+      ...wardrobeDecor.map(
+        (d) => [
+          '${d['id'] ?? ''}',
+          '${d['decorId'] ?? ''}',
+          '${d['shelfLabel'] ?? ''}',
+        ],
+      ),
+    ],
+    'Locker': [
+      const ['key', 'value'],
+      ['pin', '${wardrobeLocker['pin'] ?? ''}'],
+      ['locked', '${wardrobeLocker['locked'] ?? false}'],
+    ],
+    'Metal': [
+      const ['key', 'value'],
+      for (final e in metalBriefing.entries) [e.key, '${e.value ?? ''}'],
+    ],
+    'Ecommerce': [
+      const ['storeId', 'url', 'logged'],
+      ...ecommerceSessions.map(
+        (s) => [
+          '${s['storeId'] ?? ''}',
+          '${s['url'] ?? ''}',
+          '${s['logged'] ?? false}',
+        ],
+      ),
+    ],
     'Days': [
       const ['date'],
       ...completedDays.map((day) => [day]),
@@ -138,6 +186,11 @@ Uint8List encodeExcelBackup({
   required Set<String> completedDays,
   List<ClothSet> clothSets = const [],
   List<StyleBucketItem> bucketList = const [],
+  List<AppNotice> notices = const [],
+  List<Map<String, dynamic>> wardrobeDecor = const [],
+  Map<String, dynamic> wardrobeLocker = const {},
+  Map<String, dynamic> metalBriefing = const {},
+  List<Map<String, dynamic>> ecommerceSessions = const [],
 }) {
   return SimpleXlsx.encode(
     excelSheetsOf(
@@ -149,6 +202,11 @@ Uint8List encodeExcelBackup({
       completedDays: completedDays,
       clothSets: clothSets,
       bucketList: bucketList,
+      notices: notices,
+      wardrobeDecor: wardrobeDecor,
+      wardrobeLocker: wardrobeLocker,
+      metalBriefing: metalBriefing,
+      ecommerceSessions: ecommerceSessions,
     ),
   );
 }
@@ -163,17 +221,25 @@ Map<String, dynamic> jsonFromExcelSheets(Map<String, List<List<String>>> sheets)
   final looks = _table(_sheetNamed(sheets, 'looks'));
   final sets = _table(_sheetNamed(sheets, 'sets'));
   final bucket = _table(_sheetNamed(sheets, 'bucket'));
+  final noticeRows = _table(_sheetNamed(sheets, 'notices'));
+  final decorRows = _table(_sheetNamed(sheets, 'decor'));
+  final ecommerceRows = _table(_sheetNamed(sheets, 'ecommerce'));
   final days = _table(_sheetNamed(sheets, 'days'));
   final weekRows = _table(_sheetNamed(sheets, 'week'));
 
   final json = <String, dynamic>{
-    'version': 1,
+    'version': 2,
     'source': 'excel',
     'garments': clothes.map(_garmentFromRow).toList(),
     'events': events.map(_eventFromRow).toList(),
     'partyLooks': looks.map(_lookFromRow).toList(),
     'clothSets': sets.map(_setFromRow).toList(),
     'bucketList': bucket.map(_bucketFromRow).toList(),
+    'notices': noticeRows.map(_noticeFromRow).toList(),
+    'wardrobeDecor': decorRows.map(_decorFromRow).toList(),
+    'ecommerceSessions': ecommerceRows.map(_ecommerceFromRow).toList(),
+    'wardrobeLocker': _keyValueMap(_sheetNamed(sheets, 'locker')),
+    'metalBriefing': _keyValueMap(_sheetNamed(sheets, 'metal')),
     'completedDays': [
       for (final row in days)
         if ((row['date'] ?? '').trim().isNotEmpty) row['date']!.trim(),
@@ -215,6 +281,10 @@ List<List<String>> _profileSheet(UserProfile profile) => [
       ['officeAlarmHour', '${profile.officeAlarmHour}'],
       ['officeAlarmMinute', '${profile.officeAlarmMinute}'],
       ['customShelves', profile.customShelves.join('|')],
+      ['shelfOrder', profile.shelfOrder.join('|')],
+      ['hiddenShelves', profile.hiddenShelves.join('|')],
+      ['walkthroughSeen', profile.walkthroughSeen ? 'true' : 'false'],
+      ['onboarded', profile.onboarded ? 'true' : 'false'],
     ];
 
 const _clothesHeader = [
@@ -235,6 +305,7 @@ const _clothesHeader = [
   'lastWornAt',
   'customShelf',
   'styleCollection',
+  'shelfIndex',
 ];
 
 List<String> _clothesRow(Garment garment) => [
@@ -255,6 +326,7 @@ List<String> _clothesRow(Garment garment) => [
       garment.lastWornAt?.toIso8601String() ?? '',
       garment.customShelf ?? '',
       garment.styleCollection?.name ?? '',
+      '${garment.shelfIndex}',
     ];
 
 const _eventsHeader = [
@@ -337,9 +409,62 @@ Map<String, dynamic>? _profileFromSheet(List<List<String>>? rows) {
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList(),
+    'shelfOrder': (values['shelforder'] ?? '')
+        .split(RegExp(r'[|,]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList(),
+    'hiddenShelves': (values['hiddenshelves'] ?? '')
+        .split(RegExp(r'[|,]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList(),
+    'walkthroughSeen': _truthy(values['walkthroughseen'] ?? ''),
     'onboarded': true,
   };
 }
+
+Map<String, dynamic> _keyValueMap(List<List<String>>? rows) {
+  final out = <String, dynamic>{};
+  if (rows == null) return out;
+  for (final row in rows) {
+    if (row.isEmpty) continue;
+    final key = row.first.trim();
+    if (key.isEmpty || key.toLowerCase() == 'key') continue;
+    final value = row.length > 1 ? row[1].trim() : '';
+    if (value == 'true' || value == 'false') {
+      out[key] = value == 'true';
+    } else if (num.tryParse(value) != null) {
+      out[key] = num.parse(value);
+    } else if (value.isNotEmpty) {
+      out[key] = value;
+    } else {
+      out[key] = null;
+    }
+  }
+  return out;
+}
+
+Map<String, dynamic> _noticeFromRow(Map<String, String> row) => {
+      'id': row['id'] ?? '',
+      'title': row['title'] ?? 'Update',
+      'body': row['body'] ?? '',
+      'at': row['at'] ?? DateTime.now().toIso8601String(),
+      'kind': row['kind'] ?? 'update',
+      'read': _truthy(row['read'] ?? ''),
+    };
+
+Map<String, dynamic> _decorFromRow(Map<String, String> row) => {
+      'id': row['id'] ?? '',
+      'decorId': row['decorid'] ?? '',
+      'shelfLabel': row['shelflabel'] ?? '',
+    };
+
+Map<String, dynamic> _ecommerceFromRow(Map<String, String> row) => {
+      'storeId': row['storeid'] ?? '',
+      'url': row['url'],
+      'logged': _truthy(row['logged'] ?? ''),
+    };
 
 Map<String, dynamic> _garmentFromRow(Map<String, String> row) {
   final id = row['id']?.trim();
@@ -374,6 +499,7 @@ Map<String, dynamic> _garmentFromRow(Map<String, String> row) {
       StyleCollection.values,
       row['stylecollection'] ?? '',
     ),
+    'shelfIndex': int.tryParse(row['shelfindex'] ?? '') ?? 0,
     'pairsWithIds': const [],
   };
 }

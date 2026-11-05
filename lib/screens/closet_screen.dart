@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/jewelry.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
@@ -30,6 +31,7 @@ class ClosetScreen extends StatelessWidget {
   List<_ShelfRowData> _populatedRows(MineState state) {
     final byShelf = <String, List<Garment>>{};
     for (final garment in state.garments) {
+      if (Jewelry.isPiece(garment)) continue;
       byShelf.putIfAbsent(garment.shelfLabel, () => []).add(garment);
     }
 
@@ -79,7 +81,7 @@ class ClosetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
     final rows = _populatedRows(state);
-    final total = state.garments.length;
+    final total = state.garments.where((g) => !Jewelry.isPiece(g)).length;
 
     return PageBackground(
       child: Scaffold(

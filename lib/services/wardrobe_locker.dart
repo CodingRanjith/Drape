@@ -46,4 +46,25 @@ class WardrobeLocker {
     await p.remove(_pinKey);
     await p.remove(_lockedKey);
   }
+
+  /// Snapshot for full app backup / restore.
+  Future<Map<String, dynamic>> exportState() async {
+    final p = await _prefs;
+    return {
+      'pin': p.getString(_pinKey),
+      'locked': p.getBool(_lockedKey) ?? false,
+    };
+  }
+
+  Future<void> importState(Map<String, dynamic>? raw) async {
+    if (raw == null) return;
+    final p = await _prefs;
+    final pin = raw['pin'] as String?;
+    if (pin != null && pin.length == 4) {
+      await p.setString(_pinKey, pin);
+    }
+    if (raw.containsKey('locked')) {
+      await p.setBool(_lockedKey, raw['locked'] == true);
+    }
+  }
 }
