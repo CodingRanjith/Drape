@@ -622,8 +622,9 @@ class _DrawnWardrobeStage extends StatelessWidget {
         final maxW = constraints.maxWidth;
         final maxH = constraints.maxHeight;
         final safeTop = MediaQuery.paddingOf(context).top;
-        // Live sky lives OUTSIDE the cupboard, above the armoire.
-        const skyBody = 148.0;
+        // Weather only when cupboard is closed. Inside open shelves = no sky.
+        final weatherOut = (1.0 - expand).clamp(0.0, 1.0);
+        final skyBody = 20.0 + 128.0 * weatherOut;
         final skyBand = safeTop + skyBody;
         const rateBand = 66.0;
         // Keep rates just above the smile dock — no empty wall under the cupboard.
@@ -637,7 +638,7 @@ class _DrawnWardrobeStage extends StatelessWidget {
           cabW = cabH / aspect;
         }
         final left = (maxW - cabW) / 2;
-        final minTop = skyBand + 10;
+        final minTop = skyBand + (weatherOut > 0.2 ? 10.0 : 4.0);
         final top = math.max(minTop, maxH - floorGap - cabH);
 
         const doorTop = _PhotoArmoire.doorTop;
@@ -649,8 +650,13 @@ class _DrawnWardrobeStage extends StatelessWidget {
           cabW * (1 - doorInner * 2),
           cabH * (doorBottom - doorTop),
         );
-        // Open shelves fill below the outdoor sky — never cover the weather.
-        final full = Rect.fromLTWH(0, skyBand - 6, maxW, maxH - (skyBand - 6));
+        // Open shelves fill the chamber — weather stays outside / hidden when open.
+        final full = Rect.fromLTWH(
+          0,
+          weatherOut > 0.15 ? skyBand + 2 : safeTop + 2,
+          maxW,
+          maxH - (weatherOut > 0.15 ? skyBand + 2 : safeTop + 2),
+        );
         final hole = Rect.lerp(cavity, full, expand)!;
         // Keep the name plaque below the outdoor sky so it never covers weather.
         final plaqueTop = math.max(skyBand + 4, top - 40);
@@ -662,17 +668,21 @@ class _DrawnWardrobeStage extends StatelessWidget {
             const Positioned.fill(
               child: CustomPaint(painter: _RoomBackdropPainter()),
             ),
-            // Outdoor sky above the wardrobe (not inside the wood).
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              height: skyBand + 18,
-              child: const IgnorePointer(
-                ignoring: false,
-                child: WardrobeWeatherSky(height: skyBody),
+            // Outdoor weather only above a closed cupboard — never inside shelves.
+            if (weatherOut > 0.02)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: skyBand + 8,
+                child: IgnorePointer(
+                  ignoring: weatherOut < 0.4,
+                  child: Opacity(
+                    opacity: weatherOut,
+                    child: WardrobeWeatherSky(height: skyBody),
+                  ),
+                ),
               ),
-            ),
             Positioned.fromRect(
               rect: hole,
               child: ClipRRect(
