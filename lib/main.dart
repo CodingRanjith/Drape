@@ -8,7 +8,7 @@ import 'app_nav.dart';
 import 'logic/remove_clothes_background.dart';
 import 'screens/alarm_ring_screen.dart';
 import 'screens/logo_prepage_screen.dart';
-import 'screens/onboarding_screen.dart';
+import 'screens/import_or_create_profile_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/splash_walkthrough_screen.dart';
 import 'services/notify.dart';
@@ -164,7 +164,8 @@ class _HomeFor extends StatelessWidget {
       );
     }
     if (!state.profile.onboarded) {
-      return const OnboardingScreen();
+      // After walkthrough slide 4: import existing data, or create a profile.
+      return const ImportOrCreateProfileScreen();
     }
     return const ShellScreen();
   }
