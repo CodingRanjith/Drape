@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'app_nav.dart';
-import 'logic/remove_clothes_background.dart';
 import 'screens/alarm_ring_screen.dart';
 import 'screens/logo_prepage_screen.dart';
 import 'screens/import_or_create_profile_screen.dart';
 import 'screens/shell_screen.dart';
+import 'screens/intro_video_screen.dart';
 import 'screens/splash_walkthrough_screen.dart';
 import 'services/notify.dart';
 import 'services/webview_setup_stub.dart'
@@ -27,8 +27,6 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  // Prefetch ONNX + Android cutout so the first clothes photo is faster.
-  unawaited(warmUpClothesBackgroundModel());
   runApp(const MineRoot());
 }
 
@@ -69,6 +67,7 @@ class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_state.checkDueAlarms());
+      unawaited(_state.checkWaterReminder());
       unawaited(_state.runMetalBriefing());
     }
   }
@@ -166,6 +165,9 @@ class _HomeFor extends StatelessWidget {
     if (!state.profile.onboarded) {
       // After walkthrough slide 4: import existing data, or create a profile.
       return const ImportOrCreateProfileScreen();
+    }
+    if (!state.profile.introVideoSeen) {
+      return const IntroVideoScreen();
     }
     return const ShellScreen();
   }

@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 
 import '../data/stored_bytes.dart';
 import '../logic/detect_image_color.dart';
-import '../logic/remove_clothes_background.dart';
 import '../logic/rotate_image.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
@@ -78,9 +77,6 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    final stripBg = await _askRemoveBackground();
-    if (!mounted || stripBg == null) return;
-
     setState(() => _processing = true);
     try {
       final bytes = await pickAppImage(
@@ -91,7 +87,6 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
         wardrobeCategory: _garment.wardrobeCategory,
         garmentCategory: _garment.category,
         guideLabel: _garment.wardrobeCategory.label,
-        removeBackground: stripBg,
       );
       if (!mounted) return;
       if (bytes == null) {
@@ -113,60 +108,6 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
       setState(() => _processing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not process that photo. Try again.')),
-      );
-    }
-  }
-
-  /// null = cancelled, true/false = user choice.
-  Future<bool?> _askRemoveBackground() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove background?'),
-        content: const Text(
-          'Cut the clothes out of the photo for a clean wardrobe look, or keep the original background.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep background'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove BG'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _removeBackgroundNow() async {
-    if (_processing) return;
-    setState(() => _processing = true);
-    try {
-      var bytes = _pickedBytes;
-      bytes ??= await readStoredBytes(_garment.imagePath);
-      if (bytes == null || bytes.isEmpty) {
-        if (mounted) setState(() => _processing = false);
-        return;
-      }
-      final cut = await removeClothesBackground(bytes);
-      final colors = detectClothesColors(cut);
-      if (!mounted) return;
-      setState(() {
-        _pickedBytes = cut;
-        _processing = false;
-        if (colors.isNotEmpty) {
-          _garment.colors
-            ..clear()
-            ..addAll(colors);
-        }
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _processing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not remove background.')),
       );
     }
   }
@@ -302,7 +243,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
                             ),
                             SizedBox(height: 14),
                             Text(
-                              'Removing background…',
+                              'Processing photo…',
                               style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ],
@@ -337,12 +278,6 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  _TinyActionChip(
-                                    icon: Icons.auto_fix_off_outlined,
-                                    label: 'BG',
-                                    onTap: _removeBackgroundNow,
-                                  ),
-                                  const SizedBox(width: 6),
                                   _RotateChip(
                                     icon: Icons.rotate_left_rounded,
                                     onTap: () => _rotate(-90),
@@ -549,48 +484,6 @@ class _RotateChip extends StatelessWidget {
           width: 40,
           height: 40,
           child: Icon(icon, color: Colors.white, size: 22),
-        ),
-      ),
-    );
-  }
-}
-
-class _TinyActionChip extends StatelessWidget {
-  const _TinyActionChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.55),
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

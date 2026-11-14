@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/app_store.dart';
@@ -9,9 +10,6 @@ import '../data/backup.dart';
 import '../data/excel_backup.dart';
 import '../data/media_bytes.dart';
 import '../data/persist_image.dart';
-import '../data/stored_bytes.dart';
-import '../logic/detect_image_color.dart';
-import '../logic/remove_clothes_background.dart';
 import '../logic/stylist.dart';
 import '../models/bucket_list.dart';
 import '../models/jewelry.dart';
@@ -83,8 +81,10 @@ class MineState extends ChangeNotifier {
     _alarmWatch?.cancel();
     _alarmWatch = Timer.periodic(const Duration(seconds: 8), (_) {
       unawaited(_checkDueAlarms());
+      unawaited(_checkWaterReminder());
     });
     unawaited(_checkDueAlarms());
+    unawaited(_checkWaterReminder());
   }
 
   /// Morning gold/silver vs yesterday. Runs once a day after 8 am, or on tap.
@@ -186,6 +186,20 @@ class MineState extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> completeIntroVideo() async {
+    profile.introVideoSeen = true;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> setIntroVideoLang(String lang) async {
+    final next = lang == 'ta' ? 'ta' : 'en';
+    if (profile.introVideoLang == next) return;
+    profile.introVideoLang = next;
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> completeOnboarding({
     required String name,
     required Set<int> workdays,
@@ -200,7 +214,8 @@ class MineState extends ChangeNotifier {
       ..workStyle = workStyle
       ..wearer = wearer
       ..dateOfBirth = dateOfBirth
-      ..onboarded = true;
+      ..onboarded = true
+      ..introVideoSeen = false;
     if (photoBytes != null) {
       profile.photoPath = await _store.saveImage(
         photoBytes,
@@ -266,6 +281,196 @@ class MineState extends ChangeNotifier {
     profile = next;
     notifyListeners();
     await _persist();
+  }
+
+  bool _ensureWaterDay() {
+    final today = dateKey(DateTime.now());
+    if (profile.waterDrunkDay == today) return false;
+    profile.waterDrunkDay = today;
+    profile.waterGlassesDrunk = 0;
+    profile.waterAwaitingDrink = false;
+    return true;
+  }
+
+  String _waterProgressLabel() {
+    _ensureWaterDay();
+    return '${profile.waterGlassesDrunk}/${profile.waterGlassesGoal} glasses';
+  }
+
+  String _waterMotivateBody() {
+    final left =
+        (profile.waterGlassesGoal - profile.waterGlassesDrunk).clamp(0, 99);
+    final tip = _waterMotivate[DateTime.now().minute % _waterMotivate.length];
+    return '$tip\n$_waterProgressLabel() · $left left today.';
+  }
+
+  Future<void> saveWaterReminder({
+    required int glassesPerDay,
+    required int intervalHours,
+    bool enabled = true,
+  }) async {
+    final glasses = glassesPerDay.clamp(1, 20);
+    final hours = intervalHours.clamp(1, 12);
+    _ensureWaterDay();
+    profile
+      ..waterReminderOn = enabled
+      ..waterGlassesGoal = glasses
+      ..waterIntervalHours = hours
+      ..waterAwaitingDrink = false;
+    if (profile.waterGlassesDrunk > glasses) {
+      profile.waterGlassesDrunk = glasses;
+    }
+    await cancelEventAlarm(waterScheduleId);
+    await cancelEventAlarm(waterNotifId);
+    if (!enabled) {
+      profile.waterNextAtTime = null;
+      notifyListeners();
+      await _persist();
+      return;
+    }
+    if (profile.waterGoalMet) {
+      profile.waterNextAtTime = null;
+      notifyListeners();
+      await _persist();
+      _note(
+        'Water goal ready',
+        body: 'Already done for today · $glasses glasses',
+        kind: 'water',
+      );
+      return;
+    }
+    final next = DateTime.now().add(Duration(hours: hours));
+    profile.waterNextAtTime = next;
+    notifyListeners();
+    await _persist();
+    await _scheduleNextWaterReminder();
+    _note(
+      'Water reminder on',
+      body: '$glasses glasses/day · every ${hours}h',
+      kind: 'water',
+    );
+  }
+
+  Future<void> markWaterDrunk() async {
+    _ensureWaterDay();
+    if (!profile.waterReminderOn) return;
+    if (profile.waterGoalMet) {
+      profile.waterAwaitingDrink = false;
+      await cancelEventAlarm(waterNotifId);
+      notifyListeners();
+      await _persist();
+      return;
+    }
+    profile.waterGlassesDrunk += 1;
+    profile.waterAwaitingDrink = false;
+    await cancelEventAlarm(waterNotifId);
+    if (profile.waterGoalMet) {
+      profile.waterNextAtTime = null;
+      await cancelEventAlarm(waterScheduleId);
+      notifyListeners();
+      await _persist();
+      _note(
+        'Water goal done!',
+        body: 'All ${profile.waterGlassesGoal} glasses today — nice work.',
+        kind: 'water',
+      );
+      return;
+    }
+    final next =
+        DateTime.now().add(Duration(hours: profile.waterIntervalHours));
+    profile.waterNextAtTime = next;
+    notifyListeners();
+    await _persist();
+    await _scheduleNextWaterReminder();
+    _note(
+      'Glass logged',
+      body: _waterProgressLabel(),
+      kind: 'water',
+    );
+  }
+
+  Future<void> _scheduleNextWaterReminder() async {
+    await cancelEventAlarm(waterScheduleId);
+    if (!profile.waterReminderOn || profile.waterGoalMet) return;
+    final at = profile.waterNextAtTime;
+    if (at == null) return;
+    await scheduleWaterReminder(
+      id: waterScheduleId,
+      at: at,
+      title: 'Drink water',
+      body: _waterMotivateBody(),
+      payload: waterReminderId,
+    );
+  }
+
+  Future<void> _fireWaterReminder({bool forceNotice = false}) async {
+    _ensureWaterDay();
+    if (!profile.waterReminderOn || profile.waterGoalMet) return;
+    if (profile.waterAwaitingDrink && !forceNotice) return;
+    profile.waterAwaitingDrink = true;
+    // Hold next until user logs the glass (or until they change settings).
+    profile.waterNextAtTime = null;
+    await cancelEventAlarm(waterScheduleId);
+    notifyListeners();
+    await _persist();
+    final title = 'Drink water';
+    final body = _waterMotivateBody();
+    // OS schedule already notifies on mobile; force / web still push a notice.
+    if (forceNotice || kIsWeb) {
+      await showWaterReminderNotice(
+        id: waterNotifId,
+        title: title,
+        body: body,
+        payload: waterReminderId,
+      );
+    }
+    _note(title, body: body, kind: 'water');
+    unawaited(_playWaterSound());
+  }
+
+  Future<void> _playWaterSound() async {
+    try {
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.release);
+      await _player.setVolume(1);
+      await _player.play(AssetSource('sounds/water_chime.wav'));
+    } catch (_) {
+      try {
+        await _player.play(BytesSource(buildWaterWav()));
+      } catch (e) {
+        debugPrint('Water sound failed: $e');
+      }
+    }
+  }
+
+  Future<void> _checkWaterReminder() async {
+    await _consumePendingWaterDrank();
+    if (_ensureWaterDay()) {
+      notifyListeners();
+      if (profile.waterReminderOn && !profile.waterGoalMet) {
+        profile.waterNextAtTime = DateTime.now().add(
+          Duration(hours: profile.waterIntervalHours),
+        );
+        await _persist();
+        await _scheduleNextWaterReminder();
+      } else {
+        await _persist();
+      }
+    }
+    if (!profile.waterReminderOn || profile.waterGoalMet) return;
+    final next = profile.waterNextAtTime;
+    if (next == null) return;
+    if (next.isAfter(DateTime.now())) return;
+    await _fireWaterReminder();
+  }
+
+  Future<void> _consumePendingWaterDrank() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(pendingWaterDrankKey) != true) return;
+      await prefs.setBool(pendingWaterDrankKey, false);
+      await markWaterDrunk();
+    } catch (_) {}
   }
 
   Future<void> addCustomShelf(String name) async {
@@ -443,6 +648,17 @@ class MineState extends ChangeNotifier {
   }
 
   static const officeAlarmId = 'office-alarm';
+  static const waterReminderId = 'water-reminder';
+  static const waterNotifId = 9301;
+  static const waterScheduleId = 9302;
+
+  static const _waterMotivate = [
+    'Time for a glass — your body will thank you.',
+    'Sip time! Stay fresh and focused.',
+    'Hydration check — grab a glass of water.',
+    'One glass closer to your goal. You’ve got this!',
+    'Pause and drink — energy loves water.',
+  ];
   static const _officeSnoozeNotifId = 9199;
 
   static int officeNotifId(int weekday) => 9100 + weekday;
@@ -574,52 +790,17 @@ class MineState extends ChangeNotifier {
         oldIndex == newIndex) {
       return;
     }
-    // onReorderItem already adjusts newIndex for the removed item.
+    // Classic ReorderableListView.onReorder: adjust when moving down.
+    var target = newIndex;
+    if (oldIndex < target) target -= 1;
     final moved = list.removeAt(oldIndex);
-    final target = newIndex.clamp(0, list.length);
+    target = target.clamp(0, list.length);
     list.insert(target, moved);
     for (var i = 0; i < list.length; i++) {
       list[i].shelfIndex = i;
     }
     notifyListeners();
     await _persist();
-  }
-
-  /// Strip backgrounds for every photo on a shelf, left→right, one by one.
-  /// Returns how many photos were processed.
-  Future<int> stripShelfBackgrounds(
-    String shelfLabel, {
-    void Function(int done, int total)? onProgress,
-  }) async {
-    final list = garmentsOnShelf(shelfLabel)
-        .where((g) => g.imagePath != null && g.imagePath!.trim().isNotEmpty)
-        .toList();
-    final total = list.length;
-    if (total == 0) return 0;
-
-    var done = 0;
-    for (final garment in list) {
-      onProgress?.call(done, total);
-      final bytes = await readStoredBytes(garment.imagePath);
-      if (bytes == null || bytes.isEmpty) {
-        done++;
-        onProgress?.call(done, total);
-        continue;
-      }
-      final cut = await removeClothesBackground(bytes);
-      garment.imagePath = await _store.saveImage(cut, garment.id);
-      final colors = detectClothesColors(cut);
-      if (colors.isNotEmpty) {
-        garment.colors
-          ..clear()
-          ..addAll(colors);
-      }
-      done++;
-      notifyListeners();
-      onProgress?.call(done, total);
-    }
-    await _persist();
-    return done;
   }
 
   Future<void> saveGarment(Garment garment, {Uint8List? imageBytes}) async {
@@ -807,22 +988,46 @@ class MineState extends ChangeNotifier {
   }
 
   Future<bool> assignSetToDay(DayPlan day, ClothSet set) async {
-    if (day.locked || day.worn) return false;
+    if (day.worn) return false;
     final ids = set.outfit.pieceIds;
     for (final id in ids) {
       if (isUsedElsewhereThisWeek(id, except: day)) return false;
     }
     day.outfit = set.outfit.copy(id: _uuid.v4());
+    // Keep the user's pick fixed — auto-suggest skips locked days.
+    day.locked = true;
+    notifyListeners();
+    await _persist();
+    return true;
+  }
+
+  /// Build a day look from wardrobe piece ids (no style collection needed).
+  Future<bool> assignPiecesToDay(DayPlan day, List<String> garmentIds) async {
+    if (day.worn) return false;
+    if (garmentIds.isEmpty) return false;
+    for (final id in garmentIds) {
+      if (isUsedElsewhereThisWeek(id, except: day)) return false;
+    }
+    final outfit = Outfit(id: _uuid.v4());
+    for (final id in garmentIds) {
+      final garment = garmentById(id);
+      if (garment == null) continue;
+      _putGarmentOnOutfit(outfit, garment);
+    }
+    if (outfit.pieceIds.isEmpty) return false;
+    day.outfit = outfit;
+    day.locked = true;
     notifyListeners();
     await _persist();
     return true;
   }
 
   Future<bool> assignDressToDay(DayPlan day, Garment dress) async {
-    if (day.locked || day.worn) return false;
+    if (day.worn) return false;
     if (dress.category != GarmentCategory.dress) return false;
     if (isUsedElsewhereThisWeek(dress.id, except: day)) return false;
     day.outfit = Outfit(id: _uuid.v4(), dressId: dress.id);
+    day.locked = true;
     notifyListeners();
     await _persist();
     return true;
@@ -903,18 +1108,42 @@ class MineState extends ChangeNotifier {
 
   Future<void> showNextLook() async {
     final day = todayPlan;
-    if (day == null || day.locked || todayChoices.isEmpty) return;
+    if (day == null || day.worn) return;
+    if (todayChoices.isEmpty) _rebuildTodayChoices();
+    if (todayChoices.isEmpty) {
+      await shuffleDay(day);
+      return;
+    }
     todayIndex = (todayIndex + 1) % todayChoices.length;
+    // Replace today’s week look (even if a set was already saved).
     day.outfit = todayChoices[todayIndex];
+    day.locked = false;
     notifyListeners();
     await _persist();
   }
 
   Future<void> showPreviousLook() async {
     final day = todayPlan;
-    if (day == null || day.locked || todayChoices.isEmpty) return;
+    if (day == null || day.worn) return;
+    if (todayChoices.isEmpty) _rebuildTodayChoices();
+    if (todayChoices.isEmpty) return;
     todayIndex = (todayIndex - 1 + todayChoices.length) % todayChoices.length;
     day.outfit = todayChoices[todayIndex];
+    day.locked = false;
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Save the current look onto today’s week day (replaces any prior set).
+  Future<void> saveTodayLook() async {
+    final day = todayPlan;
+    if (day == null || day.outfit == null || day.outfit!.isEmpty) return;
+    day.locked = true;
+    _note(
+      "Today's look saved",
+      body: 'This outfit is set for today in your week plan.',
+      kind: 'outfit',
+    );
     notifyListeners();
     await _persist();
   }
@@ -932,7 +1161,7 @@ class MineState extends ChangeNotifier {
   }
 
   Future<void> shuffleDay(DayPlan day) async {
-    if (day.locked) return;
+    if (day.worn) return;
     final used = _usedIds(except: day);
     day.outfit = _stylist.buildOutfit(
       wardrobe: garments,
@@ -945,7 +1174,7 @@ class MineState extends ChangeNotifier {
   }
 
   Future<void> clearDayOutfit(DayPlan day) async {
-    if (day.locked) return;
+    day.locked = false;
     day.outfit = null;
     if (day.worn) {
       day.worn = false;
@@ -1505,9 +1734,19 @@ class MineState extends ChangeNotifier {
 
   Future<void> checkDueAlarms() => _checkDueAlarms();
 
+  Future<void> checkWaterReminder() => _checkWaterReminder();
+
   Future<void> handleAlarm(String eventId) async {
     if (eventId == MetalBriefing.payload) {
       await runMetalBriefing(force: true);
+      return;
+    }
+    if (eventId == waterDrankPayload || eventId == 'water-drank') {
+      await markWaterDrunk();
+      return;
+    }
+    if (eventId == waterReminderId || eventId == waterReminderPayload) {
+      await _fireWaterReminder(forceNotice: false);
       return;
     }
     if (eventId == officeAlarmId) {
@@ -1636,6 +1875,12 @@ class MineState extends ChangeNotifier {
       }
     }
     await _scheduleOfficeAlarms();
+    _ensureWaterDay();
+    if (profile.waterReminderOn &&
+        !profile.waterGoalMet &&
+        profile.waterNextAtTime != null) {
+      await _scheduleNextWaterReminder();
+    }
   }
 
   int get completedThisWeek {
@@ -1885,6 +2130,8 @@ class MineState extends ChangeNotifier {
     }
     profile.walkthroughSeen =
         profile.walkthroughSeen || incoming.walkthroughSeen;
+    // Imported profiles already know the app — skip intro video.
+    profile.introVideoSeen = true;
     if (incoming.customShelves.isNotEmpty) {
       final seen = {
         for (final shelf in profile.customShelves) shelf.toLowerCase(),

@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/mine_logo_mark.dart';
 import '../widgets/page_background.dart';
+import '../widgets/week_day_look_sheet.dart';
 import 'outfit_full_view_screen.dart';
 
 class WeekScreen extends StatefulWidget {
@@ -25,12 +26,14 @@ class WeekScreen extends StatefulWidget {
 class _WeekScreenState extends State<WeekScreen> {
   late DateTime _weekAnchor;
   var _didAutoSuggest = false;
+  DateTime? _focusDay;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _weekAnchor = DateTime(now.year, now.month, now.day);
+    _focusDay = dateOnly(now);
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSuggest());
   }
 
@@ -54,152 +57,15 @@ class _WeekScreenState extends State<WeekScreen> {
     setState(() {
       _weekAnchor = dateOnly(_weekAnchor.add(Duration(days: 7 * weeks)));
       _didAutoSuggest = false;
+      final days = _weekDays;
+      final today = dateOnly(DateTime.now());
+      _focusDay = days.any((d) => sameDay(d, today)) ? today : days.first;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSuggest());
   }
 
   Future<void> _addLook(DayPlan day) async {
-    if (day.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock this day before changing the look.')),
-      );
-      return;
-    }
-    final state = context.read<MineState>();
-    final sets = state.availableSetsForDay(day);
-    final dresses = state.availableDressesForDay(day);
-    if (sets.isEmpty && dresses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No free sets or dresses left. Add more in My outfit, or unlock other days.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.paper,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.62,
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Add set or dress',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const TabBar(
-                    tabs: [
-                      Tab(text: 'Sets'),
-                      Tab(text: 'Dresses'),
-                    ],
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _LookPickList(
-                          emptyLabel: 'No sets available for this day.',
-                          itemCount: sets.length,
-                          itemBuilder: (context, index) {
-                            final set = sets[index];
-                            final pieces = state.piecesOf(set.outfit);
-                            return ListTile(
-                              leading: SizedBox(
-                                width: 48,
-                                height: 48,
-                                child: pieces.isEmpty
-                                    ? const Icon(Icons.layers_outlined)
-                                    : PhotoTile(
-                                        garment: pieces.first,
-                                        radius: 12,
-                                      ),
-                              ),
-                              title: Text(set.name),
-                              subtitle: Text(
-                                '${set.collection.label} · ${pieces.length} pieces',
-                              ),
-                              onTap: () async {
-                                final messenger =
-                                    ScaffoldMessenger.of(this.context);
-                                final ok =
-                                    await state.assignSetToDay(day, set);
-                                if (!context.mounted) return;
-                                Navigator.pop(context);
-                                if (!ok) {
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'That set uses items already planned this week.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            );
-                          },
-                        ),
-                        _LookPickList(
-                          emptyLabel: 'No dresses available for this day.',
-                          itemCount: dresses.length,
-                          itemBuilder: (context, index) {
-                            final dress = dresses[index];
-                            return ListTile(
-                              leading: SizedBox(
-                                width: 48,
-                                height: 48,
-                                child: PhotoTile(garment: dress, radius: 12),
-                              ),
-                              title: Text(
-                                dress.name.isEmpty ? 'Dress' : dress.name,
-                              ),
-                              subtitle: Text(dress.shelfLabel),
-                              onTap: () async {
-                                final messenger =
-                                    ScaffoldMessenger.of(this.context);
-                                final ok =
-                                    await state.assignDressToDay(day, dress);
-                                if (!context.mounted) return;
-                                Navigator.pop(context);
-                                if (!ok) {
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'That dress is already planned this week.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    await showWeekDayLookSheet(context, day);
   }
 
   @override
@@ -207,8 +73,14 @@ class _WeekScreenState extends State<WeekScreen> {
     final state = context.watch<MineState>();
     final days = _weekDays;
     final setCount = state.readySetCount;
+    final planned = days.where((d) {
+      final plan = state.week?.forDate(d);
+      if (plan == null) return false;
+      return state.piecesOf(plan.outfit).isNotEmpty;
+    }).length;
     final range =
         '${DateFormat('d MMM').format(_weekStart)} – ${DateFormat('d MMM').format(_weekStart.add(const Duration(days: 6)))}';
+    final focus = _focusDay ?? days.first;
 
     final planner = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -226,7 +98,8 @@ class _WeekScreenState extends State<WeekScreen> {
                     style: GoogleFonts.manrope(
                       fontSize: 26,
                       height: 1.15,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
                       color: AppColors.ink,
                     ),
                   ),
@@ -235,88 +108,57 @@ class _WeekScreenState extends State<WeekScreen> {
             ),
           ),
         Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Previous week',
-                      onPressed: () => _shiftWeek(-1),
-                      icon: const Icon(Icons.chevron_left_rounded),
-                    ),
-                    Expanded(
-                      child: Text(
-                        range,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: _WeekHeroBar(
+            range: range,
+            planned: planned,
+            total: 7,
+            setCount: setCount,
+            onPrev: () => _shiftWeek(-1),
+            onNext: () => _shiftWeek(1),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ListView.separated(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              setCount >= 7 ? 100 : 28,
+            ),
+            itemCount: 7,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final date = days[index];
+              final plan = state.week?.forDate(date);
+              final pieces = plan == null
+                  ? const <Garment>[]
+                  : state.piecesOf(plan.outfit);
+              final highlighted = sameDay(date, focus);
+              return _DayLookCard(
+                date: date,
+                plan: plan,
+                pieces: pieces,
+                highlighted: highlighted,
+                onFocus: () => setState(() => _focusDay = date),
+                onAdd: plan == null ? null : () => _addLook(plan),
+                onClear:
+                    plan == null ? null : () => state.clearDayOutfit(plan),
+                onOpen: pieces.isEmpty
+                    ? null
+                    : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => OutfitFullViewScreen(
+                              pieces: pieces,
+                              date: date,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Next week',
-                      onPressed: () => _shiftWeek(1),
-                      icon: const Icon(Icons.chevron_right_rounded),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
-                child: Text(
-                  setCount >= 7
-                      ? '$setCount sets ready · auto-suggested'
-                      : 'Add a set or dress on each day'
-                          '${setCount > 0 ? ' · $setCount sets so far' : ''}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    4,
-                    16,
-                    setCount >= 7 ? 96 : 24,
-                  ),
-                  itemCount: 7,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final date = days[index];
-                    final plan = state.week?.forDate(date);
-                    final pieces = plan == null
-                        ? const <Garment>[]
-                        : state.piecesOf(plan.outfit);
-                    return _DayCard(
-                      date: date,
-                      plan: plan,
-                      pieces: pieces,
-                      onAdd: plan == null ? null : () => _addLook(plan),
-                      onLock: plan == null
-                          ? null
-                          : () => state.toggleLock(plan),
-                      onClear: plan == null || plan.locked
-                          ? null
-                          : () => state.clearDayOutfit(plan),
-                      onOpen: pieces.isEmpty
-                          ? null
-                          : () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => OutfitFullViewScreen(
-                                    pieces: pieces,
-                                    date: date,
-                                  ),
-                                ),
-                              ),
-                    );
-                  },
-                ),
-              ),
+              );
+            },
+          ),
+        ),
       ],
     );
 
@@ -328,10 +170,13 @@ class _WeekScreenState extends State<WeekScreen> {
         floatingActionButton: setCount >= 7
             ? FloatingActionButton.extended(
                 onPressed: () => state.suggestWeekSets(reshuffle: true),
-                backgroundColor: AppColors.ink,
+                backgroundColor: AppColors.terracotta,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.auto_awesome_rounded),
-                label: const Text('Suggest week'),
+                label: Text(
+                  'Suggest week',
+                  style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                ),
               )
             : null,
         body: SafeArea(child: planner),
@@ -340,45 +185,144 @@ class _WeekScreenState extends State<WeekScreen> {
   }
 }
 
-class _LookPickList extends StatelessWidget {
-  const _LookPickList({
-    required this.emptyLabel,
-    required this.itemCount,
-    required this.itemBuilder,
+class _WeekHeroBar extends StatelessWidget {
+  const _WeekHeroBar({
+    required this.range,
+    required this.planned,
+    required this.total,
+    required this.setCount,
+    required this.onPrev,
+    required this.onNext,
   });
 
-  final String emptyLabel;
-  final int itemCount;
-  final IndexedWidgetBuilder itemBuilder;
+  final String range;
+  final int planned;
+  final int total;
+  final int setCount;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
-    if (itemCount == 0) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            emptyLabel,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.muted),
-          ),
+    final progress = planned / total;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFBF7),
+            Color(0xFFF7EFE6),
+            Color(0xFFF3E1D4),
+          ],
         ),
-      );
-    }
-    return ListView.builder(
-      itemCount: itemCount,
-      itemBuilder: itemBuilder,
+        border: Border.all(color: AppColors.clay.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.terracotta.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Previous week',
+                onPressed: onPrev,
+                color: AppColors.terracotta,
+                icon: const Icon(Icons.chevron_left_rounded),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      range,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      setCount >= 7
+                          ? '$setCount sets ready · auto-styled'
+                          : (setCount > 0
+                              ? '$setCount sets so far · keep building'
+                              : 'Add a look to each day'),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.manrope(
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Next week',
+                onPressed: onNext,
+                color: AppColors.terracotta,
+                icon: const Icon(Icons.chevron_right_rounded),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: progress),
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) {
+                        return LinearProgressIndicator(
+                          value: value,
+                          minHeight: 6,
+                          backgroundColor: AppColors.clay.withValues(alpha: 0.45),
+                          color: AppColors.terracotta,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '$planned/$total',
+                  style: GoogleFonts.manrope(
+                    color: AppColors.terracotta,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _DayCard extends StatelessWidget {
-  const _DayCard({
+class _DayLookCard extends StatelessWidget {
+  const _DayLookCard({
     required this.date,
     required this.plan,
     required this.pieces,
+    required this.highlighted,
+    required this.onFocus,
     required this.onAdd,
-    required this.onLock,
     required this.onClear,
     required this.onOpen,
   });
@@ -386,160 +330,281 @@ class _DayCard extends StatelessWidget {
   final DateTime date;
   final DayPlan? plan;
   final List<Garment> pieces;
+  final bool highlighted;
+  final VoidCallback onFocus;
   final VoidCallback? onAdd;
-  final VoidCallback? onLock;
   final VoidCallback? onClear;
   final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final locked = plan?.locked ?? false;
     final isToday = sameDay(date, DateTime.now());
     final dayName = DateFormat('EEEE').format(date);
     final dayDate = DateFormat('d MMM').format(date);
 
-    return Material(
-      color: AppColors.paper,
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onOpen,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isToday ? AppColors.terracotta : AppColors.line,
-              width: isToday ? 1.5 : 1,
+    return AnimatedScale(
+      scale: highlighted ? 1.0 : 0.985,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () {
+            onFocus();
+            if (pieces.isEmpty) {
+              onAdd?.call();
+            } else {
+              onOpen?.call();
+            }
+          },
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              color: Colors.white.withValues(alpha: 0.82),
+              border: Border.all(
+                color: highlighted || isToday
+                    ? AppColors.terracotta.withValues(alpha: 0.55)
+                    : AppColors.ink.withValues(alpha: 0.06),
+                width: highlighted || isToday ? 1.4 : 1,
+              ),
+              boxShadow: highlighted
+                  ? [
+                      BoxShadow(
+                        color: AppColors.terracotta.withValues(alpha: 0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: pieces.isEmpty
-                      ? DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: AppColors.terracottaSoft.withValues(
-                              alpha: 0.55,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat('d').format(date),
+                          style: GoogleFonts.manrope(
+                            fontSize: 28,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                            color: isToday
+                                ? AppColors.terracotta
+                                : AppColors.ink,
                           ),
-                          child: const Icon(
-                            Icons.checkroom_outlined,
-                            color: AppColors.terracotta,
-                          ),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: PhotoTile(garment: pieces.first, radius: 0),
                         ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat('MMM').format(date).toUpperCase(),
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        if (isToday) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.terracottaSoft,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                             child: Text(
-                              dayName,
+                              'TODAY',
                               style: GoogleFonts.manrope(
+                                fontSize: 9,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                                color: AppColors.ink,
+                                color: AppColors.terracotta,
                               ),
                             ),
                           ),
-                          if (locked)
-                            const Icon(
-                              Icons.lock_rounded,
-                              size: 16,
-                              color: AppColors.terracotta,
-                            ),
                         ],
-                      ),
-                      Text(
-                        dayDate,
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        pieces.isEmpty
-                            ? 'No look yet'
-                            : '${pieces.length} ${pieces.length == 1 ? 'piece' : 'pieces'}',
-                        style: TextStyle(
-                          color: pieces.isEmpty
-                              ? AppColors.muted
-                              : AppColors.sage,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (pieces.length > 1) ...[
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 28,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: pieces.length.clamp(0, 4),
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(width: 4),
-                            itemBuilder: (context, index) {
-                              return SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: PhotoTile(
-                                  garment: pieces[index],
-                                  radius: 8,
-                                ),
-                              );
-                            },
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dayName,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppColors.ink,
                           ),
+                        ),
+                        Text(
+                          dayDate,
+                          style: GoogleFonts.manrope(
+                            color: AppColors.muted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        if (pieces.isEmpty)
+                          Container(
+                            height: 72,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: AppColors.terracottaSoft
+                                  .withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.checkroom_outlined,
+                                  color: AppColors.terracotta
+                                      .withValues(alpha: 0.8),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'No look yet',
+                                  style: GoogleFonts.manrope(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.terracotta,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          SizedBox(
+                            height: 78,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                for (var i = 0;
+                                    i < pieces.length.clamp(0, 4);
+                                    i++)
+                                  Positioned(
+                                    left: i * 36.0,
+                                    child: Container(
+                                      width: 68,
+                                      height: 78,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.ink
+                                                .withValues(alpha: 0.1),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        child: PhotoTile(
+                                          garment: pieces[i],
+                                          radius: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if (pieces.length > 4)
+                                  Positioned(
+                                    left: 4 * 36.0,
+                                    top: 24,
+                                    child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.terracotta,
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '+${pieces.length - 4}',
+                                        style: GoogleFonts.manrope(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      _MiniAction(
+                        label: pieces.isEmpty ? 'Add' : 'Change',
+                        onTap: onAdd,
+                      ),
+                      if (pieces.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        _MiniAction(
+                          label: 'Clear',
+                          muted: true,
+                          onTap: onClear,
                         ),
                       ],
                     ],
                   ),
-                ),
-                Column(
-                  children: [
-                    IconButton(
-                      tooltip: locked ? 'Unlock' : 'Lock',
-                      onPressed: onLock,
-                      icon: Icon(
-                        locked
-                            ? Icons.lock_rounded
-                            : Icons.lock_open_rounded,
-                        color: locked
-                            ? AppColors.terracotta
-                            : AppColors.muted,
-                      ),
-                    ),
-                    if (!locked)
-                      TextButton(
-                        onPressed: onAdd,
-                        child: const Text('Add'),
-                      ),
-                    if (!locked && pieces.isNotEmpty)
-                      TextButton(
-                        onPressed: onClear,
-                        child: const Text(
-                          'Clear',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniAction extends StatelessWidget {
+  const _MiniAction({
+    required this.label,
+    required this.onTap,
+    this.muted = false,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: muted ? AppColors.muted : AppColors.terracotta,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
         ),
       ),
     );

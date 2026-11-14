@@ -42,7 +42,6 @@ Future<Uint8List?> pickProfileImage(BuildContext context) async {
     source: source,
     maxWidth: 1200,
     imageQuality: 88,
-    removeBackground: false,
   );
 }
 

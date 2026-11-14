@@ -256,8 +256,10 @@ class _ManageCategoriesSheetState extends State<_ManageCategoriesSheet> {
                       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                       sliver: SliverReorderableList(
                         itemCount: _order.length,
-                        onReorderItem: (oldIndex, newIndex) async {
+                        onReorder: (oldIndex, newIndex) async {
                           setState(() {
+                            // Classic onReorder: adjust when moving down.
+                            if (oldIndex < newIndex) newIndex -= 1;
                             final item = _order.removeAt(oldIndex);
                             _order.insert(newIndex, item);
                           });

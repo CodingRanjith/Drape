@@ -1,3 +1,8 @@
+const waterReminderPayload = 'water-reminder';
+const waterDrankPayload = 'water-drank';
+const waterDrankActionId = 'water_drank';
+const pendingWaterDrankKey = 'pending_water_drank';
+
 Future<void> initEventAlarmsImpl({
   required void Function(String eventId) onAlarm,
 }) async {}
@@ -23,6 +28,21 @@ Future<void> scheduleDailyMetalBriefingImpl({
   required int id,
   required int hour,
   required int minute,
+  required String title,
+  required String body,
+  required String payload,
+}) async {}
+
+Future<void> scheduleWaterReminderImpl({
+  required int id,
+  required DateTime at,
+  required String title,
+  required String body,
+  required String payload,
+}) async {}
+
+Future<void> showWaterReminderNoticeImpl({
+  required int id,
   required String title,
   required String body,
   required String payload,

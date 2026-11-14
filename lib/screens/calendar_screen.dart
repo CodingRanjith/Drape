@@ -67,33 +67,48 @@ class _CalendarScreenState extends State<CalendarScreen>
     final onWeek = _tabs.index == 0;
     final setCount = context.watch<MineState>().readySetCount;
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F3EF),
-      floatingActionButton: onWeek
-          ? (setCount >= 7
-              ? FloatingActionButton.extended(
-                  onPressed: () => context
-                      .read<MineState>()
-                      .suggestWeekSets(reshuffle: true),
-                  backgroundColor: AppColors.ink,
-                  foregroundColor: Colors.white,
-                  icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Suggest week'),
-                )
-              : null)
-          : FloatingActionButton(
-              backgroundColor: AppColors.terracotta,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => EventEditorScreen(initialDate: _selected),
+      backgroundColor: const Color(0xFFF5F1EC),
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, anim) => ScaleTransition(
+          scale: anim,
+          child: FadeTransition(opacity: anim, child: child),
+        ),
+        child: onWeek
+            ? (setCount >= 7
+                ? FloatingActionButton.extended(
+                    key: const ValueKey('suggest'),
+                    onPressed: () => context
+                        .read<MineState>()
+                        .suggestWeekSets(reshuffle: true),
+                    backgroundColor: AppColors.terracotta,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+                    label: Text(
+                      'Suggest week',
+                      style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                    ),
+                  )
+                : const SizedBox.shrink(key: ValueKey('empty')))
+            : FloatingActionButton(
+                key: const ValueKey('add-event'),
+                backgroundColor: AppColors.terracotta,
+                foregroundColor: Colors.white,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => EventEditorScreen(initialDate: _selected),
+                  ),
+                ),
+                child: const Icon(Icons.add_rounded),
               ),
-              child: const Icon(Icons.add_rounded),
-            ),
+      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -103,12 +118,12 @@ class _CalendarScreenState extends State<CalendarScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const MineLogoMark(size: 48, radius: 14),
-                      const SizedBox(width: 12),
+                      const MineLogoMark(size: 46, radius: 14),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,15 +131,18 @@ class _CalendarScreenState extends State<CalendarScreen>
                             Text(
                               'Calendar',
                               style: GoogleFonts.manrope(
-                                fontSize: 34,
+                                fontSize: 30,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: -1.1,
+                                letterSpacing: -1.0,
+                                height: 1.05,
                                 color: AppColors.ink,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
-                              'Plan outfits & reminders',
+                              onWeek
+                                  ? 'Style every day of the week'
+                                  : 'Outfits, events & reminders',
                               style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -137,42 +155,36 @@ class _CalendarScreenState extends State<CalendarScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                TabBar(
-                  controller: _tabs,
-                  indicatorColor: AppColors.terracotta,
-                  indicatorWeight: 3,
-                  labelColor: AppColors.ink,
-                  unselectedLabelColor: AppColors.muted,
-                  labelStyle: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _SegmentTabs(
+                    index: _tabs.index,
+                    onChanged: (i) {
+                      HapticFeedback.selectionClick();
+                      _tabs.animateTo(i);
+                    },
                   ),
-                  unselectedLabelStyle: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                  tabs: const [
-                    Tab(text: 'Week'),
-                    Tab(text: 'Month'),
-                  ],
                 ),
+                const SizedBox(height: 8),
                 Expanded(
                   child: TabBarView(
                     controller: _tabs,
                     children: [
                       const WeekScreen(embedded: true),
-                      _EventsTab(
-                    month: _month,
-                    selected: _selected,
-                    onPrevMonth: () => setState(
-                      () => _month = DateTime(_month.year, _month.month - 1),
-                    ),
-                    onNextMonth: () => setState(
-                      () => _month = DateTime(_month.year, _month.month + 1),
-                    ),
-                    onSelect: _selectDay,
-                  ),
+                      _MonthTab(
+                        month: _month,
+                        selected: _selected,
+                        onPrevMonth: () => setState(
+                          () =>
+                              _month = DateTime(_month.year, _month.month - 1),
+                        ),
+                        onNextMonth: () => setState(
+                          () =>
+                              _month = DateTime(_month.year, _month.month + 1),
+                        ),
+                        onSelect: _selectDay,
+                      ),
                     ],
                   ),
                 ),
@@ -185,6 +197,106 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 }
 
+class _SegmentTabs extends StatelessWidget {
+  const _SegmentTabs({required this.index, required this.onChanged});
+
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.clay.withValues(alpha: 0.55)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = (constraints.maxWidth - 0) / 2;
+          return Stack(
+            children: [
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                alignment:
+                    index == 0 ? Alignment.centerLeft : Alignment.centerRight,
+                child: Container(
+                  width: w,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.terracotta,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.terracotta.withValues(alpha: 0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SegLabel(
+                      label: 'Week',
+                      selected: index == 0,
+                      onTap: () => onChanged(0),
+                    ),
+                  ),
+                  Expanded(
+                    child: _SegLabel(
+                      label: 'Month',
+                      selected: index == 1,
+                      onTap: () => onChanged(1),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SegLabel extends StatelessWidget {
+  const _SegLabel({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Center(
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+            letterSpacing: -0.2,
+            color: selected ? Colors.white : AppColors.muted,
+          ),
+          child: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
 class _CalendarBackdropPainter extends CustomPainter {
   const _CalendarBackdropPainter();
 
@@ -192,35 +304,49 @@ class _CalendarBackdropPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = const Color(0xFFF6F3EF),
+      Paint()..color = const Color(0xFFF5F1EC),
     );
     final a = Paint()
       ..shader = const RadialGradient(
-        colors: [Color(0x44C45C26), Color(0x00F6F3EF)],
+        colors: [Color(0x38C45C26), Color(0x00F5F1EC)],
       ).createShader(
         Rect.fromCircle(
-          center: Offset(size.width * 0.85, -20),
-          radius: size.width * 0.65,
+          center: Offset(size.width * 0.92, -40),
+          radius: size.width * 0.7,
         ),
       );
     canvas.drawCircle(
-      Offset(size.width * 0.85, -20),
-      size.width * 0.65,
+      Offset(size.width * 0.92, -40),
+      size.width * 0.7,
       a,
     );
     final b = Paint()
       ..shader = const RadialGradient(
-        colors: [Color(0x33B0894F), Color(0x00F6F3EF)],
+        colors: [Color(0x28B0894F), Color(0x00F5F1EC)],
       ).createShader(
         Rect.fromCircle(
-          center: Offset(size.width * 0.1, size.height * 0.55),
-          radius: size.width * 0.55,
+          center: Offset(-20, size.height * 0.42),
+          radius: size.width * 0.58,
         ),
       );
     canvas.drawCircle(
-      Offset(size.width * 0.1, size.height * 0.55),
-      size.width * 0.55,
+      Offset(-20, size.height * 0.42),
+      size.width * 0.58,
       b,
+    );
+    final c = Paint()
+      ..shader = const RadialGradient(
+        colors: [Color(0x1A3F5E51), Color(0x00F5F1EC)],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(size.width * 0.55, size.height * 0.95),
+          radius: size.width * 0.5,
+        ),
+      );
+    canvas.drawCircle(
+      Offset(size.width * 0.55, size.height * 0.95),
+      size.width * 0.5,
+      c,
     );
   }
 
@@ -228,8 +354,8 @@ class _CalendarBackdropPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _EventsTab extends StatelessWidget {
-  const _EventsTab({
+class _MonthTab extends StatelessWidget {
+  const _MonthTab({
     required this.month,
     required this.selected,
     required this.onPrevMonth,
@@ -247,26 +373,29 @@ class _EventsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
     final dayEvents = state.eventsOn(selected);
+    final pieces = state.outfitPiecesFor(selected);
+    final completed = state.isDayCompleted(selected);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF2A2420),
-                Color(0xFF3A322C),
-                Color(0xFF1C1612),
+                Color(0xFFFFFBF7),
+                Color(0xFFF7EFE6),
+                Color(0xFFF3E1D4),
               ],
             ),
+            border: Border.all(color: AppColors.clay.withValues(alpha: 0.55)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.ink.withValues(alpha: 0.22),
+                color: AppColors.terracotta.withValues(alpha: 0.10),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -286,30 +415,27 @@ class _EventsTab extends StatelessWidget {
                 events: state.events,
                 onSelect: onSelect,
               ),
-              const SizedBox(height: 16),
-              Wrap(
+              const SizedBox(height: 14),
+              const Wrap(
                 alignment: WrapAlignment.center,
-                spacing: 14,
+                spacing: 16,
                 runSpacing: 8,
-                children: const [
+                children: [
                   _LegendMark(
+                    label: 'Past',
                     child: _FinishedBadge(size: 14),
-                    label: 'Finished',
-                    light: true,
                   ),
                   _LegendMark(
-                    child: _TodayDot(),
                     label: 'Today',
-                    light: true,
+                    child: _TodayDot(),
                   ),
                   _LegendMark(
+                    label: 'Event',
                     child: Icon(
                       Icons.flag_rounded,
                       size: 14,
                       color: AppColors.terracotta,
                     ),
-                    label: 'Reminder',
-                    light: true,
                   ),
                 ],
               ),
@@ -317,71 +443,127 @@ class _EventsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
-        Text(
-          DateFormat('EEEE, d MMMM').format(selected),
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-            color: AppColors.ink,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (state.isDayCompleted(selected))
-          Text(
-            'Office outfit completed this day.',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w600,
-              color: AppColors.terracotta,
-            ),
-          ),
-        Builder(
-          builder: (context) {
-            final pieces = state.outfitPiecesFor(selected);
-            if (pieces.isEmpty) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(top: 14, bottom: 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Outfit that day',
+                    DateFormat('EEEE').format(selected),
                     style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.terracotta,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('d MMMM').format(selected),
+                    style: GoogleFonts.manrope(
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
                       color: AppColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  ClothesPhotoRow(
-                    garments: pieces,
-                    height: 110,
-                    onTap: (g) {
-                      final i = pieces.indexOf(g);
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => OutfitFullViewScreen(
-                            pieces: pieces,
-                            date: selected,
-                            initialIndex: i < 0 ? 0 : i,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
-            );
-          },
-        ),
-        if (dayEvents.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              'No function, birthday or party on this day.',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w600,
-                color: AppColors.muted,
+            ),
+            if (completed)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.terracottaSoft,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Worn',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    color: AppColors.terracotta,
+                  ),
+                ),
               ),
+          ],
+        ),
+        if (pieces.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Outfit',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClothesPhotoRow(
+            garments: pieces,
+            height: 118,
+            onTap: (g) {
+              final i = pieces.indexOf(g);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => OutfitFullViewScreen(
+                    pieces: pieces,
+                    date: selected,
+                    initialIndex: i < 0 ? 0 : i,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+        const SizedBox(height: 18),
+        Text(
+          'Events',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w800,
+            fontSize: 15,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (dayEvents.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.ink.withValues(alpha: 0.05)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.event_available_outlined,
+                  color: AppColors.muted.withValues(alpha: 0.7),
+                  size: 28,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Nothing planned',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tap + to add a birthday, party or function.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
             ),
           )
         else
@@ -408,14 +590,27 @@ class _MonthHeader extends StatelessWidget {
       children: [
         _NavChip(icon: Icons.chevron_left_rounded, onTap: onPrev),
         Expanded(
-          child: Text(
-            DateFormat('MMMM y').format(month),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
+          child: Column(
+            children: [
+              Text(
+                DateFormat('MMMM').format(month),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                  color: AppColors.ink,
+                ),
+              ),
+              Text(
+                DateFormat('y').format(month),
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.muted,
+                ),
+              ),
+            ],
           ),
         ),
         _NavChip(icon: Icons.chevron_right_rounded, onTap: onNext),
@@ -433,7 +628,7 @@ class _NavChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.12),
+      color: AppColors.terracottaSoft,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -441,7 +636,7 @@ class _NavChip extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, color: Colors.white),
+          child: Icon(icon, color: AppColors.terracotta),
         ),
       ),
     );
@@ -482,9 +677,9 @@ class _MonthGrid extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFFC4B8AE),
+                    color: AppColors.muted,
                     fontSize: 11,
-                    letterSpacing: 0.4,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -497,9 +692,9 @@ class _MonthGrid extends StatelessWidget {
           itemCount: lead + daysInMonth,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 8,
+            mainAxisSpacing: 6,
             crossAxisSpacing: 4,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.78,
           ),
           itemBuilder: (context, i) {
             if (i < lead) return const SizedBox.shrink();
@@ -544,15 +739,12 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color fill;
-    Color numberColor;
-    if (isToday || isSelected) {
-      fill = Colors.white;
-      numberColor = AppColors.ink;
-    } else {
-      fill = Colors.white.withValues(alpha: 0.10);
-      numberColor = Colors.white;
-    }
+    final fill = isToday
+        ? AppColors.terracotta
+        : (isSelected ? AppColors.terracottaSoft : Colors.white);
+    final numberColor = isToday
+        ? Colors.white
+        : (isSelected ? AppColors.terracotta : AppColors.ink);
 
     return InkWell(
       customBorder: const CircleBorder(),
@@ -566,18 +758,32 @@ class _DayCell extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
                   width: 36,
                   height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: fill,
                     shape: BoxShape.circle,
-                    border: isSelected && !isToday
-                        ? Border.all(
-                            color: AppColors.terracotta,
-                            width: 2,
-                          )
+                    border: isToday
+                        ? null
+                        : Border.all(
+                            color: isSelected
+                                ? AppColors.terracotta
+                                : AppColors.clay.withValues(alpha: 0.55),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                    boxShadow: isToday
+                        ? [
+                            BoxShadow(
+                              color: AppColors.terracotta.withValues(
+                                alpha: 0.45,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
                         : null,
                   ),
                   child: Text(
@@ -593,7 +799,7 @@ class _DayCell extends StatelessWidget {
                 if (completed && !isToday)
                   const Positioned(
                     top: -1,
-                    child: _FinishedBadge(size: 13),
+                    child: _FinishedBadge(size: 12),
                   ),
               ],
             ),
@@ -603,7 +809,7 @@ class _DayCell extends StatelessWidget {
             child: hasReminder
                 ? const Icon(
                     Icons.flag_rounded,
-                    size: 12,
+                    size: 11,
                     color: AppColors.terracotta,
                   )
                 : const SizedBox.shrink(),
@@ -641,9 +847,15 @@ class _TodayDot extends StatelessWidget {
     return Container(
       width: 16,
       height: 16,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.terracotta,
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.terracotta.withValues(alpha: 0.4),
+            blurRadius: 6,
+          ),
+        ],
       ),
     );
   }
@@ -653,12 +865,10 @@ class _LegendMark extends StatelessWidget {
   const _LegendMark({
     required this.child,
     required this.label,
-    this.light = false,
   });
 
   final Widget child;
   final String label;
-  final bool light;
 
   @override
   Widget build(BuildContext context) {
@@ -672,7 +882,7 @@ class _LegendMark extends StatelessWidget {
           style: GoogleFonts.manrope(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: light ? const Color(0xFFC4B8AE) : AppColors.ink,
+            color: AppColors.muted,
           ),
         ),
       ],
@@ -693,61 +903,79 @@ class _EventTile extends StatelessWidget {
         .whereType<Garment>()
         .toList();
     return Container(
-      margin: const EdgeInsets.only(bottom: 10, top: 8),
+      margin: const EdgeInsets.only(bottom: 10, top: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.ink.withValues(alpha: 0.07),
-        ),
+        color: Colors.white.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.ink.withValues(alpha: 0.06)),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => EventEditorScreen(existing: event)),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.terracottaSoft,
-                  child: Icon(
-                    switch (event.kind) {
-                      EventKind.birthday => Icons.cake_outlined,
-                      EventKind.function => Icons.apartment_outlined,
-                      EventKind.party => Icons.celebration_outlined,
-                      EventKind.other => Icons.event_outlined,
-                    },
-                    color: AppColors.terracotta,
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.terracottaSoft,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      switch (event.kind) {
+                        EventKind.birthday => Icons.cake_outlined,
+                        EventKind.function => Icons.apartment_outlined,
+                        EventKind.party => Icons.celebration_outlined,
+                        EventKind.other => Icons.event_outlined,
+                      },
+                      color: AppColors.terracotta,
+                    ),
                   ),
-                ),
-                title: Text(
-                  event.title,
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  '${event.kind.label} · ${DateFormat('d MMM, h:mm a').format(event.at)}'
-                  '${event.alarmOn ? ' · Alarm on' : ''}'
-                  '${look == null ? '' : ' · ${look.name}'}',
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.muted,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event.title,
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${event.kind.label} · ${DateFormat('d MMM, h:mm a').format(event.at)}'
+                          '${event.alarmOn ? ' · Alarm' : ''}'
+                          '${look == null ? '' : ' · ${look.name}'}',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                trailing: event.alarmOn
-                    ? const Icon(
-                        Icons.alarm_rounded,
-                        color: AppColors.terracotta,
-                      )
-                    : null,
+                  if (event.alarmOn)
+                    const Icon(
+                      Icons.alarm_rounded,
+                      color: AppColors.terracotta,
+                      size: 20,
+                    ),
+                ],
               ),
               if (clothes.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                ClothesPhotoRow(garments: clothes, height: 110),
+                const SizedBox(height: 10),
+                ClothesPhotoRow(garments: clothes, height: 100),
               ],
             ],
           ),

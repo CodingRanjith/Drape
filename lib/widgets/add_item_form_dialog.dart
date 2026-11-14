@@ -454,7 +454,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                                     ),
                                     SizedBox(height: 12),
                                     Text(
-                                      'Removing background…',
+                                      'Processing photo…',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                       ),

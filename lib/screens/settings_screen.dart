@@ -167,8 +167,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                           ),
+                          _MenuRow(
+                            icon: Icons.water_drop_outlined,
+                            title: 'Water reminder',
+                            value: _waterValue(profile),
+                            onTap: _openWaterReminder,
+                          ),
                         ],
                       ),
+                      if (profile.waterReminderOn) ...[
+                        const SizedBox(height: 14),
+                        _WaterProgressCard(
+                          drunk: profile.waterGlassesDrunk,
+                          goal: profile.waterGlassesGoal,
+                          hours: profile.waterIntervalHours,
+                          awaiting: profile.waterAwaitingDrink,
+                          done: profile.waterGoalMet,
+                          onDrank: () => context.read<MineState>().markWaterDrunk(),
+                          onEdit: _openWaterReminder,
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       _StudioPanel(
                         title: 'Data & app',
@@ -286,6 +304,139 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final count = context.read<MineState>().homeNoticeCount;
     if (count <= 0) return null;
     return '$count new';
+  }
+
+  String? _waterValue(UserProfile profile) {
+    if (!profile.waterReminderOn) return 'Off';
+    if (profile.waterGoalMet) return 'Done today ✓';
+    return '${profile.waterGlassesDrunk}/${profile.waterGlassesGoal} · ${profile.waterIntervalHours}h';
+  }
+
+  Future<void> _openWaterReminder() async {
+    final profile = context.read<MineState>().profile;
+    var glasses = profile.waterReminderOn
+        ? profile.waterGlassesGoal.clamp(1, 20)
+        : 8;
+    var hours = profile.waterReminderOn
+        ? profile.waterIntervalHours.clamp(1, 12)
+        : 1;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFFF7FAF8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              title: Text(
+                'Water reminder',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'How many glasses per day?',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: const Color(0xFF1F2A26),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    valueLabel: '$glasses glass${glasses == 1 ? '' : 'es'}',
+                    onMinus: () => setLocal(() {
+                      if (glasses > 1) glasses--;
+                    }),
+                    onPlus: () => setLocal(() {
+                      if (glasses < 20) glasses++;
+                    }),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'How much time after each reminder?',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: const Color(0xFF1F2A26),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    valueLabel: '$hours hour${hours == 1 ? '' : 's'}',
+                    onMinus: () => setLocal(() {
+                      if (hours > 1) hours--;
+                    }),
+                    onPlus: () => setLocal(() {
+                      if (hours < 12) hours++;
+                    }),
+                  ),
+                ],
+              ),
+              actions: [
+                if (profile.waterReminderOn)
+                  TextButton(
+                    onPressed: () async {
+                      await context.read<MineState>().saveWaterReminder(
+                            glassesPerDay: glasses,
+                            intervalHours: hours,
+                            enabled: false,
+                          );
+                      if (ctx.mounted) Navigator.pop(ctx, false);
+                    },
+                    child: Text(
+                      'Turn off',
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFE24B4B),
+                      ),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2F6F8F),
+                  ),
+                  onPressed: () async {
+                    await context.read<MineState>().saveWaterReminder(
+                          glassesPerDay: glasses,
+                          intervalHours: hours,
+                          enabled: true,
+                        );
+                    if (ctx.mounted) Navigator.pop(ctx, true);
+                  },
+                  child: Text(
+                    'Save',
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Reminder on · $glasses glasses · every $hours hour${hours == 1 ? '' : 's'}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _changePhoto() async {
@@ -938,6 +1089,173 @@ class _BandStat extends StatelessWidget {
                 color: Colors.white70,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperRow extends StatelessWidget {
+  const _StepperRow({
+    required this.valueLabel,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  final String valueLabel;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF1F2A26).withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onMinus,
+            icon: const Icon(Icons.remove_rounded),
+            color: const Color(0xFF2F6F8F),
+          ),
+          Expanded(
+            child: Text(
+              valueLabel,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: const Color(0xFF1F2A26),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onPlus,
+            icon: const Icon(Icons.add_rounded),
+            color: const Color(0xFF2F6F8F),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WaterProgressCard extends StatelessWidget {
+  const _WaterProgressCard({
+    required this.drunk,
+    required this.goal,
+    required this.hours,
+    required this.awaiting,
+    required this.done,
+    required this.onDrank,
+    required this.onEdit,
+  });
+
+  final int drunk;
+  final int goal;
+  final int hours;
+  final bool awaiting;
+  final bool done;
+  final VoidCallback onDrank;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = goal <= 0 ? 0.0 : (drunk / goal).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: done
+              ? const [Color(0xFFE7F6EE), Color(0xFFD5EFE2)]
+              : const [Color(0xFFE8F4FA), Color(0xFFD7EAF4)],
+        ),
+        border: Border.all(
+          color: done
+              ? const Color(0xFF2F8F5B).withValues(alpha: 0.25)
+              : const Color(0xFF2F6F8F).withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                done ? Icons.check_circle_rounded : Icons.water_drop_rounded,
+                color: done ? const Color(0xFF2F8F5B) : const Color(0xFF2F6F8F),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  done ? 'Water goal done today' : 'Today’s water',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: const Color(0xFF1F2A26),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onEdit,
+                child: Text(
+                  'Edit',
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2F6F8F),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            done
+                ? 'All $goal glasses complete — stay hydrated.'
+                : '$drunk of $goal glasses · every ${hours}h',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: const Color(0xFF4A5C56),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withValues(alpha: 0.7),
+              color: done ? const Color(0xFF2F8F5B) : const Color(0xFF2F6F8F),
+            ),
+          ),
+          if (!done) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: awaiting
+                    ? const Color(0xFF2F6F8F)
+                    : const Color(0xFF3F5E51),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onDrank,
+              icon: const Icon(Icons.local_drink_outlined, size: 18),
+              label: Text(
+                awaiting ? 'I drank this glass' : 'Log a glass',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
         ],
       ),
     );

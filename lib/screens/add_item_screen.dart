@@ -190,7 +190,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                               CircularProgressIndicator(color: AppColors.terracotta),
                               SizedBox(height: 14),
                               Text(
-                                'Removing background…',
+                                'Processing photo…',
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ],

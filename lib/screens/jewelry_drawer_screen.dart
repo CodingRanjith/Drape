@@ -657,7 +657,6 @@ class _AddJewelSheetState extends State<_AddJewelSheet> {
       context,
       source: source,
       guideLabel: widget.gold ? 'Gold jewellery' : 'Silver jewellery',
-      removeBackground: false,
     );
     if (bytes == null || !mounted) return;
     setState(() => _photo = bytes);

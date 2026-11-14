@@ -4,17 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-
 import '../app_nav.dart';
 import '../models/wardrobe.dart';
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
-import '../widgets/clothes_photo_row.dart';
 import '../widgets/common.dart';
-import 'full_look_screen.dart';
 import 'notifications_screen.dart';
+import 'outfit_full_view_screen.dart';
 
-/// Editorial home — brand first, then today's look.
+/// Home — greeting + today's look only.
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
 
@@ -53,14 +51,13 @@ class _TodayScreenState extends State<TodayScreen>
     final state = context.watch<MineState>();
     final today = DateTime.now();
     final plan = state.todayPlan;
-    final groups = ClothesType.todaySlots(state.profile.wearer)
-        .map((type) => (type: type, items: state.optionsFor(type)))
-        .where((g) => g.items.isNotEmpty)
-        .toList();
-    final selected = <Garment>[
-      for (final g in groups)
-        if (state.todaySlotGarment(g.type) case final piece?) piece,
-    ];
+    final pieces = state.piecesOf(plan?.outfit);
+    final hasWardrobe = state.garments.any(
+      (g) =>
+          !g.inLaundry &&
+          g.imagePath != null &&
+          g.imagePath!.trim().isNotEmpty,
+    );
     final canConfirm =
         plan?.outfit != null && !plan!.outfit!.isEmpty && plan.worn != true;
     final worn = plan?.worn == true;
@@ -86,7 +83,7 @@ class _TodayScreenState extends State<TodayScreen>
                   ),
                 ),
               ),
-              if (groups.isEmpty)
+              if (!hasWardrobe)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Padding(
@@ -99,96 +96,358 @@ class _TodayScreenState extends State<TodayScreen>
                     ),
                   ),
                 )
-              else ...[
+              else
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 0),
-                    child: _LookBoard(
-                      pieces: selected,
-                      worn: worn,
-                      onShuffle: state.todayChoices.length > 1
-                          ? () async {
-                              HapticFeedback.selectionClick();
-                              await state.showNextLook();
-                            }
-                          : null,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 0),
-                    child: Text(
-                      'Build the look',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
-                        color: AppColors.ink.withValues(alpha: 0.45),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 14, 0, 0),
-                  sliver: SliverList.builder(
-                    itemCount: groups.length,
-                    itemBuilder: (context, index) {
-                      final group = groups[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 22),
-                        child: _SlotSection(
-                          label: group.type.label,
-                          garments: group.items,
-                          selectedId: state.todaySlotGarment(group.type)?.id,
-                          locked: plan?.locked == true || plan?.worn == true,
-                          onTap: (garment) {
-                            HapticFeedback.selectionClick();
-                            state.selectTodaySlot(group.type, garment.id);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 4, 22, 36),
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 36),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _WearCta(
+                        _TodayLookHero(
+                          pieces: pieces,
                           worn: worn,
-                          enabled: worn || canConfirm,
-                          onPressed: () async {
-                            HapticFeedback.mediumImpact();
-                            if (!worn) await state.acceptToday();
-                            if (!context.mounted) return;
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const FullLookScreen(),
+                          onOpen: pieces.isEmpty
+                              ? null
+                              : () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OutfitFullViewScreen(
+                                        pieces: pieces,
+                                        date: dateOnly(today),
+                                      ),
+                                    ),
+                                  );
+                                },
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ActionBtn(
+                                label: 'Shuffle',
+                                icon: Icons.autorenew_rounded,
+                                filled: false,
+                                enabled: !worn && hasWardrobe,
+                                onPressed: () async {
+                                  HapticFeedback.selectionClick();
+                                  await state.showNextLook();
+                                },
                               ),
-                            );
-                          },
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _ActionBtn(
+                                label: worn ? 'Saved' : 'Save',
+                                icon: worn
+                                    ? Icons.check_rounded
+                                    : Icons.bookmark_rounded,
+                                filled: true,
+                                enabled: !worn && canConfirm,
+                                onPressed: () async {
+                                  HapticFeedback.mediumImpact();
+                                  final ok = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      backgroundColor: const Color(0xFFFFF8F2),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(22),
+                                      ),
+                                      title: Text(
+                                        'Save today’s look?',
+                                        style: GoogleFonts.manrope(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      content: Text(
+                                        'This will lock these ${pieces.length} '
+                                        'piece${pieces.length == 1 ? '' : 's'} '
+                                        'into your week for today.',
+                                        style: GoogleFonts.manrope(
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.4,
+                                          color: AppColors.muted,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: Text(
+                                            'Cancel',
+                                            style: GoogleFonts.manrope(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                        FilledButton(
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.terracotta,
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: Text(
+                                            'Save',
+                                            style: GoogleFonts.manrope(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (ok != true || !context.mounted) return;
+                                  await state.saveTodayLook();
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Saved to today’s week look.',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          worn
-                              ? 'Locked in for today'
-                              : 'Tap a piece to swap it into today’s look',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.muted,
-                            height: 1.35,
+                        if (worn) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Locked in for today',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.muted,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayLookHero extends StatelessWidget {
+  const _TodayLookHero({
+    required this.pieces,
+    required this.worn,
+    this.onOpen,
+  });
+
+  final List<Garment> pieces;
+  final bool worn;
+  final VoidCallback? onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFBF7),
+            Color(0xFFF7EFE6),
+            Color(0xFFF3E1D4),
+          ],
+        ),
+        border: Border.all(color: AppColors.clay.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.terracotta.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            worn ? 'WEARING TODAY' : "TODAY'S LOOK",
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+              color: AppColors.terracotta,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            pieces.isEmpty
+                ? 'Shuffle to build a look'
+                : '${pieces.length} ${pieces.length == 1 ? 'piece' : 'pieces'}',
+            style: GoogleFonts.manrope(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (pieces.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 28, 16, 28),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.clay.withValues(alpha: 0.45),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.autorenew_rounded,
+                    size: 36,
+                    color: AppColors.terracotta.withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap Shuffle for a look',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Then Save to set it for today in your week.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: onOpen,
+              child: SizedBox(
+                height: 210,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: pieces.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final g = pieces[i];
+                    final tilt = ((i % 3) - 1) * 0.028;
+                    return Transform.rotate(
+                      angle: tilt,
+                      child: AspectRatio(
+                        aspectRatio: 0.72,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.terracotta.withValues(
+                                  alpha: 0.16,
+                                ),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: PhotoTile(
+                            garment: g,
+                            radius: 22,
+                            showName: true,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  const _ActionBtn({
+    required this.label,
+    required this.icon,
+    required this.filled,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool filled;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: enabled ? 1 : 0.45,
+      child: Material(
+        color: filled ? AppColors.terracotta : Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: filled
+                  ? null
+                  : Border.all(color: AppColors.clay.withValues(alpha: 0.55)),
+              boxShadow: filled
+                  ? [
+                      BoxShadow(
+                        color: AppColors.terracotta.withValues(alpha: 0.28),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: filled ? Colors.white : AppColors.terracotta,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: filled ? Colors.white : AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -236,7 +495,6 @@ class _HomeStage extends StatelessWidget {
             ),
           ),
         ),
-        // Soft daylight veil — stays light top to bottom.
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -254,7 +512,6 @@ class _HomeStage extends StatelessWidget {
             ),
           ),
         ),
-        // Warm terracotta wash at the edge — polished, not dark.
         Positioned.fill(
           child: IgnorePointer(
             child: DecoratedBox(
@@ -303,7 +560,6 @@ class _HomeMasthead extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Brand mark — logo asset, not wordmark text.
             Container(
               width: 56,
               height: 56,
@@ -512,214 +768,6 @@ class _EmptyWardrobeInviteState extends State<_EmptyWardrobeInvite>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LookBoard extends StatelessWidget {
-  const _LookBoard({
-    required this.pieces,
-    required this.worn,
-    this.onShuffle,
-  });
-
-  final List<Garment> pieces;
-  final bool worn;
-  final VoidCallback? onShuffle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                worn ? 'Wearing today' : "Today’s look",
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.4,
-                  color: AppColors.ink.withValues(alpha: 0.45),
-                ),
-              ),
-            ),
-            if (onShuffle != null && !worn)
-              GestureDetector(
-                onTap: onShuffle,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.autorenew_rounded,
-                      size: 18,
-                      color: AppColors.ink.withValues(alpha: 0.55),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Shuffle',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink.withValues(alpha: 0.55),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (pieces.isEmpty)
-          Text(
-            'Pick pieces below to assemble today’s outfit.',
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.muted,
-            ),
-          )
-        else
-          SizedBox(
-            height: 168,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: pieces.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (context, i) {
-                final g = pieces[i];
-                final tilt = ((i % 3) - 1) * 0.03;
-                return Transform.rotate(
-                  angle: tilt,
-                  child: AspectRatio(
-                    aspectRatio: 0.72,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.terracotta.withValues(alpha: 0.16),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: PhotoTile(garment: g, radius: 22, showName: true),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SlotSection extends StatelessWidget {
-  const _SlotSection({
-    required this.label,
-    required this.garments,
-    required this.selectedId,
-    required this.locked,
-    required this.onTap,
-  });
-
-  final String label;
-  final List<Garment> garments;
-  final String? selectedId;
-  final bool locked;
-  final void Function(Garment garment) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.6,
-            color: AppColors.terracotta,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ClothesPhotoRow(
-          garments: garments,
-          selectedIds: {
-            if (selectedId != null) selectedId!,
-          },
-          onTap: locked ? null : onTap,
-          height: 128,
-        ),
-      ],
-    );
-  }
-}
-
-class _WearCta extends StatelessWidget {
-  const _WearCta({
-    required this.worn,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final bool worn;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onPressed : null,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 220),
-        opacity: enabled ? 1 : 0.45,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: worn
-                  ? const [Color(0xFF5F8A76), AppColors.sage]
-                  : const [Color(0xFFD97845), AppColors.terracotta],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (worn ? AppColors.sage : AppColors.terracotta)
-                    .withValues(alpha: 0.32),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                worn ? Icons.check_rounded : Icons.wb_sunny_outlined,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                worn ? 'See full outfit' : 'I will wear this',
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

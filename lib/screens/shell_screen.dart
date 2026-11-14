@@ -90,7 +90,7 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 }
 
-/// Smile / U floating dock — active orb travels the curve with bounce.
+/// Futuristic smile dock — glass rail, traveling glow orb, bounce icons.
 class _SmileDock extends StatefulWidget {
   const _SmileDock({
     required this.index,
@@ -108,11 +108,12 @@ class _SmileDock extends StatefulWidget {
 
 class _SmileDockState extends State<_SmileDock>
     with TickerProviderStateMixin {
-  static const _height = 112.0;
+  static const _height = 118.0;
   static const _slotT = [0.04, 0.26, 0.50, 0.74, 0.96];
 
   late final AnimationController _travel;
   late final AnimationController _pop;
+  late final AnimationController _pulse;
   late final Animation<double> _travelCurve;
   late final Animation<double> _popCurve;
 
@@ -126,15 +127,19 @@ class _SmileDockState extends State<_SmileDock>
     _toIndex = widget.index;
     _travel = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: const Duration(milliseconds: 560),
     )..value = 1;
     _pop = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: const Duration(milliseconds: 480),
     )..value = 1;
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
     _travelCurve = CurvedAnimation(
       parent: _travel,
-      curve: Curves.easeInOutCubic,
+      curve: Curves.easeInOutCubicEmphasized,
     );
     _popCurve = CurvedAnimation(
       parent: _pop,
@@ -156,6 +161,7 @@ class _SmileDockState extends State<_SmileDock>
   void dispose() {
     _travel.dispose();
     _pop.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
@@ -178,7 +184,7 @@ class _SmileDockState extends State<_SmileDock>
     );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(12, 0, 12, 8 + bottom),
+      padding: EdgeInsets.fromLTRB(10, 0, 10, 6 + bottom),
       child: SizedBox(
         height: _height,
         child: LayoutBuilder(
@@ -189,38 +195,84 @@ class _SmileDockState extends State<_SmileDock>
             ];
 
             return AnimatedBuilder(
-              animation: Listenable.merge([_travel, _pop]),
+              animation: Listenable.merge([_travel, _pop, _pulse]),
               builder: (context, _) {
                 final orb = _SmileGeometry.pointOnSmile(size, _activeT);
-                final pop = 0.86 + 0.22 * _popCurve.value;
+                final pop = 0.82 + 0.28 * _popCurve.value;
+                final breath = 0.55 + 0.45 * _pulse.value;
 
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // Sliding selection orb — follows the smile path.
+                    // Glass smile rail
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _SmileRailPainter(pulse: breath),
+                        ),
+                      ),
+                    ),
+                    // Traveling energy orb
                     Positioned(
-                      left: orb.dx - 22,
-                      top: orb.dy - 22,
+                      left: orb.dx - 28,
+                      top: orb.dy - 28,
                       child: IgnorePointer(
                         child: Transform.scale(
                           scale: widget.index == 2 ? 0 : pop,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.terracottaSoft,
-                                  AppColors.terracotta.withValues(alpha: 0.55),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.terracotta
-                                      .withValues(alpha: 0.28),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 5),
+                          child: SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        AppColors.gold.withValues(
+                                          alpha: 0.22 * breath,
+                                        ),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        const Color(0xFFFFC48A),
+                                        AppColors.terracotta,
+                                        const Color(0xFFE07A3D),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.terracotta
+                                            .withValues(alpha: 0.45 * breath),
+                                        blurRadius: 18,
+                                        spreadRadius: 1,
+                                      ),
+                                      BoxShadow(
+                                        color: AppColors.gold
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.55),
+                                      width: 1.2,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -230,12 +282,13 @@ class _SmileDockState extends State<_SmileDock>
                     ),
                     for (var i = 0; i < slots.length; i++)
                       Positioned(
-                        left: slots[i].dx - (i == 2 ? 31 : 24),
-                        top: slots[i].dy - (i == 2 ? 31 : 24),
+                        left: slots[i].dx - (i == 2 ? 32 : 26),
+                        top: slots[i].dy - (i == 2 ? 32 : 26),
                         child: _SmileNavItem(
                           index: i,
                           selected: widget.index == i,
                           pop: widget.index == i ? _popCurve.value : 0,
+                          pulse: breath,
                           photo: photo,
                           onTap: () => _tap(i),
                           onDoubleTap:
@@ -253,11 +306,67 @@ class _SmileDockState extends State<_SmileDock>
   }
 }
 
+class _SmileRailPainter extends CustomPainter {
+  const _SmileRailPainter({required this.pulse});
+
+  final double pulse;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.08, size.height * 0.34)
+      ..quadraticBezierTo(
+        size.width * 0.5,
+        size.height * 0.92,
+        size.width * 0.92,
+        size.height * 0.34,
+      );
+
+    // Soft glass under-glow
+    final glow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 28
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16)
+      ..color = AppColors.terracotta.withValues(alpha: 0.10 * pulse);
+    canvas.drawPath(path, glow);
+
+    // Frosted rail fill band
+    final rail = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 52
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.55);
+    canvas.drawPath(path, rail);
+
+    // Gold hairline
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..color = AppColors.gold.withValues(alpha: 0.35 + 0.2 * pulse);
+    canvas.drawPath(path, line);
+
+    // Inner bright edge
+    final inner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.7);
+    canvas.drawPath(path, inner);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SmileRailPainter oldDelegate) =>
+      oldDelegate.pulse != pulse;
+}
+
 class _SmileNavItem extends StatelessWidget {
   const _SmileNavItem({
     required this.index,
     required this.selected,
     required this.pop,
+    required this.pulse,
     required this.photo,
     required this.onTap,
     this.onDoubleTap,
@@ -266,6 +375,7 @@ class _SmileNavItem extends StatelessWidget {
   final int index;
   final bool selected;
   final double pop;
+  final double pulse;
   final ImageProvider? photo;
   final VoidCallback onTap;
   final VoidCallback? onDoubleTap;
@@ -273,15 +383,27 @@ class _SmileNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (index == 2) {
-      final scale = selected ? 0.92 + 0.16 * pop : 1.0;
+      final scale = selected ? 0.94 + 0.14 * pop : 1.0;
       return GestureDetector(
         onTap: onTap,
         onDoubleTap: onDoubleTap,
         child: Transform.scale(
           scale: scale,
-          child: SizedBox(
-            width: 56,
-            height: 56,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.terracotta.withValues(
+                    alpha: selected ? 0.28 * pulse : 0.12,
+                  ),
+                  blurRadius: selected ? 18 : 10,
+                  spreadRadius: selected ? 1 : 0,
+                ),
+              ],
+            ),
             child: Image.asset(
               'assets/nav/wardrobe_icon.png',
               fit: BoxFit.contain,
@@ -297,11 +419,14 @@ class _SmileNavItem extends StatelessWidget {
       );
     }
 
-    final bounce = selected ? 0.88 + 0.20 * Curves.easeOutBack.transform(
-          pop.clamp(0.0, 1.0),
-        ) : 1.0;
-    final lift = selected ? -6.0 * pop : 0.0;
-    final color = selected ? AppColors.terracotta : AppColors.ink;
+    final bounce = selected
+        ? 0.86 +
+            0.22 *
+                Curves.easeOutBack.transform(
+                  pop.clamp(0.0, 1.0),
+                )
+        : 1.0;
+    final lift = selected ? -8.0 * pop : 0.0;
     final icon = selected ? _smileSelectedIcons[index] : _smileIcons[index];
 
     Widget glyph;
@@ -311,45 +436,56 @@ class _SmileNavItem extends StatelessWidget {
         height: 22,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
+          border: Border.all(
+            color: selected
+                ? Colors.white.withValues(alpha: 0.9)
+                : AppColors.gold.withValues(alpha: 0.35),
+            width: 1.2,
+          ),
           image: DecorationImage(image: photo!, fit: BoxFit.cover),
         ),
       );
     } else {
-      glyph = Icon(icon, size: 20, color: color);
+      glyph = Icon(
+        icon,
+        size: selected ? 21 : 19,
+        color: selected ? Colors.white : AppColors.ink.withValues(alpha: 0.72),
+      );
     }
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 48,
-        height: 48,
+        width: 52,
+        height: 52,
         child: Transform.translate(
           offset: Offset(0, lift),
           child: Transform.scale(
             scale: bounce,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 40,
-              height: 40,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: 44,
+              height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selected
                     ? Colors.transparent
-                    : Colors.white.withValues(alpha: 0.72),
+                    : Colors.white.withValues(alpha: 0.78),
                 border: Border.all(
                   color: selected
-                      ? Colors.transparent
-                      : AppColors.gold.withValues(alpha: 0.28),
+                      ? Colors.white.withValues(alpha: 0.0)
+                      : AppColors.gold.withValues(alpha: 0.22),
                 ),
                 boxShadow: selected
                     ? null
                     : [
                         BoxShadow(
-                          color: AppColors.ink.withValues(alpha: 0.06),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          color: AppColors.terracotta.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
               ),
@@ -389,5 +525,4 @@ class _SmileGeometry {
       u * u * p0.dy + 2 * u * t * p1.dy + t * t * p2.dy,
     );
   }
-
 }

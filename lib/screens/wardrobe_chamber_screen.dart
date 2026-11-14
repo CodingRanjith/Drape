@@ -18,7 +18,6 @@ import '../widgets/common.dart';
 import '../widgets/mine_logo_mark.dart';
 import '../widgets/wardrobe_decor_palette.dart';
 import '../widgets/wardrobe_decor_sticker.dart';
-import '../widgets/wardrobe_weather_sky.dart';
 import 'add_clothes_screen.dart';
 import 'bucket_list_screen.dart';
 import 'garment_detail_screen.dart';
@@ -359,82 +358,6 @@ class _WardrobeChamberScreenState extends State<WardrobeChamberScreen>
     return rows;
   }
 
-  Future<void> _stripRowBackgrounds(_ShelfRow row) async {
-    final withPhotos = row.garments
-        .where((g) => g.imagePath != null && g.imagePath!.trim().isNotEmpty)
-        .length;
-    if (withPhotos == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No photos in ${row.label} yet.')),
-      );
-      return;
-    }
-
-    var done = 0;
-    var total = withPhotos;
-    final progress = ValueNotifier<(int, int)>((0, total));
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return PopScope(
-          canPop: false,
-          child: AlertDialog(
-            title: const Text('Removing backgrounds'),
-            content: ValueListenableBuilder<(int, int)>(
-              valueListenable: progress,
-              builder: (_, value, _) {
-                final d = value.$1;
-                final t = value.$2;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Row: ${row.label}\n$d of $t photos…',
-                      style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 14),
-                    LinearProgressIndicator(
-                      value: t == 0 ? null : d / t,
-                      color: const Color(0xFFC45C26),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-
-    try {
-      await context.read<MineState>().stripShelfBackgrounds(
-            row.label,
-            onProgress: (d, t) {
-              done = d;
-              total = t;
-              progress.value = (d, t);
-            },
-          );
-    } finally {
-      progress.dispose();
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          done == 0
-              ? 'Nothing to cut in ${row.label}.'
-              : 'Background removed on $done ${done == 1 ? 'photo' : 'photos'} in ${row.label}.',
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
@@ -489,7 +412,6 @@ class _WardrobeChamberScreenState extends State<WardrobeChamberScreen>
                           context,
                           garmentId: g.id,
                         ),
-                        onStripRow: _stripRowBackgrounds,
                         onReorderRow: (label, oldIndex, newIndex) => context
                             .read<MineState>()
                             .reorderShelfGarments(label, oldIndex, newIndex),
@@ -547,7 +469,6 @@ class _DrawnWardrobeStage extends StatelessWidget {
     required this.onCustomize,
     required this.onAdd,
     required this.onOpenGarment,
-    required this.onStripRow,
     required this.onReorderRow,
   });
 
@@ -568,7 +489,6 @@ class _DrawnWardrobeStage extends StatelessWidget {
   final Future<void> Function({WardrobeCategory? category, String? customShelf})
       onAdd;
   final ValueChanged<Garment> onOpenGarment;
-  final Future<void> Function(_ShelfRow row) onStripRow;
   final Future<void> Function(String shelfLabel, int oldIndex, int newIndex)
       onReorderRow;
 
@@ -600,7 +520,6 @@ class _DrawnWardrobeStage extends StatelessWidget {
                         (decor.customizeMode ? 150 : 0),
                     onAdd: onAdd,
                     onOpenGarment: onOpenGarment,
-                    onStripRow: onStripRow,
                     onReorderRow: onReorderRow,
                   ),
                 ),
@@ -612,7 +531,6 @@ class _DrawnWardrobeStage extends StatelessWidget {
               bottomInset: 8,
               onAdd: onAdd,
               onOpenGarment: onOpenGarment,
-              onStripRow: onStripRow,
               onReorderRow: onReorderRow,
             ),
     );
@@ -622,15 +540,11 @@ class _DrawnWardrobeStage extends StatelessWidget {
         final maxW = constraints.maxWidth;
         final maxH = constraints.maxHeight;
         final safeTop = MediaQuery.paddingOf(context).top;
-        // Weather only when cupboard is closed. Inside open shelves = no sky.
-        final weatherOut = (1.0 - expand).clamp(0.0, 1.0);
-        final skyBody = 20.0 + 128.0 * weatherOut;
-        final skyBand = safeTop + skyBody;
         const rateBand = 66.0;
         // Keep rates just above the smile dock — no empty wall under the cupboard.
         final floorGap = MediaQuery.paddingOf(context).bottom + 2 + rateBand;
         const aspect = 1024 / 935;
-        final availH = math.max(160.0, maxH - floorGap - skyBand - 8);
+        final availH = math.max(160.0, maxH - floorGap - safeTop - 8);
         var cabW = maxW * 0.995;
         var cabH = cabW * aspect;
         if (cabH > availH) {
@@ -638,7 +552,7 @@ class _DrawnWardrobeStage extends StatelessWidget {
           cabW = cabH / aspect;
         }
         final left = (maxW - cabW) / 2;
-        final minTop = skyBand + (weatherOut > 0.2 ? 10.0 : 4.0);
+        final minTop = safeTop + 4.0;
         final top = math.max(minTop, maxH - floorGap - cabH);
 
         const doorTop = _PhotoArmoire.doorTop;
@@ -650,16 +564,14 @@ class _DrawnWardrobeStage extends StatelessWidget {
           cabW * (1 - doorInner * 2),
           cabH * (doorBottom - doorTop),
         );
-        // Open shelves fill the chamber — weather stays outside / hidden when open.
         final full = Rect.fromLTWH(
           0,
-          weatherOut > 0.15 ? skyBand + 2 : safeTop + 2,
+          safeTop + 2,
           maxW,
-          maxH - (weatherOut > 0.15 ? skyBand + 2 : safeTop + 2),
+          maxH - (safeTop + 2),
         );
         final hole = Rect.lerp(cavity, full, expand)!;
-        // Keep the name plaque below the outdoor sky so it never covers weather.
-        final plaqueTop = math.max(skyBand + 4, top - 40);
+        final plaqueTop = math.max(safeTop + 4, top - 40);
 
         return Stack(
           fit: StackFit.expand,
@@ -668,21 +580,6 @@ class _DrawnWardrobeStage extends StatelessWidget {
             const Positioned.fill(
               child: CustomPaint(painter: _RoomBackdropPainter()),
             ),
-            // Outdoor weather only above a closed cupboard — never inside shelves.
-            if (weatherOut > 0.02)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: skyBand + 8,
-                child: IgnorePointer(
-                  ignoring: weatherOut < 0.4,
-                  child: Opacity(
-                    opacity: weatherOut,
-                    child: WardrobeWeatherSky(height: skyBody),
-                  ),
-                ),
-              ),
             Positioned.fromRect(
               rect: hole,
               child: ClipRRect(
@@ -2279,7 +2176,6 @@ class _InteriorShelves extends StatelessWidget {
     required this.bottomInset,
     required this.onAdd,
     required this.onOpenGarment,
-    required this.onStripRow,
     required this.onReorderRow,
   });
 
@@ -2289,7 +2185,6 @@ class _InteriorShelves extends StatelessWidget {
   final Future<void> Function({WardrobeCategory? category, String? customShelf})
       onAdd;
   final ValueChanged<Garment> onOpenGarment;
-  final Future<void> Function(_ShelfRow row) onStripRow;
   final Future<void> Function(String shelfLabel, int oldIndex, int newIndex)
       onReorderRow;
 
@@ -2313,7 +2208,6 @@ class _InteriorShelves extends StatelessWidget {
               customizeMode: decor.customizeMode,
               onDropDecor: (decorId) => decor.addToShelf(row.label, decorId),
               onRemoveDecor: decor.removePlacement,
-              onStripRow: () => onStripRow(row),
               onReorder: (oldIndex, newIndex) =>
                   onReorderRow(row.label, oldIndex, newIndex),
               onAdd: () => onAdd(
@@ -2338,7 +2232,6 @@ class _CupboardBay extends StatelessWidget {
     required this.customizeMode,
     required this.onDropDecor,
     required this.onRemoveDecor,
-    required this.onStripRow,
     required this.onReorder,
     required this.onAdd,
     required this.onOpenGarment,
@@ -2350,7 +2243,6 @@ class _CupboardBay extends StatelessWidget {
   final bool customizeMode;
   final ValueChanged<String> onDropDecor;
   final ValueChanged<String> onRemoveDecor;
-  final VoidCallback onStripRow;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onAdd;
   final ValueChanged<Garment> onOpenGarment;
@@ -2459,7 +2351,7 @@ class _CupboardBay extends StatelessWidget {
                                 child: child,
                               );
                             },
-                            onReorderItem: onReorder,
+                            onReorder: onReorder,
                             itemCount: row.garments.length,
                             itemBuilder: (context, index) {
                               final g = row.garments[index];
@@ -2538,22 +2430,6 @@ class _CupboardBay extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF6B3F1A),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Tooltip(
-                      message: 'Remove backgrounds in this row',
-                      child: InkWell(
-                        onTap: onStripRow,
-                        borderRadius: BorderRadius.circular(10),
-                        child: const Padding(
-                          padding: EdgeInsets.all(3),
-                          child: Icon(
-                            Icons.auto_fix_high_rounded,
-                            size: 15,
-                            color: Color(0xFF3A2414),
-                          ),
-                        ),
                       ),
                     ),
                   ],

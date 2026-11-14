@@ -807,6 +807,8 @@ class UserProfile {
     this.minRepeatDays = 4,
     this.onboarded = false,
     this.walkthroughSeen = false,
+    this.introVideoSeen = false,
+    this.introVideoLang = 'en',
     this.wearer = Wearer.woman,
     this.dateOfBirth,
     this.photoPath,
@@ -819,6 +821,13 @@ class UserProfile {
     this.officeAlarmMusicPath,
     this.officeAlarmMusicName,
     this.officeAlarmFiredOn,
+    this.waterReminderOn = false,
+    this.waterGlassesGoal = 8,
+    this.waterIntervalHours = 1,
+    this.waterGlassesDrunk = 0,
+    this.waterDrunkDay,
+    this.waterNextAt,
+    this.waterAwaitingDrink = false,
     List<String>? customShelves,
     List<String>? shelfOrder,
     List<String>? hiddenShelves,
@@ -833,6 +842,10 @@ class UserProfile {
   int minRepeatDays;
   bool onboarded;
   bool walkthroughSeen;
+  /// Full app intro video after first profile create.
+  bool introVideoSeen;
+  /// Intro narration language: `en` or `ta`.
+  String introVideoLang;
   Wearer wearer;
   DateTime? dateOfBirth;
   String? photoPath;
@@ -845,12 +858,33 @@ class UserProfile {
   String? officeAlarmMusicPath;
   String? officeAlarmMusicName;
   String? officeAlarmFiredOn;
+  /// Drink-water reminder (profile → glasses/day + hours between).
+  bool waterReminderOn;
+  int waterGlassesGoal;
+  int waterIntervalHours;
+  int waterGlassesDrunk;
+  String? waterDrunkDay;
+  String? waterNextAt;
+  bool waterAwaitingDrink;
   /// User-created cupboard categories (dynamic), shared for this profile.
   List<String> customShelves;
   /// Display order for built-in + custom shelf labels (wardrobe + pickers).
   List<String> shelfOrder;
   /// Built-in shelf labels the user removed from wardrobe (can restore).
   List<String> hiddenShelves;
+
+  bool get waterGoalMet =>
+      waterReminderOn && waterGlassesDrunk >= waterGlassesGoal && waterGlassesGoal > 0;
+
+  DateTime? get waterNextAtTime {
+    final raw = waterNextAt;
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  set waterNextAtTime(DateTime? value) {
+    waterNextAt = value?.toIso8601String();
+  }
 
   double? get bmi {
     final w = weightKg;
@@ -885,6 +919,8 @@ class UserProfile {
     'minRepeatDays': minRepeatDays,
     'onboarded': onboarded,
     'walkthroughSeen': walkthroughSeen,
+    'introVideoSeen': introVideoSeen,
+    'introVideoLang': introVideoLang,
     'wearer': wearer.name,
     'dateOfBirth': dateOfBirth?.toIso8601String(),
     'photoPath': photoPath,
@@ -897,6 +933,13 @@ class UserProfile {
     'officeAlarmMusicPath': officeAlarmMusicPath,
     'officeAlarmMusicName': officeAlarmMusicName,
     'officeAlarmFiredOn': officeAlarmFiredOn,
+    'waterReminderOn': waterReminderOn,
+    'waterGlassesGoal': waterGlassesGoal,
+    'waterIntervalHours': waterIntervalHours,
+    'waterGlassesDrunk': waterGlassesDrunk,
+    'waterDrunkDay': waterDrunkDay,
+    'waterNextAt': waterNextAt,
+    'waterAwaitingDrink': waterAwaitingDrink,
     'customShelves': customShelves,
     'shelfOrder': shelfOrder,
     'hiddenShelves': hiddenShelves,
@@ -913,6 +956,8 @@ class UserProfile {
     minRepeatDays: json['minRepeatDays'] as int? ?? 4,
     onboarded: json['onboarded'] as bool? ?? false,
     walkthroughSeen: json['walkthroughSeen'] as bool? ?? false,
+    introVideoSeen: json['introVideoSeen'] as bool? ?? false,
+    introVideoLang: (json['introVideoLang'] as String?) == 'ta' ? 'ta' : 'en',
     wearer: Wearer.values.byName(json['wearer'] as String? ?? Wearer.woman.name),
     dateOfBirth: json['dateOfBirth'] == null
         ? null
@@ -927,6 +972,13 @@ class UserProfile {
     officeAlarmMusicPath: json['officeAlarmMusicPath'] as String?,
     officeAlarmMusicName: json['officeAlarmMusicName'] as String?,
     officeAlarmFiredOn: json['officeAlarmFiredOn'] as String?,
+    waterReminderOn: json['waterReminderOn'] as bool? ?? false,
+    waterGlassesGoal: (json['waterGlassesGoal'] as num?)?.toInt() ?? 8,
+    waterIntervalHours: (json['waterIntervalHours'] as num?)?.toInt() ?? 1,
+    waterGlassesDrunk: (json['waterGlassesDrunk'] as num?)?.toInt() ?? 0,
+    waterDrunkDay: json['waterDrunkDay'] as String?,
+    waterNextAt: json['waterNextAt'] as String?,
+    waterAwaitingDrink: json['waterAwaitingDrink'] as bool? ?? false,
     customShelves: ((json['customShelves'] as List?) ?? const [])
         .map((e) => e as String)
         .where((e) => e.trim().isNotEmpty)

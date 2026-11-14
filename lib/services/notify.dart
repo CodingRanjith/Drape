@@ -53,3 +53,29 @@ Future<void> scheduleDailyMetalBriefing({
   body: body,
   payload: payload,
 );
+
+Future<void> scheduleWaterReminder({
+  required int id,
+  required DateTime at,
+  required String title,
+  required String body,
+  required String payload,
+}) => scheduleWaterReminderImpl(
+  id: id,
+  at: at,
+  title: title,
+  body: body,
+  payload: payload,
+);
+
+Future<void> showWaterReminderNotice({
+  required int id,
+  required String title,
+  required String body,
+  required String payload,
+}) => showWaterReminderNoticeImpl(
+  id: id,
+  title: title,
+  body: body,
+  payload: payload,
+);

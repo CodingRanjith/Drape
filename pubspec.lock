@@ -358,14 +358,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.7"
-  flutter_onnxruntime:
-    dependency: transitive
-    description:
-      name: flutter_onnxruntime
-      sha256: "94565ad2a3f6f92b2e09c1b274c8e5f47f7c0cda0675c5484d5e16a2c4761123"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.9.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -384,70 +376,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  geoclue:
-    dependency: transitive
-    description:
-      name: geoclue
-      sha256: c2a998c77474fc57aa00c6baa2928e58f4b267649057a1c76738656e9dbd2a7f
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
-  geolocator:
-    dependency: "direct main"
-    description:
-      name: geolocator
-      sha256: "79939537046c9025be47ec645f35c8090ecadb6fe98eba146a0d25e8c1357516"
-      url: "https://pub.dev"
-    source: hosted
-    version: "14.0.2"
-  geolocator_android:
-    dependency: transitive
-    description:
-      name: geolocator_android
-      sha256: e67583809a1fab5f4a2255902978e2bc095ace9451fde0d9624e54facd0a5c22
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.2.1"
-  geolocator_apple:
-    dependency: transitive
-    description:
-      name: geolocator_apple
-      sha256: a1e177f3081089724f2095856aeb96eb8d7d1c59e425aed8dd4de7aa2c11ab66
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.4.3"
-  geolocator_linux:
-    dependency: transitive
-    description:
-      name: geolocator_linux
-      sha256: d64112a205931926f4363bb6bd48f14cb38e7326833041d170615586cd143797
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4"
-  geolocator_platform_interface:
-    dependency: transitive
-    description:
-      name: geolocator_platform_interface
-      sha256: e012af6b7e2674e7500237ab11e44ac9119e87fd0105e7bb55cde1750e8e5d80
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.4.1"
-  geolocator_web:
-    dependency: transitive
-    description:
-      name: geolocator_web
-      sha256: "19e485a0f8d6a88abcf9c53cba3a4105e14b7435ed8ac1c108c067b938fe8429"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.4"
-  geolocator_windows:
-    dependency: transitive
-    description:
-      name: geolocator_windows
-      sha256: "175435404d20278ffd220de83c2ca293b73db95eafbdc8131fe8609be1421eb6"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.5"
   google_fonts:
     dependency: "direct main"
     description:
@@ -456,14 +384,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.3.3"
-  gsettings:
-    dependency: transitive
-    description:
-      name: gsettings
-      sha256: "1b0ce661f5436d2db1e51f3c4295a49849f03d304003a7ba177d01e3a858249c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.8"
   hooks:
     dependency: transitive
     description:
@@ -504,14 +424,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.10.1"
-  image_background_remover:
-    dependency: "direct main"
-    description:
-      name: image_background_remover
-      sha256: "1499ccf545b92048f0174ebe669ade6763ada09c383a0205d7eb369bc66172d7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   image_picker:
     dependency: "direct main"
     description:
@@ -684,10 +596,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "1741988757a65eb6b36abe716829688cf01910bbf91c34354ff7ec1c3de2b349"
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.18.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -696,14 +608,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  native_cutout:
-    dependency: "direct main"
-    description:
-      name: native_cutout
-      sha256: c501be34b81ab03e619068d8a1bd8699305d166b464d8eb4e232328161f8f2dc
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.0"
   nested:
     dependency: transitive
     description:
@@ -728,22 +632,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  package_info_plus:
-    dependency: transitive
-    description:
-      name: package_info_plus
-      sha256: "468c26b4254ab01979fa5e4a98cb343ea3631b9acee6f21028997419a80e1a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "9.0.1"
-  package_info_plus_platform_interface:
-    dependency: transitive
-    description:
-      name: package_info_plus_platform_interface
-      sha256: "202a487f08836a592a6bd4f901ac69b3a8f146af552bbd14407b6b41e1c3f086"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.1"
   path:
     dependency: "direct main"
     description:
@@ -1041,10 +929,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "949a932224383300f01be9221c39180316445ecb8e7547f70a41a35bf421fb9e"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.11"
+    version: "0.7.10"
   timezone:
     dependency: "direct main"
     description:
@@ -1081,10 +969,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "611e87fb320b70d1dd721dc46af89c98aceccea9b31fde49e084591414e0c610"
+      sha256: "17bc677f0b301615530dd1d67e0a9828cafa2d0b6b6eae4cd3679b7eac4a273c"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.33"
+    version: "6.3.30"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -1153,18 +1041,18 @@ packages:
     dependency: "direct main"
     description:
       name: video_player
-      sha256: "07ae1e03f2d4c8e2e9a75ee678f90acbc4506d4458a9c628512d119a1eee5754"
+      sha256: "48a7bdaa38a3d50ec10c78627abdbfad863fdf6f0d6e08c7c3c040cfd80ae36f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.14.1"
+    version: "2.11.1"
   video_player_android:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: d27054dea34d748a44f06d433a57005d2aac69944485b0abbaed3303dbcfa3f1
+      sha256: "877a6c7ba772456077d7bfd71314629b3fe2b73733ce503fc77c3314d43a0ca0"
       url: "https://pub.dev"
     source: hosted
-    version: "2.12.2"
+    version: "2.9.5"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -1217,10 +1105,10 @@ packages:
     dependency: "direct main"
     description:
       name: webview_flutter_android
-      sha256: "4de8b3d1ff4ebe1bdb42e68a5e4f809194a3cb0117a8f495f590004f00da3964"
+      sha256: ad5182eff9a550925330cb9f0cb038eddfdd5712aba8b77aa0f0400e50f6e688
       url: "https://pub.dev"
     source: hosted
-    version: "4.14.1"
+    version: "4.12.0"
   webview_flutter_platform_interface:
     dependency: transitive
     description:
@@ -1241,10 +1129,10 @@ packages:
     dependency: transitive
     description:
       name: webview_flutter_wkwebview
-      sha256: "0f784be1b080e5b918ef7c2c070c1f4616899fd23f1d001feb74b4978f92bdbc"
+      sha256: "82648217f537573e1ca9ae9952d3eacedca6ab5aee69dc84445fc763766dcea2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.26.2"
+    version: "3.25.1"
   win32:
     dependency: transitive
     description:
@@ -1278,5 +1166,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
-  flutter: ">=3.44.0"
+  dart: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"
