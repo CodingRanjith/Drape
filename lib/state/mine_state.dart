@@ -37,7 +37,12 @@ class MineState extends ChangeNotifier {
   bool loading = true;
   UserProfile profile = UserProfile();
   List<Garment> garments = [];
+  /// Active calendar week (this Monday–Sunday).
   WeekPlan? week;
+  /// Extra weeks the user planned (e.g. next week) — kept when the calendar rolls.
+  List<WeekPlan> otherWeeks = [];
+  /// Week currently shown on the Week tab (for Suggest / Add / Edit).
+  DateTime visibleWeekStart = mondayOf(DateTime.now());
   List<Outfit> todayChoices = [];
   int todayIndex = 0;
   List<LifeEvent> events = [];
@@ -55,6 +60,7 @@ class MineState extends ChangeNotifier {
       profile = data.profile;
       garments = data.garments;
       week = data.week;
+      otherWeeks = data.otherWeeks;
       events = data.events;
       partyLooks = data.partyLooks;
       completedDays = {...data.completedDays};
@@ -139,32 +145,111 @@ class MineState extends ChangeNotifier {
     super.dispose();
   }
 
+  WeekPlan _emptyWeek(DateTime weekStart) {
+    final start = mondayOf(weekStart);
+    return WeekPlan(
+      weekStart: start,
+      days: List.generate(
+        7,
+        (i) => DayPlan(date: start.add(Duration(days: i))),
+      ),
+    );
+  }
+
+  WeekPlan _buildWeek(DateTime weekStart) {
+    final start = mondayOf(weekStart);
+    if (_stylist.canDress(garments)) {
+      return _stylist.planWeek(
+        wardrobe: garments,
+        profile: profile,
+        weekStart: start,
+      );
+    }
+    return _emptyWeek(start);
+  }
+
+  void _upsertOtherWeek(WeekPlan plan) {
+    final start = mondayOf(plan.weekStart);
+    otherWeeks.removeWhere((w) => sameDay(w.weekStart, start));
+    otherWeeks.add(plan);
+  }
+
+  WeekPlan? _takeOtherWeek(DateTime weekStart) {
+    final start = mondayOf(weekStart);
+    final index = otherWeeks.indexWhere((w) => sameDay(w.weekStart, start));
+    if (index < 0) return null;
+    return otherWeeks.removeAt(index);
+  }
+
+  /// Week plan that contains [date], if any (current or stored next/past weeks).
+  WeekPlan? weekPlanFor(DateTime date) {
+    final start = mondayOf(date);
+    if (week != null && sameDay(week!.weekStart, start)) return week;
+    for (final w in otherWeeks) {
+      if (sameDay(w.weekStart, start)) return w;
+    }
+    return null;
+  }
+
+  DayPlan? dayPlanFor(DateTime date) => weekPlanFor(date)?.forDate(date);
+
+  /// Ensures Mon–Sun day plans exist for the week of [date] so Add/Edit work.
+  WeekPlan ensureWeek(DateTime date, {bool autoSuggest = false}) {
+    final start = mondayOf(date);
+    final currentStart = mondayOf(DateTime.now());
+    final existing = weekPlanFor(start);
+    if (existing != null) {
+      if (autoSuggest) _suggestWeekFromSets(existing, reshuffle: false);
+      return existing;
+    }
+    final plan = autoSuggest ? _buildWeek(start) : _emptyWeek(start);
+    if (sameDay(start, currentStart)) {
+      week = plan;
+    } else {
+      _upsertOtherWeek(plan);
+    }
+    if (autoSuggest) _suggestWeekFromSets(plan, reshuffle: false);
+    return plan;
+  }
+
+  /// Create/load a week plan and persist so next week Add/Edit survives restarts.
+  Future<WeekPlan> ensureWeekSaved(
+    DateTime date, {
+    bool autoSuggest = false,
+  }) async {
+    final plan = ensureWeek(date, autoSuggest: autoSuggest);
+    visibleWeekStart = mondayOf(date);
+    notifyListeners();
+    await _persist();
+    return plan;
+  }
+
+  void setVisibleWeek(DateTime date) {
+    visibleWeekStart = mondayOf(date);
+  }
+
   void _ensureCurrentWeek() {
     final start = mondayOf(DateTime.now());
-    if (week == null || !sameDay(week!.weekStart, start)) {
-      if (_stylist.canDress(garments)) {
-        week = _stylist.planWeek(
-          wardrobe: garments,
-          profile: profile,
-          weekStart: start,
-        );
-      } else {
-        week = WeekPlan(
-          weekStart: start,
-          days: List.generate(
-            7,
-            (i) => DayPlan(date: start.add(Duration(days: i))),
-          ),
-        );
-      }
+    if (week != null && !sameDay(week!.weekStart, start)) {
+      // Keep last week's looks when the calendar rolls forward.
+      _upsertOtherWeek(week!);
+      week = _takeOtherWeek(start);
     }
-    _suggestWeekFromSets(reshuffle: false);
+    week ??= _buildWeek(start);
+    _suggestWeekFromSets(week!, reshuffle: false);
   }
 
   void _syncCompletedFromWeek() {
-    if (week == null) return;
-    for (final day in week!.days) {
-      if (day.worn) completedDays.add(dateKey(day.date));
+    void sync(WeekPlan? plan) {
+      if (plan == null) return;
+      for (final day in plan.days) {
+        if (day.worn) completedDays.add(dateKey(day.date));
+      }
+    }
+
+    sync(week);
+    for (final w in otherWeeks) {
+      sync(w);
     }
   }
 
@@ -172,6 +257,7 @@ class MineState extends ChangeNotifier {
     profile: profile,
     garments: garments,
     week: week,
+    otherWeeks: otherWeeks,
     events: events,
     partyLooks: partyLooks,
     completedDays: completedDays,
@@ -260,6 +346,7 @@ class MineState extends ChangeNotifier {
     );
     garments = [];
     week = null;
+    otherWeeks = [];
     events = [];
     partyLooks = [];
     completedDays = {};
@@ -403,7 +490,7 @@ class MineState extends ChangeNotifier {
     );
   }
 
-  Future<void> _fireWaterReminder({bool forceNotice = false}) async {
+  Future<void> _fireWaterReminder({bool forceNotice = true}) async {
     _ensureWaterDay();
     if (!profile.waterReminderOn || profile.waterGoalMet) return;
     if (profile.waterAwaitingDrink && !forceNotice) return;
@@ -415,7 +502,8 @@ class MineState extends ChangeNotifier {
     await _persist();
     final title = 'Drink water';
     final body = _waterMotivateBody();
-    // OS schedule already notifies on mobile; force / web still push a notice.
+    // Post OS notice for due checks / web. Scheduled OS alarm already shows one;
+    // notification tap uses forceNotice:false to avoid a duplicate flash.
     if (forceNotice || kIsWeb) {
       await showWaterReminderNotice(
         id: waterNotifId,
@@ -426,6 +514,12 @@ class MineState extends ChangeNotifier {
     }
     _note(title, body: body, kind: 'water');
     unawaited(_playWaterSound());
+  }
+
+  /// Call after [initEventAlarms] so water/event schedules land while notify is ready.
+  Future<void> onNotificationsReady() async {
+    await _resyncAlarms();
+    await _checkWaterReminder(nudgeAwaiting: true);
   }
 
   Future<void> _playWaterSound() async {
@@ -443,7 +537,7 @@ class MineState extends ChangeNotifier {
     }
   }
 
-  Future<void> _checkWaterReminder() async {
+  Future<void> _checkWaterReminder({bool nudgeAwaiting = false}) async {
     await _consumePendingWaterDrank();
     if (_ensureWaterDay()) {
       notifyListeners();
@@ -458,10 +552,30 @@ class MineState extends ChangeNotifier {
       }
     }
     if (!profile.waterReminderOn || profile.waterGoalMet) return;
+    // Awaiting a glass — only re-show on resume / after notify init (not every timer tick).
+    if (profile.waterAwaitingDrink) {
+      if (nudgeAwaiting) {
+        await showWaterReminderNotice(
+          id: waterNotifId,
+          title: 'Drink water',
+          body: _waterMotivateBody(),
+          payload: waterReminderId,
+        );
+      }
+      return;
+    }
     final next = profile.waterNextAtTime;
-    if (next == null) return;
+    if (next == null) {
+      // Reminder on but no next time — start a fresh interval from now.
+      profile.waterNextAtTime = DateTime.now().add(
+        Duration(hours: profile.waterIntervalHours),
+      );
+      await _persist();
+      await _scheduleNextWaterReminder();
+      return;
+    }
     if (next.isAfter(DateTime.now())) return;
-    await _fireWaterReminder();
+    await _fireWaterReminder(forceNotice: true);
   }
 
   Future<void> _consumePendingWaterDrank() async {
@@ -629,7 +743,7 @@ class MineState extends ChangeNotifier {
           .toList();
       if (clothes.isNotEmpty) return clothes;
     }
-    return piecesOf(week?.forDate(date)?.outfit);
+    return piecesOf(dayPlanFor(date)?.outfit);
   }
 
   List<LifeEvent> get upcomingEvents {
@@ -849,25 +963,19 @@ class MineState extends ChangeNotifier {
 
   Future<void> deleteGarment(String id) async {
     garments.removeWhere((g) => g.id == id);
-    if (week != null) {
-      for (final day in week!.days) {
-        final outfit = day.outfit;
-        if (outfit == null) continue;
-        for (final category in GarmentCategory.values) {
-          if (outfit.idFor(category) == id) {
-            outfit.setIdFor(category, null);
-          }
-        }
-        if (outfit.tshirtId == id) outfit.tshirtId = null;
+    void scrub(WeekPlan? plan) {
+      if (plan == null) return;
+      for (final day in plan.days) {
+        day.outfit?.removePieceId(id);
       }
     }
+
+    scrub(week);
+    for (final w in otherWeeks) {
+      scrub(w);
+    }
     for (final set in clothSets) {
-      for (final category in GarmentCategory.values) {
-        if (set.outfit.idFor(category) == id) {
-          set.outfit.setIdFor(category, null);
-        }
-      }
-      if (set.outfit.tshirtId == id) set.outfit.tshirtId = null;
+      set.outfit.removePieceId(id);
     }
     for (final event in events) {
       event.garmentIds.remove(id);
@@ -890,16 +998,23 @@ class MineState extends ChangeNotifier {
     await _persist();
   }
 
-  void regenerateWeek({bool keepLocks = true}) {
-    final start = mondayOf(DateTime.now());
-    week = _stylist.planWeek(
+  void regenerateWeek({bool keepLocks = true, DateTime? weekStart}) {
+    final start = mondayOf(weekStart ?? DateTime.now());
+    final currentStart = mondayOf(DateTime.now());
+    final existing = weekPlanFor(start);
+    final planned = _stylist.planWeek(
       wardrobe: garments,
       profile: profile,
       weekStart: start,
-      existing: keepLocks ? week : null,
+      existing: keepLocks ? existing : null,
     );
+    if (sameDay(start, currentStart)) {
+      week = planned;
+    } else {
+      _upsertOtherWeek(planned);
+    }
     todayIndex = 0;
-    _suggestWeekFromSets(reshuffle: false);
+    _suggestWeekFromSets(planned, reshuffle: false);
     _rebuildTodayChoices();
   }
 
@@ -955,16 +1070,15 @@ class MineState extends ChangeNotifier {
   /// Randomly fills Mon–Sun from uploaded sets.
   /// - Need **7+** looks to auto-suggest.
   /// - With **14+** looks, [reshuffle] assigns a fresh different set each day.
-  void _suggestWeekFromSets({required bool reshuffle}) {
-    if (week == null) return;
+  void _suggestWeekFromSets(WeekPlan plan, {required bool reshuffle}) {
     final looks = [..._suggestableLooks];
     if (looks.length < 7) return;
 
     looks.shuffle();
     final picks = looks.take(7).toList();
 
-    for (var i = 0; i < week!.days.length; i++) {
-      final day = week!.days[i];
+    for (var i = 0; i < plan.days.length; i++) {
+      final day = plan.days[i];
       if (day.locked || day.worn) continue;
       final hasLook = day.outfit != null && !day.outfit!.isEmpty;
 
@@ -979,16 +1093,19 @@ class MineState extends ChangeNotifier {
     }
   }
 
-  Future<void> suggestWeekSets({bool reshuffle = false}) async {
-    _ensureCurrentWeek();
+  Future<void> suggestWeekSets({
+    bool reshuffle = false,
+    DateTime? weekStart,
+  }) async {
+    final plan = ensureWeek(weekStart ?? DateTime.now());
     final force = reshuffle || readySetCount >= 14 || suggestableLookCount >= 14;
-    _suggestWeekFromSets(reshuffle: force);
+    _suggestWeekFromSets(plan, reshuffle: force);
     notifyListeners();
     await _persist();
   }
 
   Future<bool> assignSetToDay(DayPlan day, ClothSet set) async {
-    if (day.worn) return false;
+    ensureWeek(day.date);
     final ids = set.outfit.pieceIds;
     for (final id in ids) {
       if (isUsedElsewhereThisWeek(id, except: day)) return false;
@@ -1003,7 +1120,7 @@ class MineState extends ChangeNotifier {
 
   /// Build a day look from wardrobe piece ids (no style collection needed).
   Future<bool> assignPiecesToDay(DayPlan day, List<String> garmentIds) async {
-    if (day.worn) return false;
+    ensureWeek(day.date);
     if (garmentIds.isEmpty) return false;
     for (final id in garmentIds) {
       if (isUsedElsewhereThisWeek(id, except: day)) return false;
@@ -1023,7 +1140,7 @@ class MineState extends ChangeNotifier {
   }
 
   Future<bool> assignDressToDay(DayPlan day, Garment dress) async {
-    if (day.worn) return false;
+    ensureWeek(day.date);
     if (dress.category != GarmentCategory.dress) return false;
     if (isUsedElsewhereThisWeek(dress.id, except: day)) return false;
     day.outfit = Outfit(id: _uuid.v4(), dressId: dress.id);
@@ -1161,7 +1278,7 @@ class MineState extends ChangeNotifier {
   }
 
   Future<void> shuffleDay(DayPlan day) async {
-    if (day.worn) return;
+    ensureWeek(day.date);
     final used = _usedIds(except: day);
     day.outfit = _stylist.buildOutfit(
       wardrobe: garments,
@@ -1267,13 +1384,7 @@ class MineState extends ChangeNotifier {
   Future<void> clearGarmentFromDay(DayPlan day, Garment garment) async {
     final outfit = day.outfit;
     if (outfit == null) return;
-    if (outfit.tshirtId == garment.id) {
-      outfit.tshirtId = null;
-    } else if (outfit.idFor(garment.category) == garment.id) {
-      _putOnOutfit(outfit, garment.category, null);
-    } else {
-      return;
-    }
+    if (!outfit.removePieceId(garment.id)) return;
     notifyListeners();
     await _persist();
   }
@@ -1341,7 +1452,7 @@ class MineState extends ChangeNotifier {
       _putGarmentOnOutfit(set.outfit, garment);
     }
     clothSets.add(set);
-    _suggestWeekFromSets(reshuffle: false);
+    if (week != null) _suggestWeekFromSets(week!, reshuffle: false);
     notifyListeners();
     await _persist();
     return set;
@@ -1364,7 +1475,7 @@ class MineState extends ChangeNotifier {
       if (garment == null) continue;
       _putGarmentOnOutfit(set.outfit, garment);
     }
-    _suggestWeekFromSets(reshuffle: false);
+    if (week != null) _suggestWeekFromSets(week!, reshuffle: false);
     notifyListeners();
     await _persist();
   }
@@ -1394,13 +1505,13 @@ class MineState extends ChangeNotifier {
   }
 
   void _putGarmentOnOutfit(Outfit outfit, Garment garment) {
-    if (garment.category == GarmentCategory.top &&
-        garment.topKind == TopKind.tshirt) {
-      outfit.tshirtId = garment.id;
-      outfit.dressId = null;
-      return;
-    }
-    _putOnOutfit(outfit, garment.category, garment.id);
+    final asTshirt = garment.category == GarmentCategory.top &&
+        garment.topKind == TopKind.tshirt;
+    outfit.addPieceId(
+      garment.id,
+      category: garment.category,
+      asTshirt: asTshirt,
+    );
   }
 
   Future<void> renameClothSet(String id, String name) async {
@@ -1547,7 +1658,7 @@ class MineState extends ChangeNotifier {
       if (garment == null) return;
       _putGarmentOnOutfit(set.outfit, garment);
     }
-    _suggestWeekFromSets(reshuffle: false);
+    if (week != null) _suggestWeekFromSets(week!, reshuffle: false);
     notifyListeners();
     await _persist();
   }
@@ -1555,14 +1666,8 @@ class MineState extends ChangeNotifier {
   Future<void> removeFromClothSet(String setId, Garment garment) async {
     final set = clothSetById(setId);
     if (set == null) return;
-    if (set.outfit.tshirtId == garment.id) {
-      set.outfit.tshirtId = null;
-    } else if (set.outfit.idFor(garment.category) == garment.id) {
-      _putOnOutfit(set.outfit, garment.category, null);
-    } else {
-      return;
-    }
-    _suggestWeekFromSets(reshuffle: false);
+    if (!set.outfit.removePieceId(garment.id)) return;
+    if (week != null) _suggestWeekFromSets(week!, reshuffle: false);
     notifyListeners();
     await _persist();
   }
@@ -1599,8 +1704,9 @@ class MineState extends ChangeNotifier {
 
   Set<String> _usedIds({DayPlan? except}) {
     final ids = <String>{};
-    if (week == null) return ids;
-    for (final day in week!.days) {
+    final plan = except != null ? weekPlanFor(except.date) : week;
+    if (plan == null) return ids;
+    for (final day in plan.days) {
       if (except != null && sameDay(day.date, except.date)) continue;
       ids.addAll(day.outfit?.pieceIds ?? const []);
     }
@@ -1734,7 +1840,8 @@ class MineState extends ChangeNotifier {
 
   Future<void> checkDueAlarms() => _checkDueAlarms();
 
-  Future<void> checkWaterReminder() => _checkWaterReminder();
+  Future<void> checkWaterReminder({bool nudgeAwaiting = false}) =>
+      _checkWaterReminder(nudgeAwaiting: nudgeAwaiting);
 
   Future<void> handleAlarm(String eventId) async {
     if (eventId == MetalBriefing.payload) {
@@ -1746,6 +1853,7 @@ class MineState extends ChangeNotifier {
       return;
     }
     if (eventId == waterReminderId || eventId == waterReminderPayload) {
+      // OS already displayed the scheduled notice — mark awaiting without a duplicate.
       await _fireWaterReminder(forceNotice: false);
       return;
     }
@@ -1914,6 +2022,7 @@ class MineState extends ChangeNotifier {
       profile: profile,
       garments: garments,
       week: week,
+      otherWeeks: otherWeeks,
       events: events,
       partyLooks: partyLooks,
       completedDays: completedDays,
@@ -1985,6 +2094,9 @@ class MineState extends ChangeNotifier {
       if (json['week'] != null) {
         week = WeekPlan.fromJson(json['week'] as Map<String, dynamic>);
       }
+      otherWeeks = ((json['otherWeeks'] as List?) ?? const [])
+          .map((e) => WeekPlan.fromJson(e as Map<String, dynamic>))
+          .toList();
       completedDays.addAll(
         ((json['completedDays'] as List?) ?? const []).map((e) => e as String),
       );

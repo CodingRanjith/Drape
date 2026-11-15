@@ -41,12 +41,15 @@ class _CreateSetSheet extends StatefulWidget {
 
 class _CreateSetSheetState extends State<_CreateSetSheet> {
   late final TextEditingController _name;
-  final Map<String, Garment> _pickedByShelf = {};
+  final List<Garment> _picked = [];
   String? _activeShelf;
   var _saving = false;
   var _filled = false;
 
   bool get _editing => widget.existing != null;
+
+  int _pickedCountForShelf(String label) =>
+      _picked.where((g) => g.shelfLabel == label).length;
 
   @override
   void initState() {
@@ -62,9 +65,9 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     final existing = widget.existing;
     if (existing == null) return;
     final state = context.read<MineState>();
-    for (final garment in state.piecesOf(existing.outfit)) {
-      _pickedByShelf[garment.shelfLabel] = garment;
-    }
+    _picked
+      ..clear()
+      ..addAll(state.piecesOf(existing.outfit));
   }
 
   @override
@@ -73,8 +76,19 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     super.dispose();
   }
 
+  void _toggle(Garment garment) {
+    setState(() {
+      final index = _picked.indexWhere((g) => g.id == garment.id);
+      if (index >= 0) {
+        _picked.removeAt(index);
+      } else {
+        _picked.add(garment);
+      }
+    });
+  }
+
   Future<void> _save() async {
-    if (_pickedByShelf.isEmpty) {
+    if (_picked.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pick at least one item for this set.')),
       );
@@ -82,7 +96,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     }
     setState(() => _saving = true);
     try {
-      final ids = _pickedByShelf.values.map((g) => g.id).toList();
+      final ids = _picked.map((g) => g.id).toList();
       final state = context.read<MineState>();
       if (_editing) {
         await state.replaceClothSetPieces(
@@ -109,9 +123,6 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
     final state = context.watch<MineState>();
     final shelves = state.populatedShelves();
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    final available = shelves
-        .where((s) => !_pickedByShelf.containsKey(s.label))
-        .toList();
     ({String label, List<Garment> items})? active;
     for (final shelf in shelves) {
       if (shelf.label == _activeShelf) {
@@ -163,9 +174,9 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            if (_pickedByShelf.isEmpty)
+            if (_picked.isEmpty)
               const Text(
-                'Choose a wardrobe category (Topwear, Bottomwear…), then tap an item. Add another category for more pieces.',
+                'Choose a wardrobe category, then tap items. You can add several from the same category.',
                 style: TextStyle(color: AppColors.muted),
               )
             else
@@ -174,7 +185,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    for (final entry in _pickedByShelf.entries)
+                    for (final garment in _picked)
                       Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: SizedBox(
@@ -184,16 +195,15 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
                               Expanded(
                                 child: Stack(
                                   children: [
-                                    PhotoTile(garment: entry.value, radius: 14),
+                                    PhotoTile(garment: garment, radius: 14),
                                     Positioned(
                                       top: 2,
                                       right: 2,
                                       child: InkWell(
                                         onTap: () => setState(() {
-                                          _pickedByShelf.remove(entry.key);
-                                          if (_activeShelf == entry.key) {
-                                            _activeShelf = null;
-                                          }
+                                          _picked.removeWhere(
+                                            (g) => g.id == garment.id,
+                                          );
                                         }),
                                         child: const CircleAvatar(
                                           radius: 11,
@@ -211,7 +221,7 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                entry.key,
+                                garment.shelfLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -246,42 +256,37 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
                 ),
               )
             else ...[
-              if (available.isEmpty && _activeShelf == null)
-                const Text(
-                  'Every wardrobe category with items is already in this set.',
-                  style: TextStyle(color: AppColors.muted),
-                )
-              else
-                DropdownButtonFormField<String>(
-                  key: ValueKey(
-                    '${_activeShelf ?? 'none'}-${available.map((s) => s.label).join(',')}',
-                  ),
-                  initialValue: available.any((s) => s.label == _activeShelf)
-                      ? _activeShelf
-                      : null,
-                  decoration: const InputDecoration(
-                    hintText: 'Select wardrobe category',
-                  ),
-                  items: [
-                    for (final shelf in available)
-                      DropdownMenuItem(
-                        value: shelf.label,
-                        child: Text(
-                          '${shelf.label} (${shelf.items.length})',
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _activeShelf = value);
-                  },
+              DropdownButtonFormField<String>(
+                key: ValueKey(
+                  '${_activeShelf ?? 'none'}-${shelves.map((s) => s.label).join(',')}',
                 ),
+                initialValue: shelves.any((s) => s.label == _activeShelf)
+                    ? _activeShelf
+                    : null,
+                decoration: const InputDecoration(
+                  hintText: 'Select wardrobe category',
+                ),
+                items: [
+                  for (final shelf in shelves)
+                    DropdownMenuItem(
+                      value: shelf.label,
+                      child: Text(
+                        '${shelf.label} (${shelf.items.length})'
+                        '${_pickedCountForShelf(shelf.label) > 0 ? ' · ${_pickedCountForShelf(shelf.label)} added' : ''}',
+                      ),
+                    ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _activeShelf = value);
+                },
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: activeLabel == null
                     ? const Center(
                         child: Text(
-                          'Select a wardrobe category to see its items.',
+                          'Select a wardrobe category, then tap multiple items to add.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.muted),
                         ),
@@ -298,14 +303,9 @@ class _CreateSetSheetState extends State<_CreateSetSheet> {
                         itemBuilder: (context, index) {
                           final garment = activeItems[index];
                           final selected =
-                              _pickedByShelf[activeLabel]?.id == garment.id;
+                              _picked.any((g) => g.id == garment.id);
                           return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _pickedByShelf[activeLabel] = garment;
-                                _activeShelf = null;
-                              });
-                            },
+                            onTap: () => _toggle(garment),
                             borderRadius: BorderRadius.circular(16),
                             child: DecoratedBox(
                               decoration: BoxDecoration(

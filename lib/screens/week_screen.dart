@@ -11,7 +11,6 @@ import '../widgets/common.dart';
 import '../widgets/mine_logo_mark.dart';
 import '../widgets/page_background.dart';
 import '../widgets/week_day_look_sheet.dart';
-import 'outfit_full_view_screen.dart';
 
 class WeekScreen extends StatefulWidget {
   const WeekScreen({super.key, this.embedded = false});
@@ -45,11 +44,22 @@ class _WeekScreenState extends State<WeekScreen> {
       List.generate(7, (i) => _weekStart.add(Duration(days: i)));
 
   Future<void> _maybeSuggest() async {
-    if (_didAutoSuggest || !mounted) return;
+    if (!mounted) return;
     final state = context.read<MineState>();
-    if (state.readySetCount < 7) return;
+    // Always materialize day plans so Add/Edit work on any week (incl. next).
+    if (state.readySetCount < 7) {
+      await state.ensureWeekSaved(_weekStart);
+      return;
+    }
+    if (_didAutoSuggest) {
+      await state.ensureWeekSaved(_weekStart);
+      return;
+    }
     _didAutoSuggest = true;
-    await state.suggestWeekSets(reshuffle: state.readySetCount >= 14);
+    await state.suggestWeekSets(
+      reshuffle: state.readySetCount >= 14,
+      weekStart: _weekStart,
+    );
   }
 
   void _shiftWeek(int weeks) {
@@ -68,19 +78,49 @@ class _WeekScreenState extends State<WeekScreen> {
     await showWeekDayLookSheet(context, day);
   }
 
+  Future<void> _viewLook(DayPlan day, List<Garment> pieces) async {
+    if (pieces.isEmpty) {
+      await _addLook(day);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _DayLookPopup(
+          date: day.date,
+          pieces: pieces,
+          onChange: () async {
+            Navigator.pop(ctx);
+            await _addLook(day);
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
+    // Materialize this visible week so every day has Add/Edit.
+    state.setVisibleWeek(_weekStart);
+    final weekPlan = state.ensureWeek(_weekStart);
     final days = _weekDays;
     final setCount = state.readySetCount;
+    final thisMonday = mondayOf(DateTime.now());
+    final isCurrentWeek = sameDay(_weekStart, thisMonday);
     final planned = days.where((d) {
-      final plan = state.week?.forDate(d);
+      final plan = weekPlan.forDate(d);
       if (plan == null) return false;
       return state.piecesOf(plan.outfit).isNotEmpty;
     }).length;
     final range =
         '${DateFormat('d MMM').format(_weekStart)} – ${DateFormat('d MMM').format(_weekStart.add(const Duration(days: 6)))}';
     final focus = _focusDay ?? days.first;
+    final title = isCurrentWeek
+        ? 'This week'
+        : (_weekStart.isAfter(thisMonday) ? 'Next week' : 'Past week');
 
     final planner = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,7 +134,7 @@ class _WeekScreenState extends State<WeekScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'This week',
+                    title,
                     style: GoogleFonts.manrope(
                       fontSize: 26,
                       height: 1.15,
@@ -131,7 +171,7 @@ class _WeekScreenState extends State<WeekScreen> {
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final date = days[index];
-              final plan = state.week?.forDate(date);
+              final plan = weekPlan.forDate(date);
               final pieces = plan == null
                   ? const <Garment>[]
                   : state.piecesOf(plan.outfit);
@@ -145,16 +185,9 @@ class _WeekScreenState extends State<WeekScreen> {
                 onAdd: plan == null ? null : () => _addLook(plan),
                 onClear:
                     plan == null ? null : () => state.clearDayOutfit(plan),
-                onOpen: pieces.isEmpty
+                onOpen: pieces.isEmpty || plan == null
                     ? null
-                    : () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => OutfitFullViewScreen(
-                              pieces: pieces,
-                              date: date,
-                            ),
-                          ),
-                        ),
+                    : () => _viewLook(plan, pieces),
               );
             },
           ),
@@ -169,7 +202,10 @@ class _WeekScreenState extends State<WeekScreen> {
         backgroundColor: Colors.transparent,
         floatingActionButton: setCount >= 7
             ? FloatingActionButton.extended(
-                onPressed: () => state.suggestWeekSets(reshuffle: true),
+                onPressed: () => state.suggestWeekSets(
+                  reshuffle: true,
+                  weekStart: _weekStart,
+                ),
                 backgroundColor: AppColors.terracotta,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.auto_awesome_rounded),
@@ -574,6 +610,131 @@ class _DayLookCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DayLookPopup extends StatelessWidget {
+  const _DayLookPopup({
+    required this.date,
+    required this.pieces,
+    required this.onChange,
+  });
+
+  final DateTime date;
+  final List<Garment> pieces;
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+      ),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFF8F2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.ink.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('EEEE d MMM').format(date),
+                        style: GoogleFonts.manrope(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      Text(
+                        '${pieces.length} piece${pieces.length == 1 ? '' : 's'}',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: onChange,
+                  child: Text(
+                    'Change',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.terracotta,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: GridView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 20 + bottom),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.72,
+              ),
+              itemCount: pieces.length,
+              itemBuilder: (context, index) {
+                final g = pieces[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: PhotoTile(
+                          garment: g,
+                          radius: 0,
+                          showName: false,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      g.typeLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

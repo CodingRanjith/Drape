@@ -526,7 +526,8 @@ class Outfit {
     this.shoesId,
     this.accessoryId,
     this.tshirtId,
-  });
+    List<String>? extraIds,
+  }) : extraIds = List<String>.from(extraIds ?? const []);
 
   final String id;
   String? topId;
@@ -537,17 +538,26 @@ class Outfit {
   String? accessoryId;
   String? tshirtId;
 
+  /// Extra pieces beyond the primary slot — allows multiple of the same category.
+  List<String> extraIds;
+
   bool get isEmpty => pieceIds.isEmpty;
 
-  List<String> get pieceIds => [
-    ?topId,
-    ?bottomId,
-    ?dressId,
-    ?outerwearId,
-    ?shoesId,
-    ?accessoryId,
-    ?tshirtId,
-  ];
+  List<String> get pieceIds {
+    final ids = <String>[
+      ?topId,
+      ?bottomId,
+      ?dressId,
+      ?outerwearId,
+      ?shoesId,
+      ?accessoryId,
+      ?tshirtId,
+      ...extraIds,
+    ];
+    // Dedupe while keeping order (slot first, then extras).
+    final seen = <String>{};
+    return [for (final id in ids) if (seen.add(id)) id];
+  }
 
   String? idFor(GarmentCategory category) => switch (category) {
     GarmentCategory.top => topId,
@@ -588,6 +598,74 @@ class Outfit {
     setIdFor(type.category, id);
   }
 
+  /// Adds [garmentId] without wiping an existing primary piece of that category.
+  void addPieceId(String garmentId, {GarmentCategory? category, bool asTshirt = false}) {
+    if (pieceIds.contains(garmentId)) return;
+    if (asTshirt) {
+      if (tshirtId == null || tshirtId!.isEmpty) {
+        tshirtId = garmentId;
+        dressId = null;
+      } else {
+        extraIds.add(garmentId);
+      }
+      return;
+    }
+    if (category == null) {
+      extraIds.add(garmentId);
+      return;
+    }
+    final current = idFor(category);
+    if (current == null || current.isEmpty) {
+      setIdFor(category, garmentId);
+      if (category == GarmentCategory.dress) {
+        topId = null;
+        bottomId = null;
+        tshirtId = null;
+      } else if (category == GarmentCategory.top ||
+          category == GarmentCategory.bottom) {
+        dressId = null;
+      }
+    } else {
+      extraIds.add(garmentId);
+    }
+  }
+
+  bool removePieceId(String garmentId) {
+    var removed = false;
+    if (topId == garmentId) {
+      topId = null;
+      removed = true;
+    }
+    if (bottomId == garmentId) {
+      bottomId = null;
+      removed = true;
+    }
+    if (dressId == garmentId) {
+      dressId = null;
+      removed = true;
+    }
+    if (outerwearId == garmentId) {
+      outerwearId = null;
+      removed = true;
+    }
+    if (shoesId == garmentId) {
+      shoesId = null;
+      removed = true;
+    }
+    if (accessoryId == garmentId) {
+      accessoryId = null;
+      removed = true;
+    }
+    if (tshirtId == garmentId) {
+      tshirtId = null;
+      removed = true;
+    }
+    final before = extraIds.length;
+    extraIds.removeWhere((id) => id == garmentId);
+    if (extraIds.length != before) removed = true;
+    return removed;
+  }
+
   Outfit copy({String? id}) => Outfit(
     id: id ?? this.id,
     topId: topId,
@@ -597,6 +675,7 @@ class Outfit {
     shoesId: shoesId,
     accessoryId: accessoryId,
     tshirtId: tshirtId,
+    extraIds: extraIds,
   );
 
   Map<String, dynamic> toJson() => {
@@ -608,6 +687,7 @@ class Outfit {
     'shoesId': shoesId,
     'accessoryId': accessoryId,
     'tshirtId': tshirtId,
+    'extraIds': extraIds,
   };
 
   factory Outfit.fromJson(Map<String, dynamic> json) => Outfit(
@@ -619,6 +699,9 @@ class Outfit {
     shoesId: json['shoesId'] as String?,
     accessoryId: json['accessoryId'] as String?,
     tshirtId: json['tshirtId'] as String?,
+    extraIds: ((json['extraIds'] as List?) ?? const [])
+        .map((e) => e as String)
+        .toList(),
   );
 }
 

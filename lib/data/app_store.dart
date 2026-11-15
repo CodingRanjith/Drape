@@ -27,6 +27,7 @@ class AppStore {
       UserProfile profile,
       List<Garment> garments,
       WeekPlan? week,
+      List<WeekPlan> otherWeeks,
       List<LifeEvent> events,
       List<PartyLook> partyLooks,
       Set<String> completedDays,
@@ -43,6 +44,7 @@ class AppStore {
         profile: UserProfile(),
         garments: <Garment>[],
         week: null,
+        otherWeeks: <WeekPlan>[],
         events: <LifeEvent>[],
         partyLooks: <PartyLook>[],
         completedDays: <String>{},
@@ -60,6 +62,9 @@ class AppStore {
       week: json['week'] == null
           ? null
           : WeekPlan.fromJson(json['week'] as Map<String, dynamic>),
+      otherWeeks: ((json['otherWeeks'] as List?) ?? const [])
+          .map((e) => WeekPlan.fromJson(e as Map<String, dynamic>))
+          .toList(),
       events: ((json['events'] as List?) ?? const [])
           .map((e) => LifeEvent.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -85,6 +90,7 @@ class AppStore {
     required UserProfile profile,
     required List<Garment> garments,
     WeekPlan? week,
+    List<WeekPlan> otherWeeks = const [],
     required List<LifeEvent> events,
     required List<PartyLook> partyLooks,
     required Set<String> completedDays,
@@ -99,6 +105,7 @@ class AppStore {
         'profile': profile.toJson(),
         'garments': garments.map((g) => g.toJson()).toList(),
         'week': week?.toJson(),
+        'otherWeeks': otherWeeks.map((w) => w.toJson()).toList(),
         'events': events.map((e) => e.toJson()).toList(),
         'partyLooks': partyLooks.map((e) => e.toJson()).toList(),
         'completedDays': completedDays.toList(),

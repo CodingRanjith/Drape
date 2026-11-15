@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -12,6 +13,10 @@ const waterReminderPayload = 'water-reminder';
 const waterDrankPayload = 'water-drank';
 const waterDrankActionId = 'water_drank';
 const pendingWaterDrankKey = 'pending_water_drank';
+
+const _waterChannelId = 'mine_water_v2';
+const _waterChannelName = 'Water reminders';
+const _waterChannelDesc = 'Hydration glass reminders with water sound';
 
 @pragma('vm:entry-point')
 void _onBackgroundNotification(NotificationResponse response) {
@@ -31,11 +36,86 @@ String? _payloadFromResponse(NotificationResponse response) {
   return null;
 }
 
+Future<void> _ensureLocalTimezone() async {
+  tzdata.initializeTimeZones();
+  try {
+    final info = await FlutterTimezone.getLocalTimezone();
+    final name = info.identifier;
+    tz.setLocalLocation(tz.getLocation(name));
+  } catch (e) {
+    debugPrint('Timezone fallback Asia/Kolkata: $e');
+    try {
+      tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+    } catch (_) {
+      // Keep default.
+    }
+  }
+}
+
+tz.TZDateTime _toLocalTz(DateTime at) {
+  final local = at.isUtc ? at.toLocal() : at;
+  return tz.TZDateTime(
+    tz.local,
+    local.year,
+    local.month,
+    local.day,
+    local.hour,
+    local.minute,
+    local.second,
+    local.millisecond,
+  );
+}
+
+AndroidNotificationDetails _waterAndroidDetails(String body) {
+  return AndroidNotificationDetails(
+    _waterChannelId,
+    _waterChannelName,
+    channelDescription: _waterChannelDesc,
+    importance: Importance.max,
+    priority: Priority.max,
+    category: AndroidNotificationCategory.reminder,
+    icon: '@drawable/ic_stat_water',
+    largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    playSound: true,
+    enableVibration: true,
+    sound: const RawResourceAndroidNotificationSound('water_chime'),
+    audioAttributesUsage: AudioAttributesUsage.assistanceSonification,
+    styleInformation: BigTextStyleInformation(body),
+    visibility: NotificationVisibility.public,
+    ticker: 'Drink water',
+    actions: const <AndroidNotificationAction>[
+      AndroidNotificationAction(
+        waterDrankActionId,
+        'I drank',
+        showsUserInterface: true,
+        cancelNotification: true,
+      ),
+    ],
+  );
+}
+
+Future<void> _ensureWaterChannel(
+  AndroidFlutterLocalNotificationsPlugin? android,
+) async {
+  if (android == null) return;
+  await android.createNotificationChannel(
+    const AndroidNotificationChannel(
+      _waterChannelId,
+      _waterChannelName,
+      description: _waterChannelDesc,
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      sound: RawResourceAndroidNotificationSound('water_chime'),
+    ),
+  );
+}
+
 Future<void> initEventAlarmsImpl({
   required void Function(String eventId) onAlarm,
 }) async {
   try {
-    tzdata.initializeTimeZones();
+    await _ensureLocalTimezone();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -61,7 +141,12 @@ Future<void> initEventAlarmsImpl({
         >();
     await androidPlugin?.requestNotificationsPermission();
     await androidPlugin?.requestExactAlarmsPermission();
+    await _ensureWaterChannel(androidPlugin);
     await Permission.notification.request();
+    // Exact alarms / schedule exact help water reminders fire on time.
+    try {
+      await Permission.scheduleExactAlarm.request();
+    } catch (_) {}
 
     _ready = true;
 
@@ -86,6 +171,8 @@ Future<void> initEventAlarmsImpl({
   }
 }
 
+bool get notificationsReady => _ready;
+
 Future<void> scheduleEventAlarmImpl({
   required int id,
   required DateTime at,
@@ -101,7 +188,7 @@ Future<void> scheduleEventAlarmImpl({
       id,
       title,
       body,
-      tz.TZDateTime.from(at.toUtc(), tz.UTC),
+      _toLocalTz(at),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'mine_alarms',
@@ -193,7 +280,7 @@ Future<void> scheduleDailyMetalBriefingImpl({
       id,
       title,
       body,
-      tz.TZDateTime.from(next.toUtc(), tz.UTC),
+      _toLocalTz(next),
       NotificationDetails(
         android: AndroidNotificationDetails(
           'mine_metal_rates',
@@ -226,47 +313,49 @@ Future<void> scheduleWaterReminderImpl({
   required String body,
   required String payload,
 }) async {
-  if (!_ready) return;
-  if (!at.isAfter(DateTime.now().subtract(const Duration(seconds: 5)))) return;
+  if (!_ready) {
+    debugPrint('Water schedule skipped — notifications not ready');
+    return;
+  }
+  final when = at.isAfter(DateTime.now())
+      ? at
+      : DateTime.now().add(const Duration(seconds: 5));
   try {
     await _plugin.cancel(id);
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(at.toUtc(), tz.UTC),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'mine_water_v1',
-          'Water reminders',
-          channelDescription: 'Hydration glass reminders with water sound',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          icon: '@drawable/ic_stat_water',
-          playSound: true,
-          enableVibration: true,
-          sound: const RawResourceAndroidNotificationSound('water_chime'),
-          audioAttributesUsage: AudioAttributesUsage.assistanceSonification,
-          styleInformation: BigTextStyleInformation(body),
-          actions: const <AndroidNotificationAction>[
-            AndroidNotificationAction(
-              waterDrankActionId,
-              'I drank',
-              showsUserInterface: true,
-              cancelNotification: true,
-            ),
-          ],
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-          interruptionLevel: InterruptionLevel.timeSensitive,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: payload,
+    final scheduled = _toLocalTz(when);
+    debugPrint(
+      'Water reminder scheduled for $scheduled (local ${tz.local.name})',
     );
+    final details = NotificationDetails(
+      android: _waterAndroidDetails(body),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      ),
+    );
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: payload,
+      );
+    } catch (exactErr) {
+      debugPrint('Exact water schedule failed, falling back: $exactErr');
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+    }
   } catch (e, st) {
     debugPrint('Could not schedule water reminder: $e\n$st');
   }
@@ -278,35 +367,17 @@ Future<void> showWaterReminderNoticeImpl({
   required String body,
   required String payload,
 }) async {
-  if (!_ready) return;
+  if (!_ready) {
+    debugPrint('Water notice skipped — notifications not ready');
+    return;
+  }
   try {
     await _plugin.show(
       id,
       title,
       body,
       NotificationDetails(
-        android: AndroidNotificationDetails(
-          'mine_water_v1',
-          'Water reminders',
-          channelDescription: 'Hydration glass reminders with water sound',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          icon: '@drawable/ic_stat_water',
-          playSound: true,
-          enableVibration: true,
-          sound: const RawResourceAndroidNotificationSound('water_chime'),
-          audioAttributesUsage: AudioAttributesUsage.assistanceSonification,
-          styleInformation: BigTextStyleInformation(body),
-          actions: const <AndroidNotificationAction>[
-            AndroidNotificationAction(
-              waterDrankActionId,
-              'I drank',
-              showsUserInterface: true,
-              cancelNotification: true,
-            ),
-          ],
-        ),
+        android: _waterAndroidDetails(body),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,

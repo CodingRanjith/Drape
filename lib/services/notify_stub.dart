@@ -3,6 +3,8 @@ const waterDrankPayload = 'water-drank';
 const waterDrankActionId = 'water_drank';
 const pendingWaterDrankKey = 'pending_water_drank';
 
+bool get notificationsReady => false;
+
 Future<void> initEventAlarmsImpl({
   required void Function(String eventId) onAlarm,
 }) async {}

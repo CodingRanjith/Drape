@@ -80,9 +80,13 @@ class _CalendarScreenState extends State<CalendarScreen>
             ? (setCount >= 7
                 ? FloatingActionButton.extended(
                     key: const ValueKey('suggest'),
-                    onPressed: () => context
-                        .read<MineState>()
-                        .suggestWeekSets(reshuffle: true),
+                    onPressed: () {
+                      final state = context.read<MineState>();
+                      state.suggestWeekSets(
+                        reshuffle: true,
+                        weekStart: state.visibleWeekStart,
+                      );
+                    },
                     backgroundColor: AppColors.terracotta,
                     foregroundColor: Colors.white,
                     elevation: 2,

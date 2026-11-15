@@ -36,6 +36,7 @@ dependencies:
   webview_flutter_android: 4.12.0
   # 2.12+ needs Dart ^3.12; pin for Flutter 3.41 / Dart 3.11.5
   video_player: ^2.11.1
+  flutter_timezone: ^5.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -80,4 +81,6 @@ flutter:
     - assets/collections/men/
     - assets/collections/women/
     - assets/sounds/water_chime.wav
-    - assets/intro/
+    # Add when ready:
+    # - assets/intro/mine_app_intro_en.mp4
+    # - assets/intro/mine_app_intro_ta.mp4

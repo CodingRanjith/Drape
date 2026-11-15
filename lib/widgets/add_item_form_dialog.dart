@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/stored_bytes.dart';
 import '../logic/detect_image_color.dart';
 import '../logic/rotate_image.dart';
 import '../models/wardrobe.dart';
@@ -13,11 +16,12 @@ import '../theme/app_theme.dart';
 import 'app_image_pick.dart';
 import 'manage_categories_sheet.dart';
 
-/// Centered add-item form — wardrobe-simple: category, price, photo.
+/// Centered add/edit form — wardrobe-simple: category, price, photo.
 Future<bool> showAddItemFormDialog(
   BuildContext context, {
   WardrobeCategory? initialCategory,
   String? initialCustomShelf,
+  Garment? existing,
 }) async {
   final saved = await showDialog<bool>(
     context: context,
@@ -26,6 +30,7 @@ Future<bool> showAddItemFormDialog(
     builder: (context) => AddItemFormDialog(
       initialCategory: initialCategory,
       initialCustomShelf: initialCustomShelf,
+      existing: existing,
     ),
   );
   return saved == true;
@@ -36,10 +41,12 @@ class AddItemFormDialog extends StatefulWidget {
     super.key,
     this.initialCategory,
     this.initialCustomShelf,
+    this.existing,
   });
 
   final WardrobeCategory? initialCategory;
   final String? initialCustomShelf;
+  final Garment? existing;
 
   @override
   State<AddItemFormDialog> createState() => _AddItemFormDialogState();
@@ -62,18 +69,50 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     return _category?.label;
   }
 
+  bool get _isEdit => widget.existing != null;
+
   @override
   void initState() {
     super.initState();
     _wearer = context.read<MineState>().profile.wearer;
     final allowed = _wearer.wardrobeCategories;
-    final initialCustom = widget.initialCustomShelf?.trim();
-    if (initialCustom != null && initialCustom.isNotEmpty) {
-      _customShelf = initialCustom;
-    } else if (widget.initialCategory != null &&
-        allowed.contains(widget.initialCategory)) {
-      _category = widget.initialCategory;
+    final existing = widget.existing;
+    if (existing != null) {
+      final custom = existing.customShelf?.trim();
+      if (custom != null && custom.isNotEmpty) {
+        _customShelf = custom;
+      } else if (allowed.contains(existing.wardrobeCategory)) {
+        _category = existing.wardrobeCategory;
+      } else {
+        _category = existing.wardrobeCategory;
+      }
+      if (existing.cost != null) {
+        final c = existing.cost!;
+        _price.text = c == c.roundToDouble()
+            ? '${c.round()}'
+            : c.toStringAsFixed(0);
+      }
+      _detectedColors = List<int>.from(existing.colors);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadExistingPhoto());
+      });
+    } else {
+      final initialCustom = widget.initialCustomShelf?.trim();
+      if (initialCustom != null && initialCustom.isNotEmpty) {
+        _customShelf = initialCustom;
+      } else if (widget.initialCategory != null &&
+          allowed.contains(widget.initialCategory)) {
+        _category = widget.initialCategory;
+      }
     }
+  }
+
+  Future<void> _loadExistingPhoto() async {
+    final path = widget.existing?.imagePath;
+    if (path == null || path.trim().isEmpty) return;
+    final bytes = await readStoredBytes(path);
+    if (!mounted || bytes == null || bytes.isEmpty) return;
+    setState(() => _imageBytes = bytes);
   }
 
   @override
@@ -217,7 +256,13 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
       setState(() => _error = 'Pick a category first.');
       return;
     }
-    if (bytes == null) {
+    final existing = widget.existing;
+    if (bytes == null && existing == null) {
+      setState(() => _error = 'Add an item photo first.');
+      return;
+    }
+    if (bytes == null &&
+        (existing?.imagePath == null || existing!.imagePath!.trim().isEmpty)) {
       setState(() => _error = 'Add an item photo first.');
       return;
     }
@@ -242,25 +287,43 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
     final shelfName = custom ?? builtin!.label;
     final mapped = builtin ?? WardrobeCategory.accessories;
 
-    final colors = _detectedColors.isNotEmpty
-        ? _detectedColors
-        : detectClothesColors(bytes);
-
-    final garment = Garment(
-      id: const Uuid().v4(),
-      name: shelfName,
-      category: mapped.garmentCategory,
-      colors: colors,
-      topKind: mapped.topKind,
-      wardrobeCategory: mapped,
-      customShelf: custom,
-      cost: cost,
-    );
+    final colors = bytes != null
+        ? (_detectedColors.isNotEmpty
+            ? _detectedColors
+            : detectClothesColors(bytes))
+        : (_detectedColors.isNotEmpty
+            ? _detectedColors
+            : List<int>.from(existing?.colors ?? const []));
 
     try {
       final state = context.read<MineState>();
       if (custom != null) await state.addCustomShelf(custom);
-      await state.saveGarment(garment, imageBytes: bytes);
+
+      if (existing != null) {
+        existing
+          ..name = shelfName
+          ..category = mapped.garmentCategory
+          ..topKind = mapped.topKind
+          ..wardrobeCategory = mapped
+          ..customShelf = custom
+          ..cost = cost;
+        existing.colors
+          ..clear()
+          ..addAll(colors);
+        await state.saveGarment(existing, imageBytes: bytes);
+      } else {
+        final garment = Garment(
+          id: const Uuid().v4(),
+          name: shelfName,
+          category: mapped.garmentCategory,
+          colors: colors,
+          topKind: mapped.topKind,
+          wardrobeCategory: mapped,
+          customShelf: custom,
+          cost: cost,
+        );
+        await state.saveGarment(garment, imageBytes: bytes!);
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
       if (!mounted) return;
@@ -304,7 +367,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Add items',
+                          _isEdit ? 'Edit item' : 'Add items',
                           style: GoogleFonts.manrope(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -331,18 +394,20 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                         ),
                       ),
                       const Spacer(),
-                      TextButton.icon(
-                        onPressed: busy ? null : _openCategoriesManager,
-                        icon: const Icon(Icons.tune_rounded, size: 18),
-                        label: Text(
-                          'Categories',
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                      if (!_isEdit)
+                        TextButton.icon(
+                          onPressed: busy ? null : _openCategoriesManager,
+                          icon: const Icon(Icons.tune_rounded, size: 18),
+                          label: Text(
+                            'Categories',
+                            style:
+                                GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.terracotta,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
                         ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.terracotta,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -628,7 +693,7 @@ class _AddItemFormDialogState extends State<AddItemFormDialog> {
                             ),
                           )
                         : Text(
-                            'Save item',
+                            _isEdit ? 'Save changes' : 'Save item',
                             style: GoogleFonts.manrope(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,

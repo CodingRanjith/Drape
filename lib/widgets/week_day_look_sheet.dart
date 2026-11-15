@@ -279,13 +279,27 @@ class _WeekCreateSetSheet extends StatefulWidget {
 }
 
 class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
-  /// One picked garment per wardrobe category/shelf.
-  final Map<String, Garment> _pickedByShelf = {};
+  /// Multiple pieces allowed — including several from the same category.
+  final List<Garment> _picked = [];
   String? _activeShelf;
   var _saving = false;
 
+  int _pickedCountForShelf(String label) =>
+      _picked.where((g) => g.shelfLabel == label).length;
+
+  void _toggle(Garment g) {
+    setState(() {
+      final index = _picked.indexWhere((p) => p.id == g.id);
+      if (index >= 0) {
+        _picked.removeAt(index);
+      } else {
+        _picked.add(g);
+      }
+    });
+  }
+
   Future<void> _save() async {
-    if (_pickedByShelf.isEmpty) {
+    if (_picked.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select at least one item.')),
       );
@@ -297,7 +311,7 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
       final state = context.read<MineState>();
       final ok = await state.assignPiecesToDay(
         widget.day,
-        _pickedByShelf.values.map((g) => g.id).toList(),
+        _picked.map((g) => g.id).toList(),
       );
       if (!mounted) return;
       Navigator.pop(context);
@@ -332,9 +346,9 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
 
     return _PopupShell(
       title: 'Create set',
-      subtitle: _pickedByShelf.isEmpty
-          ? 'Add wear from your wardrobe'
-          : '${_pickedByShelf.length} pieces selected',
+      subtitle: _picked.isEmpty
+          ? 'Pick a category — tap multiple items to add'
+          : '${_picked.length} pieces selected',
       footer: _saving
           ? const Center(child: CircularProgressIndicator())
           : FilledButton(
@@ -357,26 +371,26 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_pickedByShelf.isNotEmpty) ...[
+            if (_picked.isNotEmpty) ...[
               SizedBox(
                 height: 72,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    for (final entry in _pickedByShelf.entries)
+                    for (final garment in _picked)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: SizedBox(
                           width: 58,
                           child: Stack(
                             children: [
-                              PhotoTile(garment: entry.value, radius: 12),
+                              PhotoTile(garment: garment, radius: 12),
                               Positioned(
                                 top: 0,
                                 right: 0,
                                 child: InkWell(
                                   onTap: () => setState(() {
-                                    _pickedByShelf.remove(entry.key);
+                                    _picked.removeWhere((g) => g.id == garment.id);
                                   }),
                                   child: const CircleAvatar(
                                     radius: 10,
@@ -428,7 +442,7 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
                       value: shelf.label,
                       child: Text(
                         '${shelf.label} (${shelf.items.length})'
-                        '${_pickedByShelf.containsKey(shelf.label) ? ' · added' : ''}',
+                        '${_pickedCountForShelf(shelf.label) > 0 ? ' · ${_pickedCountForShelf(shelf.label)} added' : ''}',
                       ),
                     ),
                 ],
@@ -443,7 +457,7 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
                 child: _activeShelf == null
                     ? Center(
                         child: Text(
-                          'Select a category above, then tap an item to add.',
+                          'Select a category, then tap items to add — same category can have many.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.manrope(color: AppColors.muted),
                         ),
@@ -459,14 +473,11 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
                         itemCount: activeItems.length,
                         itemBuilder: (context, index) {
                           final g = activeItems[index];
-                          final selected =
-                              _pickedByShelf[_activeShelf]?.id == g.id;
+                          final selected = _picked.any((p) => p.id == g.id);
                           return InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setState(() {
-                                _pickedByShelf[_activeShelf!] = g;
-                              });
+                              _toggle(g);
                             },
                             borderRadius: BorderRadius.circular(18),
                             child: DecoratedBox(

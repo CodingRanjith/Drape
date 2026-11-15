@@ -15,7 +15,6 @@ import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_image_pick.dart';
 import '../widgets/back_icon.dart';
-import '../widgets/common.dart';
 import '../widgets/garment_photo.dart';
 
 class GarmentEditorScreen extends StatefulWidget {
@@ -160,7 +159,7 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
     );
     final assignDate = widget.assignToDate;
     if (assignDate != null) {
-      final day = state.week?.forDate(assignDate);
+      final day = state.ensureWeek(assignDate).forDate(assignDate);
       if (day != null) {
         await state.assignPiece(day, _garment.category, _garment.id);
       }
@@ -176,39 +175,11 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
     if (await _save() && mounted) Navigator.pop(context);
   }
 
-  Future<void> _saveThenAddPant() async {
-    if (!await _save() || !mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GarmentEditorScreen(
-          initialCategory: GarmentCategory.bottom,
-          pairWithId: _garment.id,
-          assignToDate: widget.assignToDate,
-          assignToSetId: widget.assignToSetId,
-          assignToCollection:
-              widget.assignToCollection ?? _garment.styleCollection,
-        ),
-      ),
-    );
-    if (mounted) Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<MineState>();
     final preview = _pickedBytes != null
         ? MemoryImage(_pickedBytes!)
         : garmentImageProvider(_garment.imagePath);
-    final pairOptions = state.garments.where((g) {
-      if (g.id == _garment.id) return false;
-      if (_garment.category == GarmentCategory.top) {
-        return g.category == GarmentCategory.bottom;
-      }
-      if (_garment.category == GarmentCategory.bottom) {
-        return g.category == GarmentCategory.top;
-      }
-      return false;
-    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -323,110 +294,8 @@ class _GarmentEditorScreenState extends State<GarmentEditorScreen> {
               hintText: 'Example: white shirt, blue pant',
             ),
           ),
-          const SizedBox(height: 18),
-          Text('Item type', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ClothesType.forWearer(state.profile.wearer).map((type) {
-              final selected = _garment.category == type.category &&
-                  (type.category != GarmentCategory.top ||
-                      _garment.topKind == type.topKind);
-              return ChoiceChip(
-                label: Text(type.label),
-                selected: selected,
-                onSelected: (_) => setState(() {
-                  _garment.category = type.category;
-                  _garment.topKind = type.topKind;
-                }),
-                selectedColor: AppColors.ink,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.ink,
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          Text('Collection', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 6),
-          const Text('Pick which card this item belongs to — change anytime.'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('None'),
-                selected: _garment.styleCollection == null,
-                onSelected: (_) => setState(() => _garment.styleCollection = null),
-                selectedColor: AppColors.ink,
-                labelStyle: TextStyle(
-                  color: _garment.styleCollection == null
-                      ? Colors.white
-                      : AppColors.ink,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              ...StyleCollection.values.map((c) {
-                final selected = _garment.styleCollection == c;
-                return ChoiceChip(
-                  label: Text(c.label),
-                  selected: selected,
-                  onSelected: (_) =>
-                      setState(() => _garment.styleCollection = c),
-                  selectedColor: AppColors.ink,
-                  labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppColors.ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                );
-              }),
-            ],
-          ),
-          if (pairOptions.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            Text(
-              _garment.category == GarmentCategory.bottom
-                  ? 'This pant goes with these shirts / T-shirts'
-                  : 'This ${_garment.typeLabel.toLowerCase()} goes with these pants',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            ...pairOptions.map((g) {
-              final selected = _garment.pairsWithIds.contains(g.id);
-              return CheckboxListTile(
-                value: selected,
-                contentPadding: EdgeInsets.zero,
-                title: Text(g.name),
-                secondary: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: PhotoTile(garment: g, radius: 10),
-                ),
-                onChanged: (v) {
-                  setState(() {
-                    if (v == true) {
-                      _garment.pairsWithIds.add(g.id);
-                    } else {
-                      _garment.pairsWithIds.remove(g.id);
-                    }
-                  });
-                },
-              );
-            }),
-          ],
           const SizedBox(height: 20),
           FilledButton(onPressed: _saveAndClose, child: const Text('Save')),
-          if (_garment.category == GarmentCategory.top) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: _saveThenAddPant,
-              icon: const Icon(Icons.add),
-              label: const Text('Save, then add a pant'),
-            ),
-          ],
         ],
       ),
     );

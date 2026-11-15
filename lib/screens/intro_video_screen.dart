@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../product.dart';
 import '../state/mine_state.dart';
@@ -28,12 +29,53 @@ class IntroVideoScreen extends StatefulWidget {
   static String assetFor(String lang) =>
       lang == 'ta' ? assetPathTa : assetPathEn;
 
-  static String youtubeEmbedUrl(String lang) {
-    // Same temp clip for both langs until custom films exist.
+  static String youtubeEmbedSrc(String lang) {
     final cc = lang == 'ta' ? 'ta' : 'en';
+    // mute=1 is required for reliable autoplay inside Android WebView.
     return 'https://www.youtube.com/embed/$tempYoutubeId'
-        '?autoplay=1&playsinline=1&rel=0&modestbranding=1'
-        '&cc_lang_pref=$cc';
+        '?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1'
+        '&controls=1&fs=1&cc_lang_pref=$cc&enablejsapi=1';
+  }
+
+  /// Full-bleed 16:9 iframe page — avoids YouTube chrome filling the whole phone.
+  static String youtubeEmbedHtml(String lang) {
+    final src = youtubeEmbedSrc(lang);
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #14110F; overflow: hidden;
+  }
+  .frame {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+  iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: 0; background: #000;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <iframe
+      src="$src"
+      title="Mine intro"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
+  </div>
+</body>
+</html>
+''';
   }
 
   @override
@@ -48,6 +90,7 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
   var _loading = false;
   var _lang = 'en';
   var _started = false;
+  var _webReady = false;
 
   @override
   void initState() {
@@ -78,12 +121,14 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
     await file?.pause();
     await file?.dispose();
     _webController = null;
+    _webReady = false;
   }
 
   Future<void> _boot(String lang) async {
     setState(() {
       _loading = true;
       _mode = _IntroMode.loading;
+      _webReady = false;
     });
     await _disposePlayers();
 
@@ -91,7 +136,7 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
     final localOk = await _tryLocal(lang);
     if (localOk) return;
 
-    // Temporary YouTube stand-in.
+    // Temporary YouTube stand-in in a fixed 16:9 frame.
     await _tryYoutube(lang);
   }
 
@@ -118,21 +163,68 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
     }
   }
 
+  Future<void> _configureAndroid(WebViewController controller) async {
+    final platform = controller.platform;
+    if (platform is AndroidWebViewController) {
+      await platform.setMediaPlaybackRequiresUserGesture(false);
+      await platform.setOnPlatformPermissionRequest((request) {
+        request.grant();
+      });
+    }
+  }
+
   Future<void> _tryYoutube(String lang) async {
     try {
-      final controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFF14110F))
-        ..loadRequest(Uri.parse(IntroVideoScreen.youtubeEmbedUrl(lang)));
+      final controller = WebViewController();
+      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+      await controller.setBackgroundColor(const Color(0xFF14110F));
+      await _configureAndroid(controller);
+      await controller.setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (!mounted) return;
+            setState(() {
+              _webReady = true;
+              _loading = false;
+            });
+          },
+          onWebResourceError: (error) {
+            debugPrint(
+              'YouTube intro resource error: ${error.errorCode} ${error.description}',
+            );
+            // Ignore subframe noise; only fail the main document.
+            if (error.isForMainFrame != true) return;
+            if (!mounted) return;
+            setState(() {
+              _mode = _IntroMode.failed;
+              _loading = false;
+            });
+          },
+        ),
+      );
+      await controller.loadHtmlString(
+        IntroVideoScreen.youtubeEmbedHtml(lang),
+        baseUrl: 'https://www.youtube.com',
+      );
       _webController = controller;
       if (!mounted) return;
       setState(() {
         _lang = lang;
         _mode = _IntroMode.youtube;
-        _loading = false;
+        // Keep spinner until page finishes (or timeout below).
       });
-    } catch (e) {
-      debugPrint('YouTube intro failed: $e');
+      // If onPageFinished never fires (some WebViews), still show the frame.
+      Future<void>.delayed(const Duration(seconds: 4), () {
+        if (!mounted || _mode != _IntroMode.youtube) return;
+        if (_loading) {
+          setState(() {
+            _loading = false;
+            _webReady = true;
+          });
+        }
+      });
+    } catch (e, st) {
+      debugPrint('YouTube intro failed: $e\n$st');
       if (!mounted) return;
       setState(() {
         _lang = lang;
@@ -187,111 +279,242 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
     final showFile =
         _mode == _IntroMode.file && file != null && file.value.isInitialized;
     final showYoutube = _mode == _IntroMode.youtube && web != null;
+    final failed = _mode == _IntroMode.failed;
 
     return Scaffold(
       backgroundColor: const Color(0xFF14110F),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (showFile)
-            FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: file.value.size.width,
-                height: file.value.size.height,
-                child: VideoPlayer(file),
-              ),
-            )
-          else if (showYoutube)
-            WebViewWidget(controller: web)
-          else if (_mode == _IntroMode.failed)
-            _IntroFallback(failed: true, tamil: isTa)
-          else
-            _IntroFallback(failed: false, tamil: isTa),
-          if (_loading)
-            const Center(
-              child: CircularProgressIndicator(color: AppColors.terracotta),
-            ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                child: _LangToggle(
-                  lang: _lang,
-                  enabled: !_finishing && !_loading,
-                  onChanged: _setLang,
-                ),
-              ),
-            ),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF2A221C), Color(0xFF14110F)],
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+                child: Row(
                   children: [
-                    if (showFile) _ProgressBar(controller: file),
-                    if (showYoutube)
-                      Text(
-                        isTa
-                            ? 'தற்காலிக YouTube அறிமுகம்'
-                            : 'Temporary YouTube intro',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white54,
-                        ),
-                      ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: _finishing ? null : _finish,
-                          child: Text(
-                            isTa ? 'தவிர்' : 'Skip',
+                    const MineLogoMark(size: 44, radius: 12),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            MineProduct.appName,
                             style: GoogleFonts.manrope(
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.terracotta,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onPressed: _finishing ? null : _finish,
-                          child: Text(
-                            _mode == _IntroMode.failed
-                                ? (isTa ? 'தொடர்' : 'Continue')
-                                : (isTa ? 'தொடங்கு' : 'Get started'),
-                            style: GoogleFonts.manrope(
+                              fontSize: 22,
                               fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.4,
                             ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            MineProduct.tagline,
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.terracotta,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _LangToggle(
+                      lang: _lang,
+                      enabled: !_finishing && !_loading,
+                      onChanged: _setLang,
                     ),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 18),
+              // Fixed 16:9 stage for file or YouTube iframe.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: ColoredBox(
+                      color: Colors.black,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (showFile)
+                            FittedBox(
+                              fit: BoxFit.contain,
+                              child: SizedBox(
+                                width: file.value.size.width,
+                                height: file.value.size.height,
+                                child: VideoPlayer(file),
+                              ),
+                            )
+                          else if (showYoutube)
+                            WebViewWidget(controller: web)
+                          else if (failed)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  isTa
+                                      ? 'வீடியோ ஏற்ற முடியவில்லை.'
+                                      : 'Could not load the intro video.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.manrope(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.terracotta,
+                              ),
+                            ),
+                          if (_loading && showYoutube && !_webReady)
+                            const ColoredBox(
+                              color: Color(0xAA14110F),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.terracotta,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (showFile) ...[
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _ProgressBar(controller: file),
+                ),
+              ],
+              if (showYoutube) ...[
+                const SizedBox(height: 10),
+                Text(
+                  isTa
+                      ? 'தற்காலிக YouTube அறிமுகம் · 16:9'
+                      : 'Temporary YouTube intro · 16:9',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white54,
+                  ),
+                ),
+              ],
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(28, 20, 28, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (failed || (!showFile && !showYoutube && !_loading))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            failed
+                                ? (isTa
+                                    ? 'தொடர்ந்து Mine-ஐ பயன்படுத்தலாம்.'
+                                    : 'You can continue into Mine.')
+                                : (isTa
+                                    ? 'உங்கள் Mine அறிமுகம் ஏற்றப்படுகிறது…'
+                                    : 'Loading your Mine intro…'),
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      if (isTa) ...[
+                        const _Beat(
+                          title: 'பிரச்சனை',
+                          body: 'அலமாரி குழப்பம். அதே உடைகள். வீணான காலை.',
+                        ),
+                        const _Beat(
+                          title: 'தீர்வு',
+                          body: 'உடைகளை பதிவு செய். Mine இன்றைய லுக் தரும்.',
+                        ),
+                        const _Beat(
+                          title: 'பயன்படுத்து',
+                          body: 'Shuffle, Save, வாரம் பிளான் — எளிதாக உடுத்து.',
+                        ),
+                      ] else ...[
+                        const _Beat(
+                          title: 'Problem',
+                          body: 'Closet chaos. Same outfits. Wasted mornings.',
+                        ),
+                        const _Beat(
+                          title: 'Solution',
+                          body:
+                              'Upload your clothes. Mine builds today’s look.',
+                        ),
+                        const _Beat(
+                          title: 'Use it',
+                          body:
+                              'Shuffle, save, plan the week, and dress with ease.',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Row(
+                  children: [
+                    TextButton(
+                      onPressed: _finishing ? null : _finish,
+                      child: Text(
+                        isTa ? 'தவிர்' : 'Skip',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.terracotta,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: _finishing ? null : _finish,
+                      child: Text(
+                        failed
+                            ? (isTa ? 'தொடர்' : 'Continue')
+                            : (isTa ? 'தொடங்கு' : 'Get started'),
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -375,100 +598,6 @@ class _ProgressBar extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _IntroFallback extends StatelessWidget {
-  const _IntroFallback({required this.failed, required this.tamil});
-
-  final bool failed;
-  final bool tamil;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF2A221C), Color(0xFF14110F)],
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 36, 28, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const MineLogoMark(size: 56, radius: 16),
-              const SizedBox(height: 28),
-              Text(
-                MineProduct.appName,
-                style: GoogleFonts.manrope(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                MineProduct.tagline,
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.terracotta,
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                failed
-                    ? (tamil
-                        ? 'வீடியோ ஏற்ற முடியவில்லை. தொடர்ந்து Mine-ஐ பயன்படுத்தலாம்.'
-                        : 'Could not load the intro video. You can continue into Mine.')
-                    : (tamil
-                        ? 'உங்கள் Mine அறிமுகம் ஏற்றப்படுகிறது…'
-                        : 'Loading your Mine intro…'),
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  height: 1.45,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 28),
-              if (tamil) ...[
-                const _Beat(
-                  title: 'பிரச்சனை',
-                  body: 'அலமாரி குழப்பம். அதே உடைகள். வீணான காலை.',
-                ),
-                const _Beat(
-                  title: 'தீர்வு',
-                  body: 'உடைகளை பதிவு செய். Mine இன்றைய லுக் தரும்.',
-                ),
-                const _Beat(
-                  title: 'பயன்படுத்து',
-                  body: 'Shuffle, Save, வாரம் பிளான் — எளிதாக உடுத்து.',
-                ),
-              ] else ...[
-                const _Beat(
-                  title: 'Problem',
-                  body: 'Closet chaos. Same outfits. Wasted mornings.',
-                ),
-                const _Beat(
-                  title: 'Solution',
-                  body: 'Upload your clothes. Mine builds today’s look.',
-                ),
-                const _Beat(
-                  title: 'Use it',
-                  body: 'Shuffle, save, plan the week, and dress with ease.',
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

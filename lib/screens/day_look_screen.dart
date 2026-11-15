@@ -18,7 +18,7 @@ class DayLookScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<MineState>();
-    final day = state.week?.forDate(date);
+    final day = state.ensureWeek(date).forDate(date);
     if (day == null) {
       return const Scaffold(body: Center(child: Text('Day not found')));
     }

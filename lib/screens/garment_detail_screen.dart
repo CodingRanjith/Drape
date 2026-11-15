@@ -7,9 +7,9 @@ import '../models/wardrobe.dart';
 
 import '../state/mine_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/add_item_form_dialog.dart';
 import '../widgets/back_icon.dart';
 import '../widgets/common.dart';
-import 'garment_editor_screen.dart';
 
 /// Wardrobe-style details popup (not a full-screen route).
 Future<void> showGarmentDetailPopup(
@@ -99,13 +99,11 @@ class GarmentDetailPopup extends StatelessWidget {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Edit',
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.of(context).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                GarmentEditorScreen(existing: garment),
-                          ),
+                        await showAddItemFormDialog(
+                          context,
+                          existing: garment,
                         );
                       },
                       icon: const Icon(Icons.edit_outlined),
@@ -292,8 +290,9 @@ class GarmentDetailScreen extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => GarmentEditorScreen(existing: garment)),
+            onPressed: () => showAddItemFormDialog(
+              context,
+              existing: garment,
             ),
             icon: const Icon(Icons.edit_outlined),
           ),

@@ -5,12 +5,12 @@
 ## Attach every single clip
 
 1. **Mine logo** image  
-2. **Same person** face photo (face identity only)
+2. **Same person** face photo (**face identity only**)
 
 ## Copy this IDENTITY LOCK into every prompt (do not shorten)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 ```
 
 ---
@@ -21,17 +21,17 @@ IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut).
 
 ---
 
-### EN Prompt 1 — 0:00–0:10 (Problem)
+### EN Prompt 1 — 0:00–0:10 (Hello, then the app)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-SCENE (10 seconds): Opening shot. The person stands in front of a messy open wooden cupboard / wardrobe, holding two shirts, looking confused and slightly stressed about what to wear. Soft morning light from a window. Camera slow push-in.
+SCENE (10 seconds): Opening shot. Beautiful woman (same face) looks into the camera, warm and friendly, says hello with her name Gayathri. Soft glam morning look — simple elegant home wear is fine. She welcomes the viewer to Mine — attached logo clear for a moment. Then she turns to a messy open wooden cupboard / wardrobe, holding two different shirts, slightly stressed about what to wear. Soft morning window light. Camera slow push-in.
 
-SPEAK in clear natural English (slightly stressed), lip sync:
-"Every morning… same problem. What should I wear today?"
+SPEAK with a very beautiful soft feminine Indian women’s voice, clear natural English, perfect lip sync, this exact line only:
+"Hi, I am Gayathri. Welcome to Mine. Every morning… same problem. What should I wear today?"
 
-END FRAME: Freeze mid-gesture looking into the closet, still holding the shirts. Tiny Mine logo watermark top-left.
+END FRAME: Mid-gesture looking into the closet, still holding the shirts. Tiny Mine logo watermark top-left. FACE unchanged.
 ```
 
 ---
@@ -39,15 +39,15 @@ END FRAME: Freeze mid-gesture looking into the closet, still holding the shirts.
 ### EN Prompt 2 — 0:10–0:20 (Problem deepens)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip (same person, same clothes, same messy cupboard). 10 seconds.
-The person checks a phone, feels time pressure, glances toward a clock / morning rush energy, still stuck at the messy wardrobe.
+CONTINUE from previous clip (SAME FACE). Outfit may change if natural. 10 seconds.
+She checks a phone, feels morning rush, glances toward a clock, still stuck at the messy wardrobe — same beautiful face, soft stressed expression.
 
-SPEAK in clear natural English, lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice, clear English, lip sync:
 "I waste so much time… and I keep repeating the same outfits."
 
-END FRAME: Tired sigh while looking at the clothes. Tiny Mine logo watermark top-left.
+END FRAME: Tired sigh while looking at the clothes. Tiny Mine logo watermark top-left. FACE locked.
 ```
 
 ---
@@ -55,15 +55,15 @@ END FRAME: Tired sigh while looking at the clothes. Tiny Mine logo watermark top
 ### EN Prompt 3 — 0:20–0:30 (Brand / hope)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-Warm hopeful light blooms in the room. The attached Mine logo becomes clear and prominent in frame (use the attached logo artwork exactly). The person’s expression softens from stress to curiosity / hope.
+CONTINUE from previous clip (SAME FACE). She may now wear a fresher, prettier outfit. 10 seconds.
+Warm hopeful light blooms. Attached Mine logo becomes clear and prominent (exact logo artwork). Expression softens from stress to curiosity / hope — glowing, beautiful.
 
-SPEAK in clear natural English (hopeful), lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice (hopeful), clear English, lip sync:
 "That’s why I found Mine — wear what loves you back."
 
-END FRAME: Mine logo + person together in the same shot.
+END FRAME: Mine logo + same face together in the same shot.
 ```
 
 ---
@@ -71,15 +71,15 @@ END FRAME: Mine logo + person together in the same shot.
 ### EN Prompt 4 — 0:30–0:40 (Open Mine)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-The person opens a smartphone. On the phone screen, a digital wardrobe cupboard unlocks (Mine app feel — wooden cupboard UI opening to shelves). Calm, hopeful mood. Same outfit.
+CONTINUE from previous clip (SAME FACE). Outfit may differ. 10 seconds.
+She opens a smartphone. On the phone screen, a digital wardrobe cupboard unlocks (Mine app feel — wooden cupboard UI opening to shelves). Calm, hopeful mood.
 
-SPEAK in clear natural English (calm), lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice (calm), clear English, lip sync:
 "Mine is my digital wardrobe. All my clothes, in one place."
 
-END FRAME: Phone screen showing gently glowing wardrobe shelves. Tiny Mine logo watermark top-left.
+END FRAME: Phone screen showing gently glowing wardrobe shelves. Tiny Mine logo watermark top-left. FACE locked.
 ```
 
 ---
@@ -87,15 +87,15 @@ END FRAME: Phone screen showing gently glowing wardrobe shelves. Tiny Mine logo 
 ### EN Prompt 5 — 0:40–0:50 (Upload clothes)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-The person snaps / adds clothes into the Mine wardrobe on the phone — shirts hanging, jeans on shelves — satisfying quick adds. Same face, same outfit on the person.
+CONTINUE from previous clip (SAME FACE). 10 seconds.
+She snaps / adds many different clothes into the Mine wardrobe on the phone — shirts, jeans, kurtis, a dress — satisfying quick adds. Her own worn outfit can be different from earlier clips; FACE stays identical.
 
-SPEAK in clear natural English, lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice, clear English, lip sync:
 "I just snap my clothes… and Mine remembers them for me."
 
-END FRAME: Holding the phone showing a filled digital wardrobe. Tiny Mine logo watermark top-left.
+END FRAME: Holding the phone showing a filled digital wardrobe. Tiny Mine logo watermark top-left. FACE locked.
 ```
 
 ---
@@ -103,15 +103,15 @@ END FRAME: Holding the phone showing a filled digital wardrobe. Tiny Mine logo w
 ### EN Prompt 6 — 0:50–1:00 (Today’s look)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-Phone shows “Today’s Look”. The person taps Shuffle, then Save, and smiles with confidence. Same clothes on the body.
+CONTINUE from previous clip (SAME FACE). 10 seconds.
+Phone shows “Today’s Look”. She taps Shuffle — on-screen looks change through different outfits — then Save, and she smiles with confidence. Optionally her real-world outfit also updates to a prettier chosen look; FACE never changes.
 
-SPEAK in clear natural English (confident smile), lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice (confident smile), clear English, lip sync:
 "Shuffle for a fresh look… Save — and today’s outfit is locked."
 
-END FRAME: Finger tapping Save, sure confident expression. Tiny Mine logo watermark top-left.
+END FRAME: Finger tapping Save, sure confident beautiful expression. Tiny Mine logo watermark top-left.
 ```
 
 ---
@@ -119,15 +119,15 @@ END FRAME: Finger tapping Save, sure confident expression. Tiny Mine logo waterm
 ### EN Prompt 7 — 1:00–1:10 (Week + calendar)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-Phone shows a week planner / calendar with outfits planned across days. The person looks relaxed and relieved. Same identity and outfit.
+CONTINUE from previous clip (SAME FACE). Outfit may be another stylish look. 10 seconds.
+Phone shows a week planner / calendar with different outfits planned across days. She looks relaxed and relieved — beautiful calm smile.
 
-SPEAK in clear natural English, lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice, clear English, lip sync:
 "I can plan my whole week… so mornings feel easy."
 
-END FRAME: Neat week strip visible on the phone screen. Tiny Mine logo watermark top-left.
+END FRAME: Neat week strip visible on the phone screen. Tiny Mine logo watermark top-left. FACE locked.
 ```
 
 ---
@@ -135,15 +135,15 @@ END FRAME: Neat week strip visible on the phone screen. Tiny Mine logo watermark
 ### EN Prompt 8 — 1:10–1:20 (Extras)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip. 10 seconds.
-Quick friendly beats on the phone / around the person: a jewelry drawer glint, then a water-glass reminder ping. Helpful lifestyle mood, not salesy. Same person, same outfit.
+CONTINUE from previous clip (SAME FACE). She may wear elegant jewellery with a changed outfit. 10 seconds.
+Quick friendly beats: jewellery drawer glint, then a water-glass reminder ping on the phone. Helpful lifestyle mood, warm and pretty — not salesy.
 
-SPEAK in clear natural English (friendly), lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice (friendly), clear English, lip sync:
 "Jewelry, water reminders… Mine helps my whole day, not just clothes."
 
-END FRAME: Small success check / toast on the phone. Tiny Mine logo watermark top-left.
+END FRAME: Small success check / toast on the phone. Tiny Mine logo watermark top-left. FACE locked.
 ```
 
 ---
@@ -151,15 +151,15 @@ END FRAME: Small success check / toast on the phone. Tiny Mine logo watermark to
 ### EN Prompt 9 — 1:20–1:30 (Close / CTA)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous clip into the finale. 10 seconds.
-The person walks out ready for the day, confident, still wearing the SAME outfit. The attached Mine logo appears full, clear, and centered (exact logo artwork). Warm resolved ending.
+CONTINUE from previous clip into the finale (SAME FACE). Final outfit can be her most beautiful day-ready look. 10 seconds.
+She walks out ready for the day, confident and glowing. Attached Mine logo appears full, clear, and centered (exact logo artwork). Warm resolved ending.
 
-SPEAK in clear natural English (warm CTA), lip sync:
+SPEAK with a very beautiful soft feminine Indian women’s voice (warm CTA), clear English, lip sync:
 "Mine by Techackode. Let’s get started."
 
-END HOLD: Logo + person together, ready for “Get started”.
+END HOLD: Logo + same face together, ready for “Get started”.
 ```
 
 ---
@@ -168,22 +168,23 @@ END HOLD: Logo + person together, ready for “Get started”.
 
 **Final file:** `assets/intro/mine_app_intro_ta.mp4`
 
-Same visuals and identity as English. Only the spoken language is clear **spoken Tamil** (இயற்கையான பேச்சுத் தமிழ் — not overly literary / not news-anchor Tamil). Lip sync must match the Tamil lines exactly.
+ஒவ்வொரு தமிழ் தொகுதியும் தனியாக முழுமை. அந்த தொகுதியை மட்டும் ஒட்டவும்.  
+**முகம் மட்டும் lock** — உடை / டிரெஸ் மாறலாம்.  
+**குரல்:** மிக அழகான, மென்மையான, இனிமையான பெண் குரல் (பேச்சுத் தமிழ்). உதடு அந்த வரியுடன் சரியாகப் பொருந்த வேண்டும்.
 
 ---
 
-### TA Prompt 1 — 0:00–0:10 (பிரச்சனை)
+### TA Prompt 1 — 0:00–0:10 (வணக்கம், பிறகு ஆப்)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-SCENE (10 seconds): Opening shot — same as English Prompt 1. The person stands in front of a messy open wooden cupboard / wardrobe, holding two shirts, looking confused and slightly stressed about what to wear. Soft morning light from a window. Camera slow push-in.
+SCENE (10 seconds): Opening shot. Same beautiful face looks into the camera, warm smile, says hello as Gayathri. Soft glam morning home wear OK. Welcomes viewer to Mine — logo clear briefly. Then turns to messy wooden cupboard, holding two different shirts, lightly stressed. Soft morning light. Slow push-in.
 
-SPEAK in clear natural spoken Tamil (slightly stressed), perfect lip sync to THIS exact line only:
-"ஒவ்வொரு காலையும்… அதே பிரச்சனை. இன்று என்ன போடலாம்?"
+பேச வேண்டிய வரி மட்டும் — மிக அழகான மென்மையான பெண் குரல், இயற்கை பேச்சுத் தமிழ், உதடு பொருந்த வேண்டும்:
+"ஹாய், நான் காயத்ரி. Mine-க்கு வரவேற்கிறேன். ஒவ்வொரு காலையும்… அதே பிரச்சனை. இன்று என்ன போடலாம்?"
 
-Do NOT speak English. Do NOT add other Tamil lines.
-END FRAME: Mid-gesture looking into the closet, still holding the shirts. Tiny Mine logo watermark top-left.
+END FRAME: Closet-க்கு பார்த்தபடி shirts பிடிச்சிருக்கும். Tiny Mine logo top-left. FACE same.
 ```
 
 ---
@@ -191,16 +192,15 @@ END FRAME: Mid-gesture looking into the closet, still holding the shirts. Tiny M
 ### TA Prompt 2 — 0:10–0:20 (பிரச்சனை ஆழமாக)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip (same person, same clothes, same messy cupboard). 10 seconds.
-The person checks a phone, feels morning time pressure, still stuck at the messy wardrobe.
+CONTINUE from previous Tamil clip (SAME FACE). உடை மாறலாம். 10 seconds.
+Phone பார்க்கிறாள், காலை அவசரம், messy wardrobe முன்னாடி சிக்கி இருக்கிறாள் — அழகான முகம் மாறாது.
 
-SPEAK in clear natural spoken Tamil, perfect lip sync to THIS exact line only:
+பேச வேண்டிய வரி மட்டும் — அழகான மென்மையான பெண் குரல், உதடு பொருந்த வேண்டும்:
 "ரொம்ப நேரம் வீணாகிறது… அதே உடைகளையே திரும்ப திரும்ப போடுறேன்."
 
-Do NOT speak English. Do NOT add other Tamil lines.
-END FRAME: Tired sigh while looking at the clothes. Tiny Mine logo watermark top-left.
+END FRAME: Tired sigh at the clothes. Tiny Mine logo top-left. FACE locked.
 ```
 
 ---
@@ -208,16 +208,15 @@ END FRAME: Tired sigh while looking at the clothes. Tiny Mine logo watermark top
 ### TA Prompt 3 — 0:20–0:30 (பிராண்ட் / நம்பிக்கை)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Warm hopeful light blooms. The attached Mine logo becomes clear and prominent (use attached logo artwork exactly). Expression softens from stress to curiosity / hope.
+CONTINUE from previous Tamil clip (SAME FACE). புதிய அழகான உடை அணியலாம். 10 seconds.
+Warm hopeful light. Attached Mine logo clear and prominent. Stress → curiosity / hope — glowing smile.
 
-SPEAK in clear natural spoken Tamil (hopeful), perfect lip sync to THIS exact line only:
-"அதனாலதான் Mine கிடைச்சுது — உனக்கு பிடிச்ச மாதிரி உடுத்தலாம்."
+பேச வேண்டிய வரி மட்டும் — அழகான பெண் குரல், நம்பிக்கை, உதடு பொருந்த வேண்டும்:
+"அதனாலதான் கிடைச்சது Mine — உனக்கு பிடிச்ச மாதிரி உடுத்தலாம்."
 
-Do NOT speak English. Keep the brand name “Mine” as Mine.
-END FRAME: Mine logo + person together in the same shot.
+END FRAME: Mine logo + same face together.
 ```
 
 ---
@@ -225,16 +224,15 @@ END FRAME: Mine logo + person together in the same shot.
 ### TA Prompt 4 — 0:30–0:40 (Mine திறத்தல்)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Opens a smartphone. On screen, a digital wardrobe cupboard unlocks (Mine app feel — wooden cupboard opening to shelves). Calm hopeful mood. Same outfit.
+CONTINUE from previous Tamil clip (SAME FACE). உடை மாறலாம். 10 seconds.
+Smartphone திறக்கிறாள். Screen-ல digital wardrobe cupboard unlock (Mine wooden cupboard UI). Calm hopeful mood.
 
-SPEAK in clear natural spoken Tamil (calm), perfect lip sync to THIS exact line only:
-"Mine என் டிஜிட்டல் அலமாரி. என் எல்லா உடைகளும் ஒரே இடத்தில்."
+பேச வேண்டிய வரி மட்டும் — அழகான மென்மையான பெண் குரல், அமைதி, உதடு பொருந்த வேண்டும்:
+"இது என் டிஜிட்டல் அலமாரி. என் எல்லா உடைகளும் ஒரே இடத்தில்."
 
-Do NOT speak English except the brand name Mine.
-END FRAME: Phone screen with gently glowing wardrobe shelves. Tiny Mine logo watermark top-left.
+END FRAME: Glowing wardrobe shelves on phone. Tiny Mine logo top-left. FACE locked.
 ```
 
 ---
@@ -242,16 +240,15 @@ END FRAME: Phone screen with gently glowing wardrobe shelves. Tiny Mine logo wat
 ### TA Prompt 5 — 0:40–0:50 (உடை பதிவு)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Snaps / adds clothes into the Mine wardrobe on the phone — shirts hanging, jeans on shelves — quick satisfying adds. Same face and outfit on the person.
+CONTINUE from previous Tamil clip (SAME FACE). 10 seconds.
+Phone-ல பல வித உடைகளை snap / add — shirt, jean, kurti, dress — quick satisfying adds. அவள் போட்டிருக்கும் உடை மாறினாலும் FACE same.
 
-SPEAK in clear natural spoken Tamil, perfect lip sync to THIS exact line only:
-"போட்டோ எடுத்தாலே போதும்… Mine என் உடைகளை ஞாபகம் வைத்துக்கும்."
+பேச வேண்டிய வரி மட்டும் — அழகான பெண் குரல், உதடு பொருந்த வேண்டும்:
+"போட்டோ எடுத்தாலே போதும்… என் உடைகளை இது ஞாபகம் வைத்துக்கும்."
 
-Do NOT speak English except the brand name Mine.
-END FRAME: Holding phone showing a filled digital wardrobe. Tiny Mine logo watermark top-left.
+END FRAME: Filled digital wardrobe on phone. Tiny Mine logo top-left. FACE locked.
 ```
 
 ---
@@ -259,16 +256,15 @@ END FRAME: Holding phone showing a filled digital wardrobe. Tiny Mine logo water
 ### TA Prompt 6 — 0:50–1:00 (இன்றைய லுக்)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Phone shows Today’s Look. Person taps Shuffle, then Save, smiles confidently. Same clothes on the body.
+CONTINUE from previous Tamil clip (SAME FACE). 10 seconds.
+Phone shows Today’s Look. Shuffle — screen-ல வெவ்வேறு outfits மாறும் — பிறகு Save, confident smile. Real-world உடையும் புது அழகான look-ஆ மாறலாம்; FACE never changes.
 
-SPEAK in clear natural spoken Tamil (confident), perfect lip sync to THIS exact line only:
-"Shuffle பண்ணி புதுசா பாரு… Save — இன்னைக்கு உடை ரெடி."
+பேச வேண்டிய வரி மட்டும் — அழகான பெண் குரல், நம்பிக்கை, உதடு பொருந்த வேண்டும்:
+"ஒரு தட்டு போட்டா புது லுக்… சேமிச்சா இன்னைக்கு உடை ரெடி."
 
-Keep the words Shuffle and Save as English UI words inside the Tamil sentence. No other English.
-END FRAME: Tapping Save with a sure confident expression. Tiny Mine logo watermark top-left.
+END FRAME: Save tap, confident beautiful expression. Tiny Mine logo top-left.
 ```
 
 ---
@@ -276,16 +272,15 @@ END FRAME: Tapping Save with a sure confident expression. Tiny Mine logo waterma
 ### TA Prompt 7 — 1:00–1:10 (வாரம் + கேலெண்டர்)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Phone shows week planner / calendar with outfits across days. Person looks relaxed. Same identity and outfit.
+CONTINUE from previous Tamil clip (SAME FACE). வேறு stylish உடை OK. 10 seconds.
+Phone-ல week planner / calendar — நாள் தோறும் வெவ்வேறு outfits. Relaxed beautiful smile.
 
-SPEAK in clear natural spoken Tamil, perfect lip sync to THIS exact line only:
-"முழு வாரம் முன்னாடியே பிளான் பண்ணலாம்… காலை லைட்டா இருக்கும்."
+பேச வேண்டிய வரி மட்டும் — அழகான மென்மையான பெண் குரல், உதடு பொருந்த வேண்டும்:
+"முழு வாரம் முன்னாடியே முடிவு பண்ணலாம்… காலை எளிதா இருக்கும்."
 
-Do NOT speak full English sentences.
-END FRAME: Neat week strip on the phone screen. Tiny Mine logo watermark top-left.
+END FRAME: Neat week strip on phone. Tiny Mine logo top-left. FACE locked.
 ```
 
 ---
@@ -293,16 +288,15 @@ END FRAME: Neat week strip on the phone screen. Tiny Mine logo watermark top-lef
 ### TA Prompt 8 — 1:10–1:20 (கூடுதல் அம்சங்கள்)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip. 10 seconds.
-Friendly beats: jewelry drawer glint, then a water reminder ping on the phone. Helpful lifestyle mood. Same person, same outfit.
+CONTINUE from previous Tamil clip (SAME FACE). Jewellery + changed outfit OK. 10 seconds.
+Jewellery drawer glint, then water reminder ping on phone. Warm pretty lifestyle mood.
 
-SPEAK in clear natural spoken Tamil (friendly), perfect lip sync to THIS exact line only:
-"நகைகள், தண்ணீர் ரிமைண்டர்… Mine உடை மட்டும் இல்ல — நாள் முழுக்க உதவி."
+பேச வேண்டிய வரி மட்டும் — அழகான நட்பான பெண் குரல், உதடு பொருந்த வேண்டும்:
+"நகைகள், தண்ணீர் நினைவூட்டல்… உடை மட்டும் இல்ல, நாள் முழுக்க உதவி."
 
-Keep brand name Mine. Do NOT speak English sentences.
-END FRAME: Small success check on the phone. Tiny Mine logo watermark top-left.
+END FRAME: Success check on phone. Tiny Mine logo top-left. FACE locked.
 ```
 
 ---
@@ -310,26 +304,26 @@ END FRAME: Small success check on the phone. Tiny Mine logo watermark top-left.
 ### TA Prompt 9 — 1:20–1:30 (முடிவு / CTA)
 
 ```
-IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut). Keep the EXACT same body shape, skin tone, hair length and style, and the EXACT same outfit/clothes for the whole film — do not redesign fashion, do not change colors of clothes, do not swap garments. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic. This is ONE continuous story: match the previous clip’s last frame pose, outfit, room, and lighting. The person SPEAKS the dialogue clearly with natural lip sync. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
+IDENTITY LOCK: Use the attached face photo as the ONLY face identity (face-cut / face-lock). Keep the EXACT same face, eyes, nose, smile shape, skin tone, and hair length/style across the whole film — never change the person. Body shape stays consistent. OUTFIT / DRESS / CLOTHES MAY CHANGE freely between clips or within a clip (different tops, saree, kurti, jeans, jewellery looks are OK and encouraged to show Mine’s variety) — do NOT lock fashion; only lock the FACE. Warm Indian home bedroom / wardrobe setting, soft morning daylight, landscape 16:9, cinematic, realistic, flattering beauty lighting. This is ONE continuous story: match the previous clip’s last frame for FACE + room mood; clothing can already be different. VOICE: very beautiful, soft, warm, feminine Indian women’s voice — clear, melodic, confident, pleasant (not robotic, not deep, not childish). The person SPEAKS with natural lip sync matching that voice. No random captions, no extra on-screen text unless this prompt asks for the Mine logo. Small Mine logo watermark top-left using the attached logo image, unless the prompt asks for a full logo moment.
 
-CONTINUE from previous Tamil clip into the finale. 10 seconds.
-Person walks out ready for the day, confident, SAME outfit. Attached Mine logo appears full, clear, and centered (exact logo artwork). Warm resolved ending.
+CONTINUE into finale (SAME FACE). Final outfit = most beautiful day-ready look. 10 seconds.
+Confident walk, glowing. Mine logo full, clear, centered (exact artwork). Warm ending.
 
-SPEAK in clear natural spoken Tamil (warm CTA), perfect lip sync to THIS exact line only:
-"Mine — Techackode. வாங்க, தொடங்குவோம்."
+பேச வேண்டிய வரி மட்டும் — அழகான அழைப்பு பெண் குரல், உதடு பொருந்த வேண்டும்:
+"Mine by Techackode. வாங்க, தொடங்குவோம்."
 
-Keep Mine and Techackode as brand names. No other English.
-END HOLD: Logo + person together, ready for “தொடங்கு / Get started”.
+END HOLD: Logo + same face together, ready to start.
 ```
 
 ---
 
 ## How to produce
 
-1. For each EN prompt 1–9: attach **logo + person**, paste the full code block into Gemini, generate 10s.
-2. For each TA prompt 1–9: same attachments, paste the full Tamil code block, generate 10s.
-3. Stitch EN clips 1→9 → `assets/intro/mine_app_intro_en.mp4`
-4. Stitch TA clips 1→9 → `assets/intro/mine_app_intro_ta.mp4`
-5. In Mine, use the **EN | தமிழ்** toggle on the intro screen.
+1. Each clip: attach **Mine logo + face photo**, paste the full code block into Gemini, generate **10s**, **16:9**.
+2. EN 1→9 stitch → `assets/intro/mine_app_intro_en.mp4`
+3. TA 1→9 stitch → `assets/intro/mine_app_intro_ta.mp4`
+4. In Mine, use **EN | தமிழ்** on the intro screen.
 
-**Tip:** If Gemini drifts the outfit, paste the previous clip’s last frame as an extra reference and repeat IDENTITY LOCK at the top unchanged.
+**Remember:** Face only is locked. Dress / clothes / jewellery looks **can and should change**. Voice must stay a **very beautiful soft feminine** voice in both languages.
+
+**Tip:** If the face drifts, paste the previous clip’s last frame as an extra reference and keep IDENTITY LOCK unchanged at the top.

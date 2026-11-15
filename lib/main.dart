@@ -50,6 +50,7 @@ class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
     unawaited(
       _state.boot().then((_) async {
         await initEventAlarms(onAlarm: _state.handleAlarm);
+        await _state.onNotificationsReady();
         await _state.runMetalBriefing();
       }),
     );
@@ -67,7 +68,7 @@ class _MineRootState extends State<MineRoot> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_state.checkDueAlarms());
-      unawaited(_state.checkWaterReminder());
+      unawaited(_state.checkWaterReminder(nudgeAwaiting: true));
       unawaited(_state.runMetalBriefing());
     }
   }
