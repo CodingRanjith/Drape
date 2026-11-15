@@ -1,7 +1,8 @@
-What's new in 1.0.2 (5)
+What's new in 1.0.5 (8)
 
-• Stability and performance improvements
-• Bug fixes for camera, wardrobe, and daily outfit flow
-• Ready for closed testing feedback
-
-Please install from the opt-in link, try the main flows, and send feedback to the address on the tester page.
+• Smaller install size — intro videos compressed (app much lighter)
+• Local EN / தமிழ் intro videos with light-themed walkthrough
+• More reliable water reminders (local timezone + reschedule)
+• Edit looks for next week and all set dates in Week plan
+• Multi-select same category when creating or editing looks
+• Bug fixes and polish for wardrobe and daily outfit flow

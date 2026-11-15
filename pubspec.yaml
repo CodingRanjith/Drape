@@ -1,7 +1,7 @@
 name: mine
 description: Mine by Techackode — upload your clothes and see what to wear each day. Developed by Ranjith Kumar C & Gayathri B.
 publish_to: "none"
-version: 1.0.3+6
+version: 1.0.5+8
 
 environment:
   sdk: ^3.11.0
@@ -37,12 +37,13 @@ dependencies:
   # 2.12+ needs Dart ^3.12; pin for Flutter 3.41 / Dart 3.11.5
   video_player: ^2.11.1
   flutter_timezone: ^5.1.1
+  flutter_native_splash: ^2.4.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
-  flutter_native_splash: ^2.4.6
 
 flutter_launcher_icons:
   android: true
@@ -81,6 +82,5 @@ flutter:
     - assets/collections/men/
     - assets/collections/women/
     - assets/sounds/water_chime.wav
-    # Add when ready:
-    # - assets/intro/mine_app_intro_en.mp4
-    # - assets/intro/mine_app_intro_ta.mp4
+    - assets/intro/mine_app_intro_en.mp4
+    - assets/intro/mine_app_intro_ta.mp4

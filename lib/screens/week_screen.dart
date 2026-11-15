@@ -78,6 +78,11 @@ class _WeekScreenState extends State<WeekScreen> {
     await showWeekDayLookSheet(context, day);
   }
 
+  /// Edit existing day look — open prefilled pieces, don't recreate via Add.
+  Future<void> _editLook(DayPlan day) async {
+    await showWeekEditLookSheet(context, day);
+  }
+
   Future<void> _viewLook(DayPlan day, List<Garment> pieces) async {
     if (pieces.isEmpty) {
       await _addLook(day);
@@ -93,7 +98,7 @@ class _WeekScreenState extends State<WeekScreen> {
           pieces: pieces,
           onChange: () async {
             Navigator.pop(ctx);
-            await _addLook(day);
+            await _editLook(day);
           },
         );
       },
@@ -182,7 +187,11 @@ class _WeekScreenState extends State<WeekScreen> {
                 pieces: pieces,
                 highlighted: highlighted,
                 onFocus: () => setState(() => _focusDay = date),
-                onAdd: plan == null ? null : () => _addLook(plan),
+                onAdd: plan == null
+                    ? null
+                    : () => pieces.isEmpty
+                        ? _addLook(plan)
+                        : _editLook(plan),
                 onClear:
                     plan == null ? null : () => state.clearDayOutfit(plan),
                 onOpen: pieces.isEmpty || plan == null
@@ -592,7 +601,7 @@ class _DayLookCard extends StatelessWidget {
                   Column(
                     children: [
                       _MiniAction(
-                        label: pieces.isEmpty ? 'Add' : 'Change',
+                        label: pieces.isEmpty ? 'Add' : 'Edit',
                         onTap: onAdd,
                       ),
                       if (pieces.isNotEmpty) ...[
@@ -678,7 +687,7 @@ class _DayLookPopup extends StatelessWidget {
                 TextButton(
                   onPressed: onChange,
                   child: Text(
-                    'Change',
+                    'Edit',
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w800,
                       color: AppColors.terracotta,

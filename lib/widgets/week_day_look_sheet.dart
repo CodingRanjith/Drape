@@ -265,14 +265,28 @@ Future<void> showWeekCreateSetSheet(BuildContext context, DayPlan day) async {
   await _showCenterPopup<void>(
     context: context,
     heightFactor: 0.88,
-    child: _WeekCreateSetSheet(day: day),
+    child: _WeekCreateSetSheet(day: day, editing: false),
+  );
+}
+
+/// Edit the day's existing look — prefilled pieces, no Create/Select choice.
+Future<void> showWeekEditLookSheet(BuildContext context, DayPlan day) async {
+  HapticFeedback.selectionClick();
+  await _showCenterPopup<void>(
+    context: context,
+    heightFactor: 0.88,
+    child: _WeekCreateSetSheet(day: day, editing: true),
   );
 }
 
 class _WeekCreateSetSheet extends StatefulWidget {
-  const _WeekCreateSetSheet({required this.day});
+  const _WeekCreateSetSheet({
+    required this.day,
+    this.editing = false,
+  });
 
   final DayPlan day;
+  final bool editing;
 
   @override
   State<_WeekCreateSetSheet> createState() => _WeekCreateSetSheetState();
@@ -283,9 +297,24 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
   final List<Garment> _picked = [];
   String? _activeShelf;
   var _saving = false;
+  var _seeded = false;
 
   int _pickedCountForShelf(String label) =>
       _picked.where((g) => g.shelfLabel == label).length;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seeded) return;
+    _seeded = true;
+    if (!widget.editing) return;
+    final state = context.read<MineState>();
+    final existing = state.piecesOf(widget.day.outfit);
+    if (existing.isEmpty) return;
+    _picked
+      ..clear()
+      ..addAll(existing);
+  }
 
   void _toggle(Garment g) {
     setState(() {
@@ -343,12 +372,15 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
               g.imagePath!.trim().isNotEmpty,
         )
         .toList();
+    final editing = widget.editing;
 
     return _PopupShell(
-      title: 'Create set',
+      title: editing ? 'Edit look' : 'Create set',
       subtitle: _picked.isEmpty
           ? 'Pick a category — tap multiple items to add'
-          : '${_picked.length} pieces selected',
+          : editing
+              ? '${_picked.length} pieces · tap to add or remove'
+              : '${_picked.length} pieces selected',
       footer: _saving
           ? const Center(child: CircularProgressIndicator())
           : FilledButton(
@@ -362,7 +394,7 @@ class _WeekCreateSetSheetState extends State<_WeekCreateSetSheet> {
                 ),
               ),
               child: Text(
-                'Save to day',
+                editing ? 'Update look' : 'Save to day',
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
               ),
             ),
